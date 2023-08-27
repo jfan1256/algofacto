@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorClustRet(Factor):
+class FactorClustVolume(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -23,11 +23,9 @@ class FactorClustRet(Factor):
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.cluster = cluster
         # Create returns and convert ticker index to columns
-        window_size = 10
-        self.factor_data = create_smooth_return(self.factor_data, windows=[1], window_size=window_size)
-        self.factor_data = self.factor_data[[f'RET_01']]
-        self.factor_data = self.factor_data['RET_01'].unstack('ticker')
-        self.factor_data.iloc[:window_size + 1] = self.factor_data.iloc[:window_size + 1].fillna(0)
+        self.factor_data = create_volume(self.factor_data, windows=[1])
+        self.factor_data = self.factor_data[[f'VOL_01']]
+        self.factor_data = self.factor_data['VOL_01'].unstack('ticker')
 
     @ray.remote
     def function(self, splice_data):
@@ -45,6 +43,6 @@ class FactorClustRet(Factor):
         # Create a dataframe that matches cluster to ticker
         cols = splice_data.columns
         date = splice_data.index[0]
-        splice_data = pd.DataFrame(cluster, columns=[f'ret_cluster'], index=[[date] * len(cols), cols])
+        splice_data = pd.DataFrame(cluster, columns=[f'vol_cluster'], index=[[date] * len(cols), cols])
         splice_data.index.names = ['date', 'ticker']
         return splice_data

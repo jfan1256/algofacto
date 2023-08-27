@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorClustRet(Factor):
+class FactorClustIndMom(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -20,14 +20,21 @@ class FactorClustRet(Factor):
                  window: int = None,
                  cluster: int = None):
         super().__init__(file_name, skip, start, end, ticker, batch_size, splice_size, group, general, window)
-        self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
+        price_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
+        ind_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_ind.parquet.brotli')
+        combine = pd.concat([price_data, ind_data], axis=1)
+
+        t = 1
+        ret = create_return(combine, windows=[t])[[f'RET_{t:02}', 'Industry']]
+        avg_ret = ret.groupby(['Industry', ret.index.get_level_values('date')])[f'RET_{t:02}'].mean()
+        ret = ret.reset_index()
+        ret = pd.merge(ret, avg_ret.rename('indRET').reset_index(), on=['Industry', 'date'], how='left')
+        ret[f'IndMom_{t:02}'] = ret[f'RET_{t:02}'] / ret['indRET']
+        ind_mom = ret.set_index(['ticker', 'date'])[[f'IndMom_{t:02}']]
+        self.factor_data = ind_mom
         self.cluster = cluster
         # Create returns and convert ticker index to columns
-        window_size = 10
-        self.factor_data = create_smooth_return(self.factor_data, windows=[1], window_size=window_size)
-        self.factor_data = self.factor_data[[f'RET_01']]
-        self.factor_data = self.factor_data['RET_01'].unstack('ticker')
-        self.factor_data.iloc[:window_size + 1] = self.factor_data.iloc[:window_size + 1].fillna(0)
+        self.factor_data = self.factor_data['IndMom_01'].unstack('ticker')
 
     @ray.remote
     def function(self, splice_data):
@@ -45,6 +52,6 @@ class FactorClustRet(Factor):
         # Create a dataframe that matches cluster to ticker
         cols = splice_data.columns
         date = splice_data.index[0]
-        splice_data = pd.DataFrame(cluster, columns=[f'ret_cluster'], index=[[date] * len(cols), cols])
+        splice_data = pd.DataFrame(cluster, columns=[f'ind_mom_cluster'], index=[[date] * len(cols), cols])
         splice_data.index.names = ['date', 'ticker']
         return splice_data

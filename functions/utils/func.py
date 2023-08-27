@@ -3,6 +3,8 @@ from sklearn.cluster import KMeans
 from statsmodels.regression.rolling import RollingOLS
 from sklearn.decomposition import PCA
 from timebudget import timebudget
+from statsmodels.regression.linear_model import OLS
+
 
 import pandas as pd
 import re
@@ -218,6 +220,37 @@ def rolling_ols_sb(price, factor_data, factor_col, window, name, ret):
         betas.append(result)
 
     return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
+
+# Rolling LR to calculate beta coefficients + predictions + alpha
+def rolling_ols_sb_test(price, factor_data, factor_col, window, name, ret):
+    @ray.remote
+    def exec_ols(i, data, window_size, factor_data, factors):
+        window_data = data.iloc[i:i + window_size]
+        window_data = window_data.fillna(0)
+
+        model_data = window_data[[ret]].merge(factor_data, on='date').dropna()
+        model_data[ret] -= model_data.RF
+        ols = OLS(endog=model_data[ret], exog=sm.add_constant(model_data[factors]))
+        factor_model = ols.fit(params_only=True).params.rename(index={'const': 'ALPHA'})
+        factor_model = factor_model.to_frame().T
+        index_val = pd.MultiIndex.from_tuples([window_data.index[-1]], names=('ticker', 'date'))
+        factor_model.index = index_val
+
+        # Compute predictions of ticker's return
+        alpha = factor_model['ALPHA'].values
+        beta_coef = factor_model[factors].values[0]
+        factor_ret = model_data[factors].iloc[-1:].values[0]
+        factor_model['PRED'] = factor_ret @ beta_coef + alpha
+        return factor_model
+
+    betas = []
+    for ticker, df in price.groupby('ticker', group_keys=False):
+        ols_list = ray.get([exec_ols.remote(i, df, window, factor_data, factor_col) for i in range(0, len(df) - window + 1)])
+        ols_df = pd.concat(ols_list, axis=0).rename(columns=lambda x: f'{x}_{name}_{window:02}')
+        betas.append(ols_df)
+
+    ols_all = pd.concat(betas, axis=0)
+    return ols_all
 
 
 # Rolling LR to calculate beta coefficients + predictions + alpha + epilson
