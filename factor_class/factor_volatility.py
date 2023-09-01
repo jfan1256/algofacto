@@ -26,7 +26,7 @@ class FactorVolatility(Factor):
         T = [1, 2, 3, 4, 5, 10, 20, 40, 60, 120, 210]
         ret = create_return(splice_data, windows=T)
         for t in T:
-            splice_data[f'Volatility_{t:02}'] = ret[f'RET_{t:02}'].rolling(window=60).std()
+            splice_data[f'Volatility_{t:02}'] = ret.groupby('ticker')[f'RET_{t:02}'].rolling(window=60).std().reset_index(level=0, drop=True)
             splice_data = splice_data.drop(f'RET_{t:02}', axis=1)
         return splice_data
 

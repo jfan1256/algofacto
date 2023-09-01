@@ -93,6 +93,7 @@ class AlphaModel:
             condition_add()
         else:
             if normalize:
+                factor = factor.replace([np.inf, -np.inf], np.nan)
                 scaler = MinMaxScaler((-1, 1))
 
                 def normalize(group):
@@ -403,7 +404,7 @@ class AlphaModel:
 
             params = get_parameters()
             param_names = list(params.keys())
-            num_iterations = [150, 200, 250, 300, 350]
+            num_iterations = [150, 200, 250, 300, 400]
             metric_cols = (param_names + ['time'] + ["dIC_mean_" + str(n) for n in num_iterations])
 
             # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

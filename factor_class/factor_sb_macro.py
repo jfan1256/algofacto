@@ -29,9 +29,7 @@ class FactorSBMacro(Factor):
         self.macro_data = pd.concat([self.macro_data, self.fama_data['RF']], axis=1)
 
         # Set time frame
-        startDate = '2006-01-01'
-        endDate = '2023-01-01'
-        self.macro_data = self.macro_data.loc[startDate:endDate]
+        self.macro_data = self.macro_data.loc[self.start:self.end]
         self.macro_data = self.macro_data.fillna(0)
 
         splice_data = create_return(splice_data, [1])

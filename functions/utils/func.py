@@ -254,7 +254,6 @@ def rolling_ols_residual(price, factor_data, factor_col, window, name, ret):
 
     return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
 
-
 # Rolling PCA
 def rolling_pca(data, window_size, num_components, name):
     principal_components = []

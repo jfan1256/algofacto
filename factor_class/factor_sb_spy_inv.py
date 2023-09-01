@@ -29,9 +29,7 @@ class FactorSBSPYInv(Factor):
         self.spy_data = pd.concat([self.spy_data, self.fama_data['RF']], axis=1)
 
         # Set time frame
-        startDate = '2006-01-01'
-        endDate = '2023-01-01'
-        self.spy_data = self.spy_data.loc[startDate:endDate]
+        self.spy_data = self.spy_data.loc[self.start:self.end]
         self.spy_data = self.spy_data.fillna(0)
 
         # Get factor columns and create returns

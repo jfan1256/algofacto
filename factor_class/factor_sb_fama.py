@@ -25,9 +25,7 @@ class FactorSBFama(Factor):
     @ray.remote
     def function(self, splice_data):
         # Set time frame
-        startDate = '2006-01-01'
-        endDate = '2023-01-01'
-        self.fama_data = self.fama_data.loc[startDate:endDate]
+        self.fama_data = self.fama_data.loc[self.start:self.end]
         self.fama_data = self.fama_data.fillna(0)
 
         splice_data = create_return(splice_data, [1])
