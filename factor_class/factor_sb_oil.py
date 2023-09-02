@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorSBBond(Factor):
+class FactorSBOil(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -21,7 +21,7 @@ class FactorSBBond(Factor):
         super().__init__(file_name, skip, start, end, ticker, batch_size, splice_size, group, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        bond_df = yf.download(['TLT', 'TIP', 'SHY'], start=self.start, end=self.end)
+        bond_df = yf.download(['XOM', 'CVX', 'SHEL'], start=self.start, end=self.end)
         bond_df = bond_df.stack().swaplevel().sort_index()
         bond_df.index.names = ['ticker', 'date']
         bond_df = bond_df.astype(float)
@@ -46,13 +46,13 @@ class FactorSBBond(Factor):
         splice_data = create_return(splice_data, windows=T)
         splice_data = splice_data.fillna(0)
 
-        t = 1
-        ret = f'RET_{t:02}'
+        for t in T:
+            ret = f'RET_{t:02}'
 
-        # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
-        windows = [30, 60]
-        for window in windows:
-            betas = rolling_ols_sb(price=splice_data, factor_data=self.bond_data, factor_col=factors, window=window, name='BOND', ret=ret)
-            splice_data = splice_data.join(betas)
+            # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
+            windows = [30, 60]
+            for window in windows:
+                betas = rolling_ols_sb(price=splice_data, factor_data=self.bond_data, factor_col=factors, window=window, name=f'{t:02}_OIL', ret=ret)
+                splice_data = splice_data.join(betas)
 
         return splice_data

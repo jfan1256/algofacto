@@ -30,7 +30,12 @@ from factor_class.factor_load_volatility import FactorLoadVolatility
 from factor_class.factor_load_volume import FactorLoadVolume
 from factor_class.factor_clust_volatility import FactorClustVolatility
 from factor_class.factor_dividend import FactorDividend
-from factor_class.factor_tf_ret import FactorTFRet
+from factor_class.factor_clust_ret30 import FactorClustRet30
+from factor_class.factor_clust_ret60 import FactorClustRet60
+from factor_class.factor_sb_oil import FactorSBOil
+from factor_class.factor_sb_sector import FactorSBSector
+from factor_class.factor_sb_ind import FactorSBInd
+from factor_class.factor_sb_overall import FactorSBOverall
 
 start = '2006-01-01'
 end = '2023-01-01'
@@ -53,23 +58,29 @@ start_time = time.time()
 # FactorRFRet(file_name='factor_rf_ret', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
 # FactorRFSign(file_name='factor_rf_sign', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
 # FactorRFVolume(file_name='factor_rf_volume', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
-# FactorSBETF(file_name='factor_sb_etf', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
-# FactorSBFama(file_name='factor_sb_fama', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
+FactorSBETF(file_name='factor_sb_etf', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
+FactorSBFama(file_name='factor_sb_fama', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
 # FactorSBSPYInv(file_name='factor_sb_spy_inv', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
-FactorTalib(file_name='factor_talib', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
+# FactorTalib(file_name='factor_talib', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
 # FactorOpenAsset(file_name='factor_open_asset', skip=True, ticker=['all'], start=start, end=end).create_factor()
 # FactorLoadRet(file_name='factor_load_ret', start=start, end=end, batch_size=8, splice_size=22, group='date', window=60, component=5).create_factor()
 # FactorClustRet(file_name='factor_clust_ret', start=start, end=end, batch_size=8, splice_size=22, group='date', window=60, cluster=15).create_factor()
 # FactorClustLoadRet(file_name='factor_clust_load_ret', start=start, end=end, batch_size=8, splice_size=22, group='date', window=60, cluster=15).create_factor()
-# FactorSBBond(file_name='factor_sb_bond', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
-# FactorSBMacro(file_name='factor_sb_macro', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
+FactorSBBond(file_name='factor_sb_bond', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
+FactorSBMacro(file_name='factor_sb_macro', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
 # FactorClustVolume(file_name='factor_clust_volume', start=start, end=end, batch_size=8, splice_size=22, group='date', window=60, cluster=15).create_factor()
 # FactorClustIndMom(file_name='factor_clust_ind_mom', start=start, end=end, batch_size=8, splice_size=22, group='date', window=60, cluster=15).create_factor()
 # FactorLoadVolatility(file_name='factor_load_volatility', start=start, end=end, batch_size=8, splice_size=22, group='date', window=60, component=5).create_factor()
 # FactorLoadVolume(file_name='factor_load_volume', start=start, end=end, batch_size=8, splice_size=22, group='date', window=60, component=5).create_factor()
 # FactorClustVolatility(file_name='factor_clust_volatility', start=start, end=end, batch_size=8, splice_size=22, group='date', window=60, cluster=15).create_factor()
 # FactorDividend(file_name='factor_dividend', skip=False, ticker=['all'], start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
-# FactorTFRet(file_name='factor_tf_ret', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
+# FactorClustRet30(file_name='factor_clust_ret30', start=start, end=end, batch_size=8, splice_size=22, group='date', window=60, cluster=15).create_factor()
+# FactorClustRet60(file_name='factor_clust_ret60', start=start, end=end, batch_size=8, splice_size=22, group='date', window=60, cluster=15).create_factor()
+# FactorSBOil(file_name='factor_sb_oil', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
+# FactorSBSector(file_name='factor_sb_sector', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
+# FactorSBInd(file_name='factor_sb_ind', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
+# FactorSBOverall(file_name='factor_sb_overall', ticker=tickers, start=start, end=end, batch_size=8, splice_size=22, group='ticker').create_factor()
+
 
 elapsed_time = time.time() - start_time
 print(f"Total time to create all factors: {round(elapsed_time)} seconds")

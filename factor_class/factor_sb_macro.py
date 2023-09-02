@@ -44,5 +44,3 @@ class FactorSBMacro(Factor):
             splice_data = splice_data.join(betas)
 
         return splice_data
-
-
