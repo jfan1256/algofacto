@@ -262,7 +262,7 @@ def rolling_pca(data, window_size, num_components, name):
         df = (df - df.mean()) / df.std()
         df.drop(columns=df.columns[df.isna().sum() > len(df) / 2], inplace=True)
         df.fillna(0, inplace=True)
-        pca = PCA(n_components=num_components)
+        pca = PCA(n_components=num_components, random_state=42)
         results = pca.fit_transform(df)
         principal_components.append(results[-1])
 
@@ -283,7 +283,7 @@ def rolling_pca_loading(data, window_size, num_components, name):
         window_data.fillna(0, inplace=True)
 
         # Run pcaReturn and get loadings
-        pca = PCA(n_components=num_components)
+        pca = PCA(n_components=num_components, random_state=42)
         pca.fit_transform(window_data)
         results_loadings = pca.components_.T * np.sqrt(pca.explained_variance_)
 

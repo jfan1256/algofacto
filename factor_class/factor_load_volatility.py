@@ -40,7 +40,7 @@ class FactorLoadVolatility(Factor):
         splice_data = splice_data.fillna(0)
 
         # Get loadings
-        pca = PCA(n_components=self.component)
+        pca = PCA(n_components=self.component, random_state=42)
         pca.fit_transform(splice_data)
         loading = pca.components_.T * np.sqrt(pca.explained_variance_)
         # Create a dataframe that matches loadings to ticker

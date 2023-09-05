@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorStreversal(Factor):
+class FactorSBFamaTest(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -20,21 +20,23 @@ class FactorStreversal(Factor):
                  window: int = None):
         super().__init__(file_name, skip, start, end, ticker, batch_size, splice_size, group, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
+        self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
 
     @ray.remote
     def function(self, splice_data):
-        T = [5, 10, 40, 60]
-        splice_data = create_return(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
-        # Streveral
-        condition1 = (splice_data['RET_05'] > 0) & (splice_data['RET_60'] < 0) & (splice_data['RET_40'] > 0)
-        splice_data['streversal'] = np.where(condition1, 1, 0)
+        # Set time frame
+        self.fama_data = self.fama_data.loc[self.start:self.end]
+        self.fama_data = self.fama_data.fillna(0)
 
-        # Strong Momentum
-        condition2 = (splice_data['RET_05'] > splice_data['RET_10']) & (splice_data['RET_10'] > splice_data['RET_40'])
-        splice_data['strong_momentum'] = np.where(condition2, 1, 0)
+        splice_data = create_return(splice_data, [1])
+        factors = self.fama_data.columns[:-1]
+        t = 1
+        ret = f'RET_{t:02}'
 
-        for t in T:
-            splice_data = splice_data.drop([f'RET_{t:02}'], axis=1)
+        # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
+        windows = [60]
+        for window in windows:
+            betas = rolling_ols_sb(price=splice_data, factor_data=self.fama_data, factor_col=factors, window=window, name='FAMA_TEST', ret=ret)
+            splice_data = splice_data.join(betas)
 
         return splice_data

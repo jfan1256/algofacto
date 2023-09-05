@@ -72,12 +72,12 @@ class PrepFactor:
                 self.data = self.data.drop(['Close'], axis=1)
         return self.data
 
-    def set_timeframe(self):
-        idx = pd.IndexSlice
-        mask = (self.data.index.get_level_values('date') >= self.start) & (
-                self.data.index.get_level_values('date') <= self.end)
-        self.data = self.data.loc[idx[mask, :], :]
-        return self.data
+    # def set_timeframe(self):
+    #     idx = pd.IndexSlice
+    #     mask = (self.data.index.get_level_values('date') >= self.start) & (
+    #             self.data.index.get_level_values('date') <= self.end)
+    #     self.data = self.data.loc[idx[mask, :], :]
+    #     return self.data
 
     def handle_missing(self):
         for column in self.data.columns:
@@ -91,7 +91,8 @@ class PrepFactor:
             self.data = self.get_factor()
             self.data = self.set_interval()
             self.data = self.div_price()
-            self.data = self.set_timeframe()
+            # self.data = self.set_timeframe()
+            self.data = set_timeframe(self.data, self.start, self.end)
             # self.data = self.handleMissingData()
             self.data.to_parquet(self.path, compression='brotli')
             return self.data

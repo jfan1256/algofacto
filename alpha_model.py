@@ -63,7 +63,7 @@ class AlphaModel:
             unique_categories = factor[col].unique()
             category_mapping[col] = {category: i for i, category in enumerate(unique_categories)}
             factor[col] = factor[col].map(category_mapping[col])
-        return factor
+        return factor.astype(int)
 
     def create_fwd(self):
         if self.pred == 'sign':
