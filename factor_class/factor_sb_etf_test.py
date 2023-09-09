@@ -22,18 +22,14 @@ class FactorSBETFTest(Factor):
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.etf_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_etf.parquet.brotli')
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
+        self.etf_data = pd.concat([self.etf_data, self.fama_data['RF']], axis=1)
+        self.etf_data = self.etf_data.loc[self.start:self.end]
+        self.etf_data = self.etf_data.fillna(0)
+        self.factor_col = self.etf_data.columns[:-1]
 
     @ray.remote
     def function(self, splice_data):
-        # Add risk-free rate
-        self.etf_data = pd.concat([self.etf_data, self.fama_data['RF']], axis=1)
 
-        # Set time frame
-        self.etf_data = self.etf_data.loc[self.start:self.end]
-        self.etf_data = self.etf_data.fillna(0)
-
-        # Get factor columns and create returns
-        factors = self.etf_data.columns[:-1]
         splice_data = create_return(splice_data, windows=[1])
 
         t = 1
@@ -41,7 +37,7 @@ class FactorSBETFTest(Factor):
         # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
         windows = [60]
         for window in windows:
-            betas = rolling_ols_sb(price=splice_data, factor_data=self.etf_data, factor_col=factors, window=window, name='ETF_TEST', ret=ret)
+            betas = rolling_ols_sb(price=splice_data, factor_data=self.etf_data, factor_col=self.factor_col, window=window, name='ETF_TEST', ret=ret)
             splice_data = splice_data.join(betas)
 
         return splice_data

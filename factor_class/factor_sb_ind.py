@@ -32,17 +32,13 @@ class FactorSBInd(Factor):
         ind_df = ind_df.unstack('ticker').swaplevel(axis=1)
         ind_df.columns = ['_'.join(col).strip() for col in ind_df.columns.values]
         self.ind_data = ind_df
+        self.ind_data = pd.concat([self.ind_data, self.fama_data['RF']], axis=1)
+        self.ind_data = self.ind_data.loc[self.start:self.end]
+        self.ind_data = self.ind_data.fillna(0)
+        self.factor_col = self.ind_data.columns[:-1]
 
     @ray.remote
     def function(self, splice_data):
-        # Add risk-free rate
-        self.ind_data = pd.concat([self.ind_data, self.fama_data['RF']], axis=1)
-
-        self.ind_data = self.ind_data.loc[self.start:self.end]
-        self.ind_data = self.ind_data.fillna(0)
-
-        # Get factor columns and create returns
-        factors = self.ind_data.columns[:-1]
         T = [1]
         splice_data = create_return(splice_data, windows=T)
         splice_data = splice_data.fillna(0)
@@ -53,7 +49,7 @@ class FactorSBInd(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [30, 60]
             for window in windows:
-                betas = rolling_ols_sb(price=splice_data, factor_data=self.ind_data, factor_col=factors, window=window, name=f'{t:02}_IND', ret=ret)
+                betas = rolling_ols_sb(price=splice_data, factor_data=self.ind_data, factor_col=self.factor_col, window=window, name=f'{t:02}_IND', ret=ret)
                 splice_data = splice_data.join(betas)
 
         return splice_data

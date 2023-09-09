@@ -27,6 +27,7 @@ class AlphaModel:
     def __init__(self, model_name: str = None,
                  tuning: [str, int] = None,
                  plot_loss: bool = False,
+                 plot_hist: bool = False,
                  pred: str = 'price',
                  lookahead: int = 1,
                  incr: bool = False,
@@ -40,6 +41,7 @@ class AlphaModel:
         self.categorical = []
         self.tuning = tuning
         self.plot_loss = plot_loss
+        self.plot_hist = plot_hist
         self.pred = pred
         self.lookahead = lookahead
         self.incr = incr
@@ -171,13 +173,25 @@ class AlphaModel:
         plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{key}' / f'waterfall_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
         plt.close()
 
+    @staticmethod
+    def plot_histo(pred, ret, date):
+        pred = pred['150'].loc[pred.index.get_level_values('date') == date]
+        ret = ret.RET_01.loc[ret.index.get_level_values('date') == date]
+        plt.hist(pred, bins='auto', edgecolor='black', alpha=0.5, label=f"Pred: {date}")
+        plt.hist(ret, bins='auto', edgecolor='red', alpha=0.5, label=f"Real: {date}")
+        plt.title('Histogram of values')
+        plt.xlabel('Value')
+        plt.ylabel('Frequency')
+        plt.legend()
+        plt.show()
+
     def lightgbm(self):
         def model_training(trial):
             # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
             # ------------------------------------------------------------------FUNCTIONS WITHIN MODEL_TRAINING------------------------------------------------------------------------------
             def custom_loss(y_pred, dataset):
                 y_true = dataset.get_label()
-                penalty = 0.5
+                penalty = 0.1
                 grad = 2 * (y_pred - y_true)
                 hess = 2 * np.ones_like(y_true)
                 # Penalizing both sign predictions
@@ -320,6 +334,10 @@ class AlphaModel:
 
                     # Record predictions for each fold
                     wfo_pred.append(test_ret.assign(**test_pred_ret).assign(i=i))
+
+                    # Plot hist
+                    if self.plot_hist:
+                        self.plot_histo(test_ret.assign(**test_pred_ret).assign(i=i), self.actual_return, data_train.iloc[train_idx].index.get_level_values('date')[-1] + timedelta(days=5))
 
                     # Record shap value
                     if i == 0 or i == n_splits // 2 or i == n_splits - 1:

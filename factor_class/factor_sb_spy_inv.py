@@ -22,18 +22,13 @@ class FactorSBSPYInv(Factor):
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.spy_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_spy.parquet.brotli')
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
+        self.spy_data = pd.concat([self.spy_data, self.fama_data['RF']], axis=1)
+        self.spy_data = self.spy_data.loc[self.start:self.end]
+        self.spy_data = self.spy_data.fillna(0)
+        self.factor_col = self.spy_data.columns[:-1]
 
     @ray.remote
     def function(self, splice_data):
-        # Add risk-free rate
-        self.spy_data = pd.concat([self.spy_data, self.fama_data['RF']], axis=1)
-
-        # Set time frame
-        self.spy_data = self.spy_data.loc[self.start:self.end]
-        self.spy_data = self.spy_data.fillna(0)
-
-        # Get factor columns and create returns
-        factors = self.spy_data.columns[:-1]
         splice_data = create_return(splice_data, windows=[1])
 
         t = 1
@@ -41,7 +36,7 @@ class FactorSBSPYInv(Factor):
         # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
         windows = [30, 60]
         for window in windows:
-            betas = rolling_ols_sb(price=splice_data, factor_data=self.spy_data, factor_col=factors, window=window,
+            betas = rolling_ols_sb(price=splice_data, factor_data=self.spy_data, factor_col=self.factor_col, window=window,
                                    name='INV_SPY', ret=ret)
             betas = betas[[col for col in betas.columns if col.startswith('spyRet')]]
             betas = betas.rdiv(1)
