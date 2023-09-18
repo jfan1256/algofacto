@@ -33,6 +33,7 @@ class AlphaModel:
                  incr: bool = False,
                  pretrain_len: Optional[int] = None,
                  train_len: int = None,
+                 valid_len: int = None,
                  test_len: int = None,
                  **kwargs):
 
@@ -47,6 +48,7 @@ class AlphaModel:
         self.incr = incr
         self.pretrain_len = pretrain_len
         self.train_len = train_len
+        self.valid_len = valid_len
         self.test_len = test_len
         self.actual_return = None
         self.parameter_specs = kwargs
@@ -287,8 +289,8 @@ class AlphaModel:
                 # Iterate over wfo periods
                 for i, (train_idx, test_idx) in enumerate(wfo):
                     # Select train subset save last 30 for validation
-                    lgb_train = lgb_data_train.subset(used_indices=train_idx.tolist()[:-21]).construct()
-                    lgb_val = lgb_data_train.subset(used_indices=train_idx.tolist()[-21:]).construct()
+                    lgb_train = lgb_data_train.subset(used_indices=train_idx.tolist()[:-self.valid_len]).construct()
+                    lgb_val = lgb_data_train.subset(used_indices=train_idx.tolist()[-self.valid_len:]).construct()
                     lgb_early_stop = lgb.early_stopping(100)
 
                     # Early stop on MSE

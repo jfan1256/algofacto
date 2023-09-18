@@ -1,4 +1,4 @@
-from typing import List
+from typing import Optional, Union, List
 
 from functions.utils.func import *
 from factor_class.factor import Factor
@@ -12,7 +12,7 @@ class FactorSBFamaTest(Factor):
                  skip: bool = None,
                  start: str = None,
                  end: str = None,
-                 ticker: List[str] = None,
+                 ticker: Optional[Union[List[str], str]] = None,
                  batch_size: int = None,
                  splice_size: int = None,
                  group: str = None,
@@ -27,14 +27,14 @@ class FactorSBFamaTest(Factor):
 
     @ray.remote
     def function(self, splice_data):
-        T = [1, 6, 30]
+        T = [1]
         splice_data = create_return(splice_data, T)
         for t in T:
             ret = f'RET_{t:02}'
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
-            windows = [60]
+            windows = [30, 60]
             for window in windows:
-                betas = rolling_ols_sb(price=splice_data, factor_data=self.fama_data, factor_col=self.factor_col, window=window, name=f'{t:02}_FAMA_TEST', ret=ret)
+                betas = rolling_ols_residual(price=splice_data, factor_data=self.fama_data, factor_col=self.factor_col, window=window, name=f'{t:02}_FAMA_TEST', ret=ret)
                 splice_data = splice_data.join(betas)
 
         return splice_data

@@ -55,7 +55,9 @@ class PrepFactor:
         else:
             # Resample from not daily to daily
             date_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_date.parquet.brotli')
-            self.data = pd.merge(date_data.loc[self.tickers], self.data, left_index=True, right_index=True, how='left')
+            tickers = read_ticker(get_load_data_large_dir() / 'tickers_to_train_fundamental.csv')
+            date_data = set_timeframe(date_data, self.start, self.end)
+            self.data = pd.merge(date_data.loc[tickers], self.data, left_index=True, right_index=True, how='left')
             self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
             self.data = self.data.ffill()
             return self.data

@@ -254,6 +254,39 @@ def rolling_ols_residual(price, factor_data, factor_col, window, name, ret):
 
     return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
 
+# Rolling LR to calculate beta coefficients + predictions + alpha + epilson + idiosyncratic risk
+def rolling_ols_residual_test(price, factor_data, factor_col, window, name, ret):
+    betas = []
+    for ticker, df in price.groupby('ticker', group_keys=False):
+        model_data = df[[ret]].merge(factor_data, on='date').dropna()
+        model_data[ret] -= model_data.RF
+        rolling_ols = RollingOLS(endog=model_data[ret],
+                                 exog=sm.add_constant(model_data[factor_col]), window=window)
+        factor_model = rolling_ols.fit(params_only=True).params.rename(columns={'const': 'ALPHA'})
+
+        # Compute predictions of ticker's return
+        alpha = factor_model['ALPHA']
+        beta_coef = factor_model[factor_col]
+        factor_ret = model_data[factor_col]
+        ticker_ret = df.reset_index('ticker').drop(columns='ticker', axis=1)[ret]
+
+        predictions = []
+        epsilons = []
+        for index, row in factor_ret.iterrows():
+            prediction = row @ beta_coef.loc[index] + alpha.loc[index]
+            epsilon = ticker_ret.loc[index] - prediction
+            predictions.append(prediction)
+            epsilons.append(epsilon)
+
+        result = factor_model.assign(ticker=ticker).set_index('ticker', append=True).swaplevel()
+        result['PRED'] = predictions
+        result['EPSIL'] = epsilons
+        result['EPSIL'] = result['EPSIL'].rolling(window=window).sum() / result['EPSIL'].rolling(window=window).std()
+        result['IDIO_VOL'] = result['EPSIL'].rolling(window=window).sum() / result['EPSIL'].rolling(window=window).std()
+        betas.append(result)
+
+    return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
+
 # Rolling PCA
 def rolling_pca(data, window_size, num_components, name):
     principal_components = []
@@ -315,6 +348,20 @@ def create_volume(df, windows):
         df[f'VOL_{t:02}'] = by_ticker.Volume.pct_change(t)
     return df
 
+# Create percentage change for high
+def create_high(df, windows):
+    by_ticker = df.groupby(level='ticker')
+    for t in windows:
+        df[f'HIGH_{t:02}'] = by_ticker.High.pct_change(t)
+    return df
+
+
+# Create percentage change for low
+def create_low(df, windows):
+    by_ticker = df.groupby(level='ticker')
+    for t in windows:
+        df[f'LOW_{t:02}'] = by_ticker.Low.pct_change(t)
+    return df
 
 # Create smoothed historical returns
 def create_smooth_return(df, windows, window_size):

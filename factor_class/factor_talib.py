@@ -1,6 +1,6 @@
 import talib
 
-from typing import List
+from typing import Optional, Union, List
 
 from functions.utils.func import *
 from factor_class.factor import Factor
@@ -14,7 +14,7 @@ class FactorTalib(Factor):
                  skip: bool = None,
                  start: str = None,
                  end: str = None,
-                 ticker: List[str] = None,
+                 ticker: Optional[Union[List[str], str]] = None,
                  batch_size: int = None,
                  splice_size: int = None,
                  group: str = None,

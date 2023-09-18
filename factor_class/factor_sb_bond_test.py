@@ -1,4 +1,4 @@
-from typing import List
+from typing import Optional, Union, List
 
 from functions.utils.func import *
 from factor_class.factor import Factor
@@ -12,7 +12,7 @@ class FactorSBBondTest(Factor):
                  skip: bool = None,
                  start: str = None,
                  end: str = None,
-                 ticker: List[str] = None,
+                 ticker: Optional[Union[List[str], str]] = None,
                  batch_size: int = None,
                  splice_size: int = None,
                  group: str = None,
@@ -25,7 +25,7 @@ class FactorSBBondTest(Factor):
         bond_df = bond_df.stack().swaplevel().sort_index()
         bond_df.index.names = ['ticker', 'date']
         bond_df = bond_df.astype(float)
-        T = [1, 6, 42]
+        T = [1, 6, 30]
         bond_df = create_return(bond_df, T)
         bond_df = bond_df.drop(['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
         bond_df = bond_df.unstack('ticker').swaplevel(axis=1)
@@ -48,7 +48,7 @@ class FactorSBBondTest(Factor):
         # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
         windows = [30, 60]
         for window in windows:
-            betas = rolling_ols_sb(price=splice_data, factor_data=self.bond_data, factor_col=self.factor_col, window=window, name='BOND_TEST', ret=ret)
+            betas = rolling_ols_residual(price=splice_data, factor_data=self.bond_data, factor_col=self.factor_col, window=window, name='BOND_TEST', ret=ret)
             splice_data = splice_data.join(betas)
 
         return splice_data

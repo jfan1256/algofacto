@@ -9,21 +9,21 @@ start = '2010-01-01'
 end = '2022-01-01'
 save = False
 params = {
-    'max_depth':         {'optuna': ('suggest_int', 6, 20),                    'gridsearch': [-1, 6, 10],                  'default': -1},
-    'learning_rate':     {'optuna': ('suggest_float', 0.15, 0.15, False),       'gridsearch': [0.005, 0.01, 0.1, 0.15],     'default': 0.15},
-    'num_leaves':        {'optuna': ('suggest_int', 10, 50),                    'gridsearch': [20, 40, 60],                 'default': 15},
-    'feature_fraction':  {'optuna': ('suggest_float', 0.70, 0.90),              'gridsearch': [0.7, 0.8, 0.9],              'default': 0.85},
-    'min_gain_to_split': {'optuna': ('suggest_float', 0.0001, 0.05, False),      'gridsearch': [0.0001, 0.001, 0.01],        'default': 0.02},
-    'min_data_in_leaf':  {'optuna': ('suggest_int', 60, 60),                   'gridsearch': [40, 60, 80],                 'default': 60},
-    'lambda_l1':         {'optuna': ('suggest_float', 0, 0, False),             'gridsearch': [0.001, 0.01],                'default': 0},
-    'lambda_l2':         {'optuna': ('suggest_float', 1e-5, 1, True),           'gridsearch': [0.001, 0.01],                'default': 0.01},
-    'bagging_fraction':  {'optuna': ('suggest_float', 1.0, 1.0, True),          'gridsearch': [0.9, 1],                     'default': 1},
-    'bagging_freq':      {'optuna': ('suggest_int', 0, 0),                      'gridsearch': [0, 20],                      'default': 0},
+    'max_depth':         {'optuna': ('suggest_int', 1, 20),                     'gridsearch': [-1, 6, 10],                   'default': -1},
+    'learning_rate':     {'optuna': ('suggest_float', 0.15, 0.15, False),       'gridsearch': [0.005, 0.01, 0.1, 0.15],      'default': 0.15},
+    'num_leaves':        {'optuna': ('suggest_int', 5, 50),                     'gridsearch': [20, 40, 60],                  'default': 15},
+    'feature_fraction':  {'optuna': ('suggest_float', 0.85, 0.85),              'gridsearch': [0.7, 0.8, 0.9],               'default': 0.85},
+    'min_gain_to_split': {'optuna': ('suggest_float', 0.02, 0.02, False),       'gridsearch': [0.0001, 0.001, 0.01],         'default': 0.02},
+    'min_data_in_leaf':  {'optuna': ('suggest_int', 60, 60),                    'gridsearch': [40, 60, 80],                  'default': 60},
+    'lambda_l1':         {'optuna': ('suggest_float', 1e-5, 1, False),          'gridsearch': [0.001, 0.01],                 'default': 0},
+    'lambda_l2':         {'optuna': ('suggest_float', 1e-5, 1, True),           'gridsearch': [0.001, 0.01],                 'default': 0.01},
+    'bagging_fraction':  {'optuna': ('suggest_float', 1.0, 1.0, True),          'gridsearch': [0.9, 1],                      'default': 1},
+    'bagging_freq':      {'optuna': ('suggest_int', 0, 0),                      'gridsearch': [0, 20],                       'default': 0},
 }
 
 start_time = time.time()
 alpha = AlphaModel(model_name='lightgbm_trial_30', tuning=['optuna', 30], plot_loss=False, plot_hist=False, pred='price',
-                   lookahead=1, incr=True, pretrain_len=1260, train_len=504, test_len=21, **params)
+                   lookahead=1, incr=True, pretrain_len=1260, train_len=504, valid_len=21, test_len=21, **params)
 
 ret = PrepFactor(factor_name='factor_ret', interval='D', kind='price', tickers=tickers, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(ret)
@@ -40,10 +40,6 @@ del cycle
 ind = PrepFactor(factor_name='factor_ind', interval='D', kind='ind', tickers=tickers, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(ind, categorical=True)
 del ind
-
-# fund_ratio = PrepFactor(factor_name='factor_fund_ratio', interval='D', kind='fundamental', tickers=tickers, div=True, start=start, end=end, save=save).prep()
-# alpha.add_factor(fund_ratio)
-# del fund_ratio
 
 # macro = PrepFactor(factor_name='factor_macro', interval='D', kind='macro', tickers=tickers, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(macro)
@@ -212,6 +208,26 @@ del load_volume
 # fund_q = PrepFactor(factor_name='factor_fund_q', interval='D', kind='fundamental', tickers=tickers, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(fund_q, categorical=True)
 # del fund_q
+
+# rank_fund_ratio = PrepFactor(factor_name='factor_rank_fund_ratio', interval='M', kind='fundamental', tickers='all', div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(rank_fund_ratio)
+# del rank_fund_ratio
+
+# clust_fund_ratio = PrepFactor(factor_name='factor_clust_fund_ratio', interval='M', kind='cluster', tickers='all', div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(clust_fund_ratio, categorical=True)
+# del clust_fund_ratio
+
+# fund_ratio = PrepFactor(factor_name='factor_fund_ratio', interval='M', kind='fundamental', tickers='all', div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(fund_ratio)
+# del fund_ratio
+#
+# high = PrepFactor(factor_name='factor_high', interval='D', kind='price', div=False, tickers=tickers, start=start, end=end, save=True).prep()
+# alpha.add_factor(high)
+# del high
+#
+# low = PrepFactor(factor_name='factor_low', interval='D', kind='price', div=False, tickers=tickers, start=start, end=end, save=True).prep()
+# alpha.add_factor(low)
+# del low
 
 elapsed_time = time.time() - start_time
 print(f"AlphaModel data shape: {alpha.data.shape}")

@@ -4,6 +4,8 @@ from functions.utils.func import *
 from functions.utils.system import *
 from itertools import chain
 
+from typing import Union, Optional, List
+
 import warnings
 
 warnings.filterwarnings('ignore')
@@ -15,7 +17,7 @@ class Factor:
                  skip: bool = None,
                  start: str = None,
                  end: str = None,
-                 ticker: List[str] = None,
+                 ticker: Optional[Union[List[str], str]] = None,
                  batch_size: int = None,
                  splice_size: int = None,
                  group: str = None,
@@ -86,8 +88,8 @@ class Factor:
             return data_spliced
 
         elif self.group == 'date':
-            if 'ticker' in self.factor_data.index.name:
-                raise ValueError('if group parameter is set to ''date'' then ''ticker'' cannot be in the index. Must have only ''date'' in index')
+            if 'ticker' in self.factor_data.index.names:
+                raise ValueError('if group parameter is set to ''date'' then ''ticker'' cannot be in the index. Must only ''date'' in index')
 
             window_data = self._rolling_window()
             for i in range(0, len(window_data), self.splice_size):
@@ -161,13 +163,13 @@ class Factor:
         if self.skip:
             print('Skipping splice and batch...')
             print(f"Exporting {self.file_name}...")
-            if self.ticker != ['all']:
+            if self.ticker != 'all':
                 self.factor_data = self.factor_data.loc[self.ticker]
             self.factor_data.to_parquet(get_root_dir() / f'factor_data/{self.file_name}.parquet.brotli', compression='brotli')
             print("-" * 60)
         else:
             if not self.general and self.group != 'date':
-                if self.ticker != ['all']:
+                if self.ticker != 'all':
                     self.factor_data = self.factor_data.loc[self.ticker]
             splice_data = self._splice_data()
             batch_data = self._batch_data(splice_data)

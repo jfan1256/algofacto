@@ -1,4 +1,4 @@
-from typing import List
+from typing import Optional, Union, List
 
 from functions.utils.func import *
 from factor_class.factor import Factor
@@ -12,7 +12,7 @@ class FactorTime(Factor):
                  skip: bool = None,
                  start: str = None,
                  end: str = None,
-                 ticker: List[str] = None,
+                 ticker: Optional[Union[List[str], str]] = None,
                  batch_size: int = None,
                  splice_size: int = None,
                  group: str = None,
@@ -26,4 +26,5 @@ class FactorTime(Factor):
     def function(self, splice_data):
         splice_data['Month'] = splice_data.index.get_level_values('date').month
         splice_data['Weekday'] = splice_data.index.get_level_values('date').weekday
+        # splice_data['Halloween'] = splice_data.index.get_level_values('date').map(lambda x: 1 if 5 <= x.month <= 10 else 0)
         return splice_data
