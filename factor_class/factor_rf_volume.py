@@ -37,8 +37,7 @@ class FactorRFVolume(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [60]
             for window in windows:
-                betas = rolling_ols_residual(price=splice_data, factor_data=self.all_rf, factor_col=self.factor_col, window=window,
-                                             name=f'{t:02}_RF_VOL', ret=vol)
+                betas = rolling_ols_beta_res(price=splice_data, factor_data=self.all_rf, factor_col=self.factor_col, window=window, name=f'{t:02}_RF_VOL', ret=vol)
                 splice_data = splice_data.join(betas)
             splice_data = splice_data.drop(vol, axis=1)
 

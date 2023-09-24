@@ -49,7 +49,7 @@ class FactorSBSector(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [60]
             for window in windows:
-                betas = rolling_ols_sb(price=splice_data, factor_data=self.sector_data, factor_col=self.factor_col, window=window, name=f'{t:02}_SECTOR', ret=ret)
+                betas = rolling_ols_beta(price=splice_data, factor_data=self.sector_data, factor_col=self.factor_col, window=window, name=f'{t:02}_SECTOR', ret=ret)
                 splice_data = splice_data.join(betas)
 
         return splice_data

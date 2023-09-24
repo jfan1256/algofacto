@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorRankFundRatio(Factor):
+class FactorRankFundRaw(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -20,4 +20,4 @@ class FactorRankFundRatio(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_ratio_rank.parquet.brotli')
+        self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw_rank.parquet.brotli')

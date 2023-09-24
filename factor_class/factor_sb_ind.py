@@ -50,7 +50,7 @@ class FactorSBInd(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [30, 60]
             for window in windows:
-                betas = rolling_ols_sb(price=splice_data, factor_data=self.ind_data, factor_col=self.factor_col, window=window, name=f'{t:02}_IND', ret=ret)
+                betas = rolling_ols_beta(price=splice_data, factor_data=self.ind_data, factor_col=self.factor_col, window=window, name=f'{t:02}_IND', ret=ret)
                 splice_data = splice_data.join(betas)
 
         return splice_data

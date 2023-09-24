@@ -38,8 +38,7 @@ class FactorRFSign(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [60]
             for window in windows:
-                betas = rolling_ols_residual(price=splice_data, factor_data=self.all_rf, factor_col=self.factor_col, window=window,
-                                             name=f'{t:02}_RF_SIGN', ret=sign)
+                betas = rolling_ols_beta_res(price=splice_data, factor_data=self.all_rf, factor_col=self.factor_col, window=window, name=f'{t:02}_RF_SIGN', ret=sign)
                 splice_data = splice_data.join(betas)
             splice_data = splice_data.drop(sign, axis=1)
 

@@ -57,29 +57,17 @@ ind_mom = PrepFactor(factor_name='factor_ind_mom', interval='D', kind='ind', sto
 alpha.add_factor(ind_mom)
 del ind_mom
 
-sb_fama = PrepFactor(factor_name='factor_sb_fama', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(sb_fama)
-del sb_fama
+# sb_fama = PrepFactor(factor_name='factor_sb_fama', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(sb_fama)
+# del sb_fama
 
-# sb_fama_test = PrepFactor(factor_name='factor_sb_fama_test', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(sb_fama_test)
-# del sb_fama_test
-
-sb_etf = PrepFactor(factor_name='factor_sb_etf', interval='D', kind='price', div=False, stock=stock, start=start, end=end, save=save).prep()
-alpha.add_factor(sb_etf)
-del sb_etf
-
-# sb_etf_test = PrepFactor(factor_name='factor_sb_etf_test', interval='D', kind='price', div=False, stock=stock, start=start, end=end, save=save).prep()
-# alpha.add_factor(sb_etf_test)
-# del sb_etf_test
+# sb_etf = PrepFactor(factor_name='factor_sb_etf', interval='D', kind='price', div=False, stock=stock, start=start, end=end, save=save).prep()
+# alpha.add_factor(sb_etf)
+# del sb_etf
 
 # rf_ret = PrepFactor(factor_name='factor_rf_ret', interval='D', kind='price', div=False, stock=stock, start=start, end=end, save=save).prep()
 # alpha.add_factor(rf_ret)
 # del rf_ret
-
-# rf_ret_test = PrepFactor(factor_name='factor_rf_ret_test', interval='D', kind='price', div=False, stock=stock, start=start, end=end, save=save).prep()
-# alpha.add_factor(rf_ret_test)
-# del rf_ret_test
 
 load_ret = PrepFactor(factor_name='factor_load_ret', interval='D', kind='loading', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(load_ret)
@@ -88,10 +76,6 @@ del load_ret
 clust_ret = PrepFactor(factor_name='factor_clust_ret', interval='D', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(clust_ret, categorical=True)
 del clust_ret
-
-# clust_ret_test = PrepFactor(factor_name='factor_clust_ret_test', interval='D', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(clust_ret_test, categorical=True)
-# del clust_ret_test
 
 clust_load_ret = PrepFactor(factor_name='factor_clust_load_ret', interval='D', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(clust_load_ret, categorical=True)
@@ -109,13 +93,9 @@ rank_ret = PrepFactor(factor_name='factor_rank_ret', interval='D', kind='price',
 alpha.add_factor(rank_ret, categorical=True)
 del rank_ret
 
-sb_bond = PrepFactor(factor_name='factor_sb_bond', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(sb_bond)
-del sb_bond
-
-# sb_bond_test = PrepFactor(factor_name='factor_sb_bond_test', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(sb_bond_test)
-# del sb_bond_test
+# sb_bond = PrepFactor(factor_name='factor_sb_bond', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(sb_bond)
+# del sb_bond
 
 sign = PrepFactor(factor_name='factor_sign', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(sign, categorical=True)
@@ -124,7 +104,7 @@ del sign
 # rf_volume = PrepFactor(factor_name='factor_rf_volume', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(rf_volume)
 # del rf_volume
-#
+
 # rf_sign = PrepFactor(factor_name='factor_rf_sign', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(rf_sign)
 # del rf_sign
@@ -137,17 +117,13 @@ del sign
 # alpha.add_factor(sb_macro)
 # del sb_macro
 
-# sb_macro_test = PrepFactor(factor_name='factor_sb_macro_test', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(sb_macro_test)
-# del sb_macro_test
+# clust_volume = PrepFactor(factor_name='factor_clust_volume', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(clust_volume, categorical=True)
+# del clust_volume
 
-clust_volume = PrepFactor(factor_name='factor_clust_volume', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(clust_volume, categorical=True)
-del clust_volume
-
-clust_ind_mom = PrepFactor(factor_name='factor_clust_ind_mom', interval='D', kind='cluster', stock=stock, div=False, start=start, end=end, save=True).prep()
-alpha.add_factor(clust_ind_mom, categorical=True)
-del clust_ind_mom
+# clust_ind_mom = PrepFactor(factor_name='factor_clust_ind_mom', interval='D', kind='cluster', stock=stock, div=False, start=start, end=end, save=True).prep()
+# alpha.add_factor(clust_ind_mom, categorical=True)
+# del clust_ind_mom
 
 # load_volatility = PrepFactor(factor_name='factor_load_volatility', interval='D', kind='loading', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(load_volatility)
@@ -157,9 +133,9 @@ load_volume = PrepFactor(factor_name='factor_load_volume', interval='D', kind='l
 alpha.add_factor(load_volume)
 del load_volume
 
-clust_volatility = PrepFactor(factor_name='factor_clust_volatility', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(clust_volatility, categorical=True)
-del clust_volatility
+# clust_volatility = PrepFactor(factor_name='factor_clust_volatility', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(clust_volatility, categorical=True)
+# del clust_volatility
 
 # dividend = PrepFactor(factor_name='factor_dividend', interval='D', kind='dividend', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(dividend, categorical=True)
@@ -213,13 +189,13 @@ del fund_raw
 # alpha.add_factor(fund_q, categorical=True)
 # del fund_q
 
-# rank_fund_ratio = PrepFactor(factor_name='factor_rank_fund_ratio', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(rank_fund_ratio)
-# del rank_fund_ratio
+rank_fund_raw = PrepFactor(factor_name='factor_rank_fund_raw', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(rank_fund_raw, categorical=True)
+del rank_fund_raw
 
-clust_fund_raw = PrepFactor(factor_name='factor_clust_fund_raw', interval='M', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(clust_fund_raw, categorical=True)
-del clust_fund_raw
+# clust_fund_raw = PrepFactor(factor_name='factor_clust_fund_raw', interval='M', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(clust_fund_raw, categorical=True)
+# del clust_fund_raw
 
 # fund_ratio = PrepFactor(factor_name='factor_fund_ratio', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(fund_ratio)
@@ -233,9 +209,9 @@ del clust_fund_raw
 # alpha.add_factor(low)
 # del low
 
-rank_volume = PrepFactor(factor_name='factor_rank_volume', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(rank_volume, categorical=True)
-del rank_volume
+# rank_volume = PrepFactor(factor_name='factor_rank_volume', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(rank_volume, categorical=True)
+# del rank_volume
 
 # clust_load_volume = PrepFactor(factor_name='factor_clust_load_volume', interval='D', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(clust_load_volume, categorical=True)
@@ -245,9 +221,21 @@ del rank_volume
 # alpha.add_factor(total)
 # del total
 
-rank_volatility = PrepFactor(factor_name='factor_rank_volatility', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(rank_volatility)
-del rank_volatility
+# rank_volatility = PrepFactor(factor_name='factor_rank_volatility', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(rank_volatility)
+# del rank_volatility
+
+ep_bond = PrepFactor(factor_name='factor_ep_bond', interval='D', kind='price', div=False, stock=stock, start=start, end=end, save=save).prep()
+alpha.add_factor(ep_bond)
+del ep_bond
+
+ep_etf = PrepFactor(factor_name='factor_ep_etf', interval='D', kind='price', div=False, stock=stock, start=start, end=end, save=save).prep()
+alpha.add_factor(ep_etf)
+del ep_etf
+
+ep_fama = PrepFactor(factor_name='factor_ep_fama', interval='D', kind='price', div=False, stock=stock, start=start, end=end, save=save).prep()
+alpha.add_factor(ep_fama)
+del ep_fama
 
 elapsed_time = time.time() - start_time
 print(f"AlphaModel data shape: {alpha.data.shape}")
