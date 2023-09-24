@@ -12,13 +12,14 @@ class FactorSBBond(Factor):
                  skip: bool = None,
                  start: str = None,
                  end: str = None,
-                 ticker: Optional[Union[List[str], str]] = None,
+                 stock: Optional[Union[List[str], str]] = None,
                  batch_size: int = None,
                  splice_size: int = None,
                  group: str = None,
+                 join: str = None,
                  general: bool = False,
                  window: int = None):
-        super().__init__(file_name, skip, start, end, ticker, batch_size, splice_size, group, general, window)
+        super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
         bond_df = yf.download(['TLT', 'TIP', 'SHY'], start=self.start, end=self.end)
@@ -48,7 +49,7 @@ class FactorSBBond(Factor):
         # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
         windows = [30, 60]
         for window in windows:
-            betas = rolling_ols_sb(price=splice_data, factor_data=self.bond_data, factor_col=self.factor_col, window=window, name='BOND', ret=ret)
+            betas = rolling_ols_res_syn(price=splice_data, factor_data=self.bond_data, factor_col=self.factor_col, window=window, name='BOND', ret=ret)
             splice_data = splice_data.join(betas)
 
         return splice_data

@@ -27,6 +27,9 @@ def get_load_data_large_dir() -> Path:
 def get_result() -> Path:
     return get_root_dir() / 'result'
 
+def get_report() -> Path:
+    return get_root_dir() / 'report'
+
 
 def get_result_model(model):
     return get_result() / f'{model}'

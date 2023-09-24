@@ -12,13 +12,14 @@ class FactorSBFundRaw(Factor):
                  skip: bool = None,
                  start: str = None,
                  end: str = None,
-                 ticker: Optional[Union[List[str], str]] = None,
+                 stock: Optional[Union[List[str], str]] = None,
                  batch_size: int = None,
                  splice_size: int = None,
                  group: str = None,
+                 join: str = None,
                  general: bool = False,
                  window: int = None):
-        super().__init__(file_name, skip, start, end, ticker, batch_size, splice_size, group, general, window)
+        super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
         self.fund_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli')
         self.factor_col = self.fund_data.columns[:-1]
@@ -38,7 +39,7 @@ class FactorSBFundRaw(Factor):
         for window in windows:
             betas = []
             for ticker, df in splice_data.groupby('ticker', group_keys=False):
-                fund_data = get_ticker_data(self.fund_data, ticker)
+                fund_data = get_stock_data(self.fund_data, ticker)
                 fund_data = fund_data.reset_index('ticker').drop('ticker', axis=1)
                 # Add risk-free rate
                 fund_data = pd.concat([fund_data, self.fama_data['RF']], axis=1)

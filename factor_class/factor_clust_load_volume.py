@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorClustLoadRet(Factor):
+class FactorClustLoadVolume(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -21,7 +21,7 @@ class FactorClustLoadRet(Factor):
                  window: int = None,
                  cluster: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.factor_data = pd.read_parquet(get_factor_data_dir() / 'factor_load_ret.parquet.brotli')
+        self.factor_data = pd.read_parquet(get_factor_data_dir() / 'factor_load_volume.parquet.brotli')
         self.cluster = cluster
         self.factor_data = self.factor_data.unstack(self.join)
 
@@ -44,7 +44,7 @@ class FactorClustLoadRet(Factor):
             # Create a dataframe that matches cluster to stock
             cols = load.columns
             date = load.index[0]
-            load = pd.DataFrame(cluster, columns=[f'load_ret{i+1}_cluster'], index=[[date] * len(cols), cols])
+            load = pd.DataFrame(cluster, columns=[f'load_volume{i+1}_cluster_test'], index=[[date] * len(cols), cols])
             load.index.names = ['date', self.join]
             clust_collect.append(load)
 

@@ -17,27 +17,31 @@ class Factor:
                  skip: bool = None,
                  start: str = None,
                  end: str = None,
-                 ticker: Optional[Union[List[str], str]] = None,
+                 stock: Optional[Union[List[str], str]] = None,
                  batch_size: int = None,
                  splice_size: int = None,
                  group: str = None,
+                 join: str = None,
                  general: bool = False,
                  window: int = None):
         self.factor_data = None
         self.file_name = file_name
         self.skip = skip
-        self.ticker = ticker
+        self.stock = stock
         self.start = start
         self.end = end
         self.batch_size = batch_size
         self.splice_size = splice_size
         self.group = group
+        self.join = join
         self.general = general
         self.window = window
 
-        assert group == 'ticker' or group == 'date' or group is None, ValueError('group parameter must be either ''ticker'' or ''date''')
-        if self.group == 'date' and self.ticker:
-            raise ValueError('if group parameter is set to date then ticker parameter must be None')
+        assert group == 'permno' or group == 'ticker' or group == 'date' or group is None, ValueError('group parameter must be either ''permno'', ''ticker'', or ''date''')
+        if self.group == 'date' and self.stock:
+            raise ValueError('if group parameter is set to date then stock parameter must be None')
+        if self.group == 'date' and self.join == None:
+            raise ValueError('if group parameter is set to date then specify join parameter to either ''permno'' or ''ticker''')
 
     # Get rolling window groups
     def _rolling_window(self):
@@ -52,11 +56,11 @@ class Factor:
         return window_df
 
     # Creating multi index
-    def _create_multi_index(self, tickers):
-        factor_values = pd.concat([self.factor_data] * len(tickers), ignore_index=True).values
-        multi_index = pd.MultiIndex.from_product([tickers, self.factor_data.index])
+    def _create_multi_index(self, stock):
+        factor_values = pd.concat([self.factor_data] * len(stock), ignore_index=True).values
+        multi_index = pd.MultiIndex.from_product([stock, self.factor_data.index])
         multi_index_factor = pd.DataFrame(factor_values, columns=self.factor_data.columns, index=multi_index)
-        multi_index_factor.index = multi_index_factor.index.set_names(['ticker', 'date'])
+        multi_index_factor.index = multi_index_factor.index.set_names([self.group, 'date'])
         return multi_index_factor
 
     # Splice data into smaller dataframes of with size (splice_size)
@@ -65,15 +69,15 @@ class Factor:
         splice = 1
 
         if self.general:
-            if 'ticker' in self.factor_data.index.names:
-                raise TypeError('if general parameter is set to True then there cannot be ''ticker'' in the index')
-            self.factor_data = self._create_multi_index(self.ticker)
+            if 'ticker' in self.factor_data.index.names or 'permno' in self.factor_data.index.names:
+                raise TypeError('if general parameter is set to True then there cannot be ''ticker'' or ''permno'' in the index')
+            self.factor_data = self._create_multi_index(self.stock)
 
-        if self.group == 'ticker':
+        if self.group == 'ticker' or self.group == 'permno':
             count = 0
             splice_all = []
 
-            for _, df in self.factor_data.groupby('ticker', group_keys=False):
+            for _, df in self.factor_data.groupby(self.group, group_keys=False):
                 splice_all.append(df)
                 count += 1
                 if count == self.splice_size:
@@ -89,7 +93,7 @@ class Factor:
 
         elif self.group == 'date':
             if 'ticker' in self.factor_data.index.names:
-                raise ValueError('if group parameter is set to ''date'' then ''ticker'' cannot be in the index. Must only ''date'' in index')
+                raise ValueError('if group parameter is set to ''date'' then ''ticker'' or ''permno'' cannot be in the index. Must only have ''date'' in index')
 
             window_data = self._rolling_window()
             for i in range(0, len(window_data), self.splice_size):
@@ -108,7 +112,7 @@ class Factor:
             batch.append(splice_data[item])
             if count == self.batch_size:
                 name = f'batch{batch_num}'
-                if self.group == 'ticker':
+                if self.group == 'ticker' or self.group == 'permno':
                     factor_batch[name] = batch
                 elif self.group == 'date':
                     factor_batch[name] = list(chain.from_iterable(batch))
@@ -118,7 +122,7 @@ class Factor:
             count = count + 1
 
         name = f'batch{batch_num}'  # Excess data
-        if self.group == 'ticker':
+        if self.group == 'ticker' or self.group == 'permno':
             factor_batch[name] = batch
         elif self.group == 'date':
             factor_batch[name] = list(chain.from_iterable(batch))
@@ -145,9 +149,14 @@ class Factor:
 
         flattened_data_all = list(chain.from_iterable(nested_data_all))
         factor_data = pd.concat(flattened_data_all, axis=0)
-        factor_data = factor_data.reset_index(['ticker', 'date'])
-        factor_data = factor_data.set_index(['ticker', 'date'])
-        factor_data = factor_data.sort_index(level=['ticker', 'date'])
+        if self.group == 'date':
+            factor_data = factor_data.reset_index([self.join, 'date'])
+            factor_data = factor_data.set_index([self.join, 'date'])
+            factor_data = factor_data.sort_index(level=[self.join, 'date'])
+        else:
+            factor_data = factor_data.reset_index([self.group, 'date'])
+            factor_data = factor_data.set_index([self.group, 'date'])
+            factor_data = factor_data.sort_index(level=[self.group, 'date'])
         print(f"Exporting {self.file_name}...")
         factor_data.to_parquet(get_root_dir() / f'factor_data/{self.file_name}.parquet.brotli', compression='brotli')
         elapsed_time = time.time() - start_time
@@ -163,14 +172,14 @@ class Factor:
         if self.skip:
             print('Skipping splice and batch...')
             print(f"Exporting {self.file_name}...")
-            if self.ticker != 'all':
-                self.factor_data = self.factor_data.loc[self.ticker]
+            if self.stock != 'all':
+                self.factor_data = get_stocks_data(self.factor_data, self.stock)
             self.factor_data.to_parquet(get_root_dir() / f'factor_data/{self.file_name}.parquet.brotli', compression='brotli')
             print("-" * 60)
         else:
             if not self.general and self.group != 'date':
-                if self.ticker != 'all':
-                    self.factor_data = self.factor_data.loc[self.ticker]
+                if self.stock != 'all':
+                    self.factor_data = get_stocks_data(self.factor_data, self.stock)
             splice_data = self._splice_data()
             batch_data = self._batch_data(splice_data)
             self.parallel_processing(batch_data)

@@ -1,5 +1,7 @@
 from typing import Optional
 
+import pandas as pd
+
 from functions.utils.func import *
 from itertools import product
 from scipy.stats import spearmanr
@@ -29,8 +31,12 @@ class AlphaModel:
                  plot_loss: bool = False,
                  plot_hist: bool = False,
                  pred: str = 'price',
+                 stock: str = None,
                  lookahead: int = 1,
                  incr: bool = False,
+                 opt: str = None,
+                 weight: bool = False,
+                 outlier: bool = False,
                  pretrain_len: Optional[int] = None,
                  train_len: int = None,
                  valid_len: int = None,
@@ -44,8 +50,12 @@ class AlphaModel:
         self.plot_loss = plot_loss
         self.plot_hist = plot_hist
         self.pred = pred
+        self.stock = stock
         self.lookahead = lookahead
         self.incr = incr
+        self.opt = opt
+        self.weight = weight
+        self.outlier = outlier
         self.pretrain_len = pretrain_len
         self.train_len = train_len
         self.valid_len = valid_len
@@ -70,15 +80,47 @@ class AlphaModel:
         return factor.astype(int)
 
     def create_fwd(self):
-        if self.pred == 'sign':
-            self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
-            self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level='ticker')[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-            self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
-            self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level='ticker')[f'TARGET_{self.lookahead}D'].apply(lambda x: np.sign(x))
-        elif self.pred == 'price':
-            self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
-            self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level='ticker')[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-            self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
+        if self.outlier:
+            if self.pred == 'sign':
+                self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
+                self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
+                self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
+                self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'TARGET_{self.lookahead}D'].apply(lambda x: np.sign(x))
+            elif self.pred == 'price':
+                self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
+                self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
+                condition = self.data[f'TARGET_{self.lookahead}D'].abs() > 0.05
+                self.data.loc[condition, f'TARGET_{self.lookahead}D'] = np.nan
+                self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
+        else:
+            if self.pred == 'sign':
+                # return_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_return.parquet.brotli')
+                # copy = self.data.drop(columns=self.data.columns)
+                # copy = copy.merge(return_data, left_index=True, right_index=True, how='left')
+                # copy = copy.loc[~self.data.index.duplicated(keep='first')]
+                # self.actual_return = copy[[f'RET_{self.lookahead:02}']]
+                #
+                # self.data[f'TARGET_{self.lookahead}D'] = self.actual_return.groupby(level='ticker')[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
+                # self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
+                # self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level='ticker')[f'TARGET_{self.lookahead}D'].apply(lambda x: np.sign(x))
+
+                self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
+                self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
+                self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
+                self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'TARGET_{self.lookahead}D'].apply(lambda x: np.sign(x))
+            elif self.pred == 'price':
+                # return_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_return.parquet.brotli')
+                # copy = self.data.drop(columns=self.data.columns)
+                # copy = pd.merge(copy, return_data, left_index=True, right_index=True, how='left')
+                # copy = copy.loc[~copy.index.duplicated(keep='first')]
+                # self.actual_return = copy[[f'RET_{self.lookahead:02}']]
+                #
+                # self.data[f'TARGET_{self.lookahead}D'] = self.actual_return.groupby(level='ticker')[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
+                # self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
+
+                self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
+                self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
+                self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
 
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Adding to {self.model_name}', animation=spinner_animation)
     def add_factor(self, factor, categorical=False, normalize=False):
@@ -145,8 +187,39 @@ class AlphaModel:
             yield train_idx, test_idx
 
     @staticmethod
-    def get_feature_importance(model):
+    def ewo(data, n_splits, lookahead, train_period_length, test_period_length):
+        unique_dates = data.index.get_level_values('date').unique()
+        days = sorted(unique_dates)
+        split_idx = []
+
+        # Start training from the first available data point
+        train_start_idx = 0
+
+        for i in range(n_splits):
+            train_end_idx = train_start_idx + i * test_period_length + train_period_length - 1
+
+            test_start_idx = train_end_idx + lookahead
+            test_end_idx = test_start_idx + test_period_length - 1
+
+            if test_end_idx >= len(days):
+                break
+
+            split_idx.append([train_start_idx, train_end_idx, test_start_idx, test_end_idx])
+
+        dates = data.reset_index()[['date']]
+        for train_start, train_end, test_start, test_end in split_idx:
+            train_idx = dates[(days[train_start] <= dates.date) & (dates.date <= days[train_end])].index
+            test_idx = dates[(days[test_start] <= dates.date) & (dates.date <= days[test_end])].index
+            yield train_idx, test_idx
+
+    @staticmethod
+    def get_feature_gain(model):
         fi = model.feature_importance(importance_type='gain')
+        return pd.Series(fi / fi.sum(), index=model.feature_name())
+
+    @staticmethod
+    def get_feature_split(model):
+        fi = model.feature_importance(importance_type='split')
         return pd.Series(fi / fi.sum(), index=model.feature_name())
 
     def plot_beeswarm_gbm(self, sv, explainer, X, key, i):
@@ -268,7 +341,6 @@ class AlphaModel:
                 params.update(base_params)
                 # Set up cross-validation and track time
                 T = 0
-                n_splits = (get_timeframe_length(data_train) - self.train_len) // self.test_len
 
                 log_loss = []
                 track_wfo = time.time()
@@ -280,14 +352,19 @@ class AlphaModel:
                     lgb_pretrain = lgb_data_pretrain.subset(used_indices=pretrain_idx.tolist()).construct()
                     prev_model = lgb.train(params=params, train_set=lgb_pretrain, num_boost_round=1000)
 
-                wfo_pred, fi = [], []
-                wfo = self.wfo(data=data_train, n_splits=n_splits, lookahead=self.lookahead, train_period_length=self.train_len, test_period_length=self.test_len)
+                opt_pred, gain, split = [], [], []
+                if self.opt == 'wfo':
+                    n_splits = (get_timeframe_length(data_train) - self.train_len) // self.test_len
+                    opt = self.wfo(data=data_train, n_splits=n_splits, lookahead=self.lookahead, train_period_length=self.train_len, test_period_length=self.test_len)
+                elif self.opt == 'ewo':
+                    n_splits = (get_timeframe_length(data_train)) // self.test_len
+                    opt = self.ewo(data=data_train, n_splits=n_splits, lookahead=self.lookahead, train_period_length=self.train_len, test_period_length=self.test_len)
 
                 print("Train model......")
                 print("-" * 60)
 
                 # Iterate over wfo periods
-                for i, (train_idx, test_idx) in enumerate(wfo):
+                for i, (train_idx, test_idx) in enumerate(opt):
                     # Select train subset save last 30 for validation
                     lgb_train = lgb_data_train.subset(used_indices=train_idx.tolist()[:-self.valid_len]).construct()
                     lgb_val = lgb_data_train.subset(used_indices=train_idx.tolist()[-self.valid_len:]).construct()
@@ -335,7 +412,7 @@ class AlphaModel:
                         print("-" * 60)
 
                     # Record predictions for each fold
-                    wfo_pred.append(test_ret.assign(**test_pred_ret).assign(i=i))
+                    opt_pred.append(test_ret.assign(**test_pred_ret).assign(i=i))
 
                     # Plot hist
                     if self.plot_hist:
@@ -353,9 +430,11 @@ class AlphaModel:
 
                     # Log feature importance and SHAP values
                     if i == 0:
-                        fi = self.get_feature_importance(model).to_frame()
+                        gain = self.get_feature_gain(model).to_frame()
+                        split = self.get_feature_split(model).to_frame()
                     else:
-                        fi[i] = self.get_feature_importance(model)
+                        gain[i] = self.get_feature_gain(model)
+                        split[i] = self.get_feature_split(model)
 
                 #Plot training loss and validation loss and track training time
                 eval_results = plot_avg_loss(log_loss)
@@ -365,7 +444,7 @@ class AlphaModel:
 
                 # Combine fold results and set params string
                 params = {name: val.__name__ if callable(val) else val for name, val in params.items()}
-                all_pred_ret = pd.concat(wfo_pred).assign(**params)
+                all_pred_ret = pd.concat(opt_pred).assign(**params)
 
                 # Compute IC or AS per day
                 by_day = all_pred_ret.groupby(level='date')
@@ -403,7 +482,8 @@ class AlphaModel:
                 # Export results
                 self.actual_return.to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'returns.parquet.brotli', compression='brotli')
                 metrics.to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'metrics.parquet.brotli', compression='brotli')
-                fi.T.describe().T.assign(**params).to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'fi.parquet.brotli', compression='brotli')
+                gain.T.describe().T.assign(**params).to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'gain.parquet.brotli', compression='brotli')
+                split.T.describe().T.assign(**params).to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'split.parquet.brotli', compression='brotli')
                 all_pred_ret.to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'predictions.parquet.brotli', compression='brotli')
 
                 if self.tuning[0] == 'optuna':
@@ -461,6 +541,18 @@ class AlphaModel:
 
                 lgb_data_train = lgb.Dataset(data=data_train.drop(ret, axis=1), label=data_train[ret],
                                              categorical_feature=self.categorical, free_raw_data=False, params={'device_type': 'gpu'})
+
+                if self.weight:
+                    # Emphasize extreme returns
+                    threshold = 0.001
+                    weight_pretrain = data_pretrain[ret[0]].map(lambda x: 1 if abs(x) > threshold else 0.1).values
+                    weight_train = data_train[ret[0]].map(lambda x: 1 if abs(x) > threshold else 0.1).values
+                    # Emphasize negative returns
+                    """weight_pretrain = data_pretrain[ret[0]].map(lambda x: 1 if x < 0 else 0.1).values
+                    weight_train = data_train[ret[0]].map(lambda x: 1 if x < 0 else 0.1).values"""
+                    lgb_data_pretrain.set_weight(weight_pretrain)
+                    lgb_data_train.set_weight(weight_train)
+
             else:
                 # Get start date and end date for train data
                 data_train = self.data.loc[:, factors + ret]
