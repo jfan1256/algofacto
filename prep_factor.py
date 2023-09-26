@@ -59,7 +59,7 @@ class PrepFactor:
             date_data = set_timeframe(date_data, self.start, self.end)
             self.data = pd.merge(date_data.loc[stocks], self.data, left_index=True, right_index=True, how='left')
             self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
-            self.data = self.data.ffill()
+            self.data = self.data.groupby('permno').ffill()
             return self.data
 
     def div_price(self):
@@ -93,5 +93,4 @@ class PrepFactor:
             self.data = pd.read_parquet(self.path)
             self.data = get_stocks_data(self.data, self.stock)
             self.data = set_timeframe(self.data, self.start, self.end)
-
             return self.data

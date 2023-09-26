@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorIndMom(Factor):
+class FactorRankIndMom(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -31,7 +31,14 @@ class FactorIndMom(Factor):
 
         for t in T:
             ret[f'IndMom_{t:02}'] = ret.groupby(['ind', 'date'])[f'RET_{t:02}'].transform('mean')
-            ind_mom = ret[[f'IndMom_{t:02}']]
+            ret[f'indMom_{t:02}_rank'] =  ret.groupby(['date'])[f'IndMom_{t:02}'].rank()
+
+            bin_size = 2.5
+            max_compressed_rank = (ret[f'indMom_{t:02}_rank'].max() + bin_size - 1) // bin_size
+            ret[f'indMom_{t:02}_rank'] = np.ceil(ret[f'indMom_{t:02}_rank'] / bin_size)
+            ret[f'indMom_{t:02}_rank'] = ret[f'indMom_{t:02}_rank'].apply(lambda x: min(x, max_compressed_rank))
+            ret[f'indMom_{t:02}_rank'] = ret[f'indMom_{t:02}_rank'].replace({np.nan: -1, np.inf: max_compressed_rank}).astype(int)
+            ind_mom = ret[[f'indMom_{t:02}_rank']]
             collect.append(ind_mom)
 
         self.factor_data = pd.concat(collect, axis=1)

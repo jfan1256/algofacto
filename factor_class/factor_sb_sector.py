@@ -31,11 +31,18 @@ class FactorSBSector(Factor):
         sector_df = sector_df.drop(['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
         sector_df = sector_df.unstack('ticker').swaplevel(axis=1)
         sector_df.columns = ['_'.join(col).strip() for col in sector_df.columns.values]
+
+        # Execute Rolling PCA
+        window_size = 60
+        num_components = 5
+        sector_df = rolling_pca(data=sector_df, window_size=window_size, num_components=num_components, name='sector')
+
         self.sector_data = sector_df
         self.sector_data = pd.concat([self.sector_data, self.fama_data['RF']], axis=1)
         self.sector_data = self.sector_data.loc[self.start:self.end]
         self.sector_data = self.sector_data.fillna(0)
         self.factor_col = self.sector_data.columns[:-1]
+
     @ray.remote
     def function(self, splice_data):
 
@@ -47,9 +54,9 @@ class FactorSBSector(Factor):
             ret = f'RET_{t:02}'
 
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
-            windows = [60]
+            windows = [30, 60]
             for window in windows:
-                betas = rolling_ols_beta(price=splice_data, factor_data=self.sector_data, factor_col=self.factor_col, window=window, name=f'{t:02}_SECTOR', ret=ret)
+                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.sector_data, factor_col=self.factor_col, window=window, name=f'{t:02}_SECTOR', ret=ret)
                 splice_data = splice_data.join(betas)
 
         return splice_data

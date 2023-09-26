@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorIndMom(Factor):
+class FactorCondIndMom(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -20,19 +20,34 @@ class FactorIndMom(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-
         price_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         ind_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_ind.parquet.brotli')
         combine = pd.concat([price_data, ind_data], axis=1)
 
-        T = [1, 2, 5, 10, 30, 60]
+        T = [1]
         ret = create_return(combine, windows=T)
         collect = []
 
         for t in T:
-            ret[f'IndMom_{t:02}'] = ret.groupby(['ind', 'date'])[f'RET_{t:02}'].transform('mean')
-            ind_mom = ret[[f'IndMom_{t:02}']]
+            grouped = ret.groupby(['ind', ret.index.get_level_values('date')])
+
+            # Compute average returns just once
+            avg_ret = grouped[f'RET_{t:02}'].transform('mean')
+
+            # Calculate shifted returns
+            ret_shifted_1 = grouped[f'RET_{t:02}'].shift(1)
+            ret_shifted_2 = grouped[f'RET_{t:02}'].shift(2)
+            avg_ret_shifted_1 = avg_ret.shift(1)
+            avg_ret_shifted_2 = avg_ret.shift(2)
+
+            condition = (
+                    (ret[f'RET_{t:02}'] > avg_ret) &
+                    (ret_shifted_1 > avg_ret_shifted_1) &
+                    (ret_shifted_2 > avg_ret_shifted_2)
+            )
+
+            ret[f'cond_indmom_{t:02}'] = np.where(condition, 1, 0)
+            ind_mom = ret[[f'cond_indmom_{t:02}']]
             collect.append(ind_mom)
 
         self.factor_data = pd.concat(collect, axis=1)
-

@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorSBBond(Factor):
+class FactorSBLagBond(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -22,12 +22,11 @@ class FactorSBBond(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        bond_df = yf.download(['TLT', 'TIP', 'SHY', 'AGG', 'HYG'], start=self.start, end=self.end)
+        bond_df = yf.download(['TLT', 'TIP', 'SHY'], start=self.start, end=self.end)
         bond_df = bond_df.stack().swaplevel().sort_index()
         bond_df.index.names = ['ticker', 'date']
         bond_df = bond_df.astype(float)
-        # T = [1, 6, 30]
-        T = [1]
+        T = [1, 6, 30]
         bond_df = create_return(bond_df, T)
         bond_df = bond_df.drop(['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
         bond_df = bond_df.unstack('ticker').swaplevel(axis=1)

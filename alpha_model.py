@@ -37,6 +37,7 @@ class AlphaModel:
                  opt: str = None,
                  weight: bool = False,
                  outlier: bool = False,
+                 early: bool = True,
                  pretrain_len: Optional[int] = None,
                  train_len: int = None,
                  valid_len: int = None,
@@ -56,6 +57,7 @@ class AlphaModel:
         self.opt = opt
         self.weight = weight
         self.outlier = outlier
+        self.early = early
         self.pretrain_len = pretrain_len
         self.train_len = train_len
         self.valid_len = valid_len
@@ -63,11 +65,21 @@ class AlphaModel:
         self.actual_return = None
         self.parameter_specs = kwargs
 
-        assert self.pred == 'price' or self.pred == 'sign', "Must use either 'price' or 'sign' for pred parameter"
+        if self.opt == 'ewo':
+            assert self.incr == False, ValueError("incr must be set to False if opt is ewo")
+            assert self.pretrain_len == 0, ValueError("pretrain_len must be 0 if opt is ewo")
+        assert self.pred == 'price' or self.pred == 'sign', ValueError('Must use either "price" or "sign" for pred parameter')
         if self.incr:
             assert self.pretrain_len > 0, ValueError("Pretrain_len must be greater than 0 to use incremental training")
         assert self.tuning[0] == 'optuna' or self.tuning[0] == 'gridsearch' or self.tuning == 'default', \
             ValueError("Must use either ['optuna', num_trials=int], ['gridsearch', num_search=int], or 'default' for tuning parameter")
+        assert self.lookahead>=1, ValueError('Must be greater than 0')
+        if self.early == False:
+            assert self.plot_loss == False, ValueError("Cannot plot validation loss if early is set to False")
+            assert self.valid_len == 0, ValueError("Must set valid_len to 0 is early is set to False")
+        if self.early:
+            assert self.valid_len > 0, ValueError("valid_len must be > 0 if early is set to True")
+
 
     # Renumber Category data to consecutive numbers
     @staticmethod
@@ -77,7 +89,8 @@ class AlphaModel:
             unique_categories = factor[col].unique()
             category_mapping[col] = {category: i for i, category in enumerate(unique_categories)}
             factor[col] = factor[col].map(category_mapping[col])
-        return factor.astype(int)
+        factor = factor.astype(int)
+        return factor
 
     def create_fwd(self):
         if self.outlier:
@@ -94,30 +107,11 @@ class AlphaModel:
                 self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
         else:
             if self.pred == 'sign':
-                # return_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_return.parquet.brotli')
-                # copy = self.data.drop(columns=self.data.columns)
-                # copy = copy.merge(return_data, left_index=True, right_index=True, how='left')
-                # copy = copy.loc[~self.data.index.duplicated(keep='first')]
-                # self.actual_return = copy[[f'RET_{self.lookahead:02}']]
-                #
-                # self.data[f'TARGET_{self.lookahead}D'] = self.actual_return.groupby(level='ticker')[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-                # self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
-                # self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level='ticker')[f'TARGET_{self.lookahead}D'].apply(lambda x: np.sign(x))
-
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
                 self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
                 self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'TARGET_{self.lookahead}D'].apply(lambda x: np.sign(x))
             elif self.pred == 'price':
-                # return_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_return.parquet.brotli')
-                # copy = self.data.drop(columns=self.data.columns)
-                # copy = pd.merge(copy, return_data, left_index=True, right_index=True, how='left')
-                # copy = copy.loc[~copy.index.duplicated(keep='first')]
-                # self.actual_return = copy[[f'RET_{self.lookahead:02}']]
-                #
-                # self.data[f'TARGET_{self.lookahead}D'] = self.actual_return.groupby(level='ticker')[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-                # self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
-
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'TARGET_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
                 self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
@@ -261,6 +255,8 @@ class AlphaModel:
         plt.show()
 
     def lightgbm(self):
+        print('List of categorical inputs:')
+        print(self.categorical)
         def model_training(trial):
             # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
             # ------------------------------------------------------------------FUNCTIONS WITHIN MODEL_TRAINING------------------------------------------------------------------------------
@@ -365,38 +361,52 @@ class AlphaModel:
 
                 # Iterate over wfo periods
                 for i, (train_idx, test_idx) in enumerate(opt):
-                    # Select train subset save last 30 for validation
-                    lgb_train = lgb_data_train.subset(used_indices=train_idx.tolist()[:-self.valid_len]).construct()
-                    lgb_val = lgb_data_train.subset(used_indices=train_idx.tolist()[-self.valid_len:]).construct()
-                    lgb_early_stop = lgb.early_stopping(100)
+                    if self.early:
+                        # Select train subset save last 30 for validation
+                        lgb_train = lgb_data_train.subset(used_indices=train_idx.tolist()[:-self.valid_len]).construct()
+                        lgb_val = lgb_data_train.subset(used_indices=train_idx.tolist()[-self.valid_len:]).construct()
+                        lgb_early_stop = lgb.early_stopping(100)
 
-                    # Early stop on MSE
-                    track_early_stopping = time.time()
-                    evals = {}
-                    if self.incr:
-                        model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000,
-                                          callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
+                        # Early stop on MSE
+                        track_training = time.time()
+                        evals = {}
+                        if self.incr:
+                            model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000,
+                                              callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
 
-                        # Retrain on entire dataset with less num_boost_round
-                        whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
-                        model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)
+                            # Retrain on entire dataset with less num_boost_round
+                            whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
+                            model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)
 
-                        # Store this model for next fold
-                        prev_model = model
+                            # Store this model for next fold
+                            prev_model = model
+                        else:
+                            model = lgb.train(params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000, callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
+
+                            # Retrain on entire dataset with less num_boost_round
+                            whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
+                            model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)
                     else:
-                        model = lgb.train(params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=2000, callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
+                        # Select train subset
+                        lgb_train = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
+                        track_training = time.time()
+                        if self.incr:
+                            model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, num_boost_round=1000)
 
-                        # Retrain on entire dataset with less num_boost_round
-                        whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
-                        model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)
+                            # Store this model for next fold
+                            prev_model = model
+                        else:
+                            model = lgb.train(params=params, train_set=lgb_train, num_boost_round=1000)
 
-                    print('Train time:', round(time.time() - track_early_stopping, 2), 'seconds')
 
-                    # Capture training loss and validation loss
-                    log_loss.append(evals)
-                    if self.plot_loss:
-                        lgb.plot_metric(evals)
-                        plt.show()
+                    print('Train time:', round(time.time() - track_training, 2), 'seconds')
+
+                    if self.early:
+                        # Capture training loss and validation loss
+                        log_loss.append(evals)
+                        if self.plot_loss:
+                            lgb.plot_metric(evals)
+                            plt.show()
 
                     # Capture predictions
                     test_set = data_train.iloc[test_idx, :]
@@ -436,11 +446,12 @@ class AlphaModel:
                         gain[i] = self.get_feature_gain(model)
                         split[i] = self.get_feature_split(model)
 
-                #Plot training loss and validation loss and track training time
-                eval_results = plot_avg_loss(log_loss)
-                lgb.plot_metric(eval_results)
-                plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{export_key}' / f'loss.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
-                plt.close()
+                if self.early:
+                    #Plot training loss and validation loss and track training time
+                    eval_results = plot_avg_loss(log_loss)
+                    lgb.plot_metric(eval_results)
+                    plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{export_key}' / f'loss.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                    plt.close()
 
                 # Combine fold results and set params string
                 params = {name: val.__name__ if callable(val) else val for name, val in params.items()}
@@ -565,6 +576,14 @@ class AlphaModel:
                 # Create binary dataset
                 lgb_data_train = lgb.Dataset(data=data_train.drop(ret, axis=1), label=data_train[ret],
                                              categorical_feature=self.categorical, free_raw_data=False, params={'device_type': 'gpu'})
+
+                if self.weight:
+                    # Emphasize extreme returns
+                    threshold = 0.001
+                    weight_train = data_train[ret[0]].map(lambda x: 1 if abs(x) > threshold else 0.1).values
+                    # Emphasize negative returns
+                    """weight_train = data_train[ret[0]].map(lambda x: 1 if x < 0 else 0.1).values"""
+                    lgb_data_train.set_weight(weight_train)
 
             # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
             # --------------------------------------------------------------------------TRAINING MODEL---------------------------------------------------------------------------------------

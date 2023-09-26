@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorIndMom(Factor):
+class FactorOpenDiv(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -20,19 +20,4 @@ class FactorIndMom(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-
-        price_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
-        ind_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_ind.parquet.brotli')
-        combine = pd.concat([price_data, ind_data], axis=1)
-
-        T = [1, 2, 5, 10, 30, 60]
-        ret = create_return(combine, windows=T)
-        collect = []
-
-        for t in T:
-            ret[f'IndMom_{t:02}'] = ret.groupby(['ind', 'date'])[f'RET_{t:02}'].transform('mean')
-            ind_mom = ret[[f'IndMom_{t:02}']]
-            collect.append(ind_mom)
-
-        self.factor_data = pd.concat(collect, axis=1)
-
+        self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_div.parquet.brotli')

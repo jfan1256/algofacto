@@ -66,7 +66,7 @@ class FactorDividend(Factor):
             return df_expdate
 
         collect = []
-        for _, df in splice_data.groupby('ticker'):
+        for _, df in splice_data.groupby(self.group):
             collect.append(create_expdate(df))
 
         splice_data = pd.concat(collect, axis=0)

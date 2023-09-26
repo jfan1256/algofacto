@@ -32,6 +32,12 @@ class FactorSBInd(Factor):
         ind_df = ind_df.drop(['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
         ind_df = ind_df.unstack('ticker').swaplevel(axis=1)
         ind_df.columns = ['_'.join(col).strip() for col in ind_df.columns.values]
+
+        # Execute Rolling PCA
+        window_size = 60
+        num_components = 5
+        ind_df = rolling_pca(data=ind_df, window_size=window_size, num_components=num_components, name='ind')
+
         self.ind_data = ind_df
         self.ind_data = pd.concat([self.ind_data, self.fama_data['RF']], axis=1)
         self.ind_data = self.ind_data.loc[self.start:self.end]
@@ -50,7 +56,7 @@ class FactorSBInd(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [30, 60]
             for window in windows:
-                betas = rolling_ols_beta(price=splice_data, factor_data=self.ind_data, factor_col=self.factor_col, window=window, name=f'{t:02}_IND', ret=ret)
+                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.ind_data, factor_col=self.factor_col, window=window, name=f'{t:02}_IND', ret=ret)
                 splice_data = splice_data.join(betas)
 
         return splice_data

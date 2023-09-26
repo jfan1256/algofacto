@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorRetCondition(Factor):
+class FactorCondRet(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -25,8 +25,17 @@ class FactorRetCondition(Factor):
     @ray.remote
     def function(self, splice_data):
         T = [5, 10, 40, 60]
+
         splice_data = create_return(splice_data, windows=T)
         splice_data = splice_data.fillna(0)
+
+        # Streversal
+        condition1 = (splice_data['RET_05'] > 0) & (splice_data['RET_60'] < 0) & (splice_data['RET_40'] > 0)
+        splice_data['s_treversal'] = np.where(condition1, 1, 0)
+
+        # Strong Momentum
+        condition2 = (splice_data['RET_05'] > splice_data['RET_10']) & (splice_data['RET_10'] > splice_data['RET_40'])
+        splice_data['strong_momentum'] = np.where(condition2, 1, 0)
 
         # Mean Reversion
         splice_data['mean_reversion'] = np.where((splice_data['RET_05'] < 0) & (splice_data['RET_60'] > 0), 1, 0)
@@ -52,10 +61,6 @@ class FactorRetCondition(Factor):
 
         # Consecutive Gains
         splice_data['consecutive_gains'] = np.where((splice_data['RET_05'] > 0) & (splice_data['RET_10'] > 0) & (splice_data['RET_40'] > 0), 1, 0)
-
-        T = [1, 2, 3, 4, 5, 10]
-        splice_data = create_return(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
 
         for t in T:
             splice_data = splice_data.drop([f'RET_{t:02}'], axis=1)

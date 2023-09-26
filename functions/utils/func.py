@@ -324,6 +324,40 @@ def rolling_ols_beta_res_syn(price, factor_data, factor_col, window, name, ret):
 
     return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
 
+    # betas = []
+    # # Prepare the design matrix with constant term (for intercept)
+    # X = np.column_stack([factor_data[factor_col].values, np.ones(len(factor_data))])
+    # # Rolling view for X (independent variable)
+    # X_view = np.lib.stride_tricks.sliding_window_view(X, (window, X.shape[1]))
+    # X_view = X_view.squeeze(1)
+    #
+    # for stock, df in price.groupby(price.index.names[0]):
+    #     model_data = df[[ret]].merge(factor_data, on='date').dropna()
+    #     model_data[ret] -= model_data.RF
+    #     y = model_data[ret].values
+    #     # Rolling view for y (dependent variable)
+    #     y_view = np.lib.stride_tricks.sliding_window_view(y, (window,))
+    #     # Compute rolling betas using matrix operations
+    #     betas_matrix = np.linalg.inv(X_view.transpose(0, 2, 1) @ X_view) @ (X_view.transpose(0, 2, 1) @ y_view[:, :, np.newaxis])
+    #     betas_matrix = betas_matrix.squeeze(axis=-1)
+    #     # Extract all beta coefficients
+    #     betas = [pd.Series(betas_matrix[:, i], index=model_data.index[60 - 1:], name=f"BETA_{col}") for i, col in enumerate(factor_col)]
+    #     # Extract y-intercept
+    #     alpha = pd.Series(betas_matrix[:, -1], index=model_data.index[60 - 1:], name=f"ALPHA")
+    #     # Calculate predictions
+    #     predictions = sum([model_data[col].iloc[window - 1:] * beta for col, beta in zip(factor_col, betas)]) + alpha
+    #     # Calculate Epsilon
+    #     epsilons = model_data[ret].iloc[window - 1:] - predictions
+    #     # Combine all series into a single DataFrame
+    #     result = pd.concat([alpha] + betas + [pd.Series(predictions, name="PRED"), pd.Series(epsilons, name="EPSIL")], axis=1)
+    #     result['IDIO_VOL'] = result['EPSIL'].rolling(window=window).std()
+    #     # Add stock index back
+    #     result[df.index.names[0]] = stock
+    #     result = result.set_index(df.index.names[0], append=True).swaplevel()
+    #     betas.append(result)
+    #
+    # return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
+
 # Rolling LR to calculate predictions + alpha + epilson + idiosyncratic risk
 def rolling_ols_res_syn(price, factor_data, factor_col, window, name, ret):
     betas = []
