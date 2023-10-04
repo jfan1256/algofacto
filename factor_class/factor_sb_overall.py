@@ -22,7 +22,7 @@ class FactorSBOverall(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        overall_df = yf.download(['IWR', 'IVV', 'QQQ', 'SPYG', 'VNQ'], start=self.start, end=self.end)
+        overall_df = yf.download(['IWR', 'IVV', 'QQQ', 'SPY', 'VNQ'], start=self.start, end=self.end)
         overall_df = overall_df.stack().swaplevel().sort_index()
         overall_df.index.names = ['ticker', 'date']
         overall_df = overall_df.astype(float)
@@ -46,7 +46,6 @@ class FactorSBOverall(Factor):
 
         for t in T:
             ret = f'RET_{t:02}'
-
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [30, 60]
             for window in windows:

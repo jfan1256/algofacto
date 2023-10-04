@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorOpenDiv(Factor):
+class FactorInvestPPEInv(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -20,4 +20,12 @@ class FactorOpenDiv(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_div.parquet.brotli')
+        columns = ['atq', 'invtq', 'ppegtq']
+        invest = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli', columns=columns)
+        invest = get_stocks_data(invest, stock)
+
+        invest['tempPPE'] = invest['ppegtq'] - invest.groupby('permno')['ppegtq'].shift(12)
+        invest['tempInv'] = invest['invtq'] - invest.groupby('permno')['invtq'].shift(12)
+        invest['InvestPPEInv'] = (invest['tempPPE'] + invest['tempInv']) / invest.groupby('permno')['atq'].shift(12)
+        invest = invest[['InvestPPEInv']]
+        self.factor_data = invest

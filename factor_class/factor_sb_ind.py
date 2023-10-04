@@ -22,8 +22,7 @@ class FactorSBInd(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        ind_df = yf.download(['XAR', 'KBE', 'XBI', 'KCE', 'XHE', 'XHS', 'XHB', 'KIE', 'XWEB', 'XME',
-                                 'XES', 'XOP', 'XPH', 'KRE', 'XRT', 'XSD', 'XSW', 'XTL', 'XTN'], start=self.start, end=self.end)
+        ind_df = yf.download(['KBE', 'XBI', 'KCE', 'KIE', 'XME', 'XOP', 'XPH', 'XRT', 'XSD'], start=self.start, end=self.end)
         ind_df = ind_df.stack().swaplevel().sort_index()
         ind_df.index.names = ['ticker', 'date']
         ind_df = ind_df.astype(float)
@@ -33,19 +32,20 @@ class FactorSBInd(Factor):
         ind_df = ind_df.unstack('ticker').swaplevel(axis=1)
         ind_df.columns = ['_'.join(col).strip() for col in ind_df.columns.values]
 
-        # Execute Rolling PCA
-        window_size = 60
-        num_components = 5
-        ind_df = rolling_pca(data=ind_df, window_size=window_size, num_components=num_components, name='ind')
+        # # Execute Rolling PCA
+        # window_size = 60
+        # num_components = 5
+        # sector_df = rolling_pca(data=sector_df, window_size=window_size, num_components=num_components, name='sector')
 
-        self.ind_data = ind_df
-        self.ind_data = pd.concat([self.ind_data, self.fama_data['RF']], axis=1)
-        self.ind_data = self.ind_data.loc[self.start:self.end]
-        self.ind_data = self.ind_data.fillna(0)
-        self.factor_col = self.ind_data.columns[:-1]
+        self.sector_data = ind_df
+        self.sector_data = pd.concat([self.sector_data, self.fama_data['RF']], axis=1)
+        self.sector_data = self.sector_data.loc[self.start:self.end]
+        self.sector_data = self.sector_data.fillna(0)
+        self.factor_col = self.sector_data.columns[:-1]
 
     @ray.remote
     def function(self, splice_data):
+
         T = [1]
         splice_data = create_return(splice_data, windows=T)
         splice_data = splice_data.fillna(0)
@@ -56,7 +56,7 @@ class FactorSBInd(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [30, 60]
             for window in windows:
-                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.ind_data, factor_col=self.factor_col, window=window, name=f'{t:02}_IND', ret=ret)
+                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.sector_data, factor_col=self.factor_col, window=window, name=f'{t:02}_IND', ret=ret)
                 splice_data = splice_data.join(betas)
 
         return splice_data

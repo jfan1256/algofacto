@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorMFRet(Factor):
+class FactorSBPCA(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -22,27 +22,35 @@ class FactorMFRet(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        # self.macro_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_macro.parquet.brotli')
-        self.etf_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_etf.parquet.brotli')
-        bond_df = yf.download(['TLT', 'TIP', 'SHY'], start=self.start, end=self.end)
-        bond_df = bond_df.stack().swaplevel().sort_index()
-        bond_df.index.names = ['ticker', 'date']
-        bond_df = bond_df.astype(float)
-        T = [1, 6, 30]
-        bond_df = create_return(bond_df, T)
-        bond_df = bond_df.drop(['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
-        bond_df = bond_df.unstack('ticker').swaplevel(axis=1)
-        bond_df.columns = ['_'.join(col).strip() for col in bond_df.columns.values]
-        self.bond_data = bond_df
-        self.mf = pd.concat([self.etf_data, self.bond_data, self.fama_data], axis=1)
-        self.mf = self.mf.loc[self.start:self.end]
-        self.mf = self.mf.fillna(0)
-        self.factor_col = self.mf.columns[:-1]
+        crsp = self.factor_data
+        pca_ret = crsp[['PERMNO', 'date', 'PRC']]
+        pca_ret['date'] = pd.to_datetime(pca_ret['date'])
+        pca_ret = pca_ret.rename(columns={'PERMNO': 'permno', 'PRC': 'Close'})
+        pca_ret = pca_ret.set_index(['permno', 'date']).sort_index(level=['permno', 'date'])
+        pca_ret = pca_ret[~pca_ret.index.duplicated(keep='first')]
+        pca_ret = get_stocks_data(pca_ret, stock)
+        pca_ret = pca_ret.dropna(subset='Close')
+        pca_ret = pca_ret[pca_ret['Close'] >= 0]
+
+        # Create returns and convert ticker index to columns
+        pca_ret = create_return(pca_ret, windows=[1])
+        ret = pca_ret[['RET_01']]
+        ret = ret['RET_01'].unstack(pca_ret.index.names[0])
+        ret.iloc[0] = ret.iloc[0].fillna(0)
+
+        # Execute Rolling PCA
+        window_size = 60
+        num_components = 5
+        self.pca_data = rolling_pca(data=ret, window_size=window_size, num_components=num_components, name='Return')
+        self.pca_data = pd.concat([self.pca_data, self.fama_data['RF']], axis=1)
+        self.pca_data = self.pca_data.loc[self.start:self.end]
+        self.pca_data = self.pca_data.fillna(0)
+        self.factor_col = self.pca_data.columns[:-1]
 
     @ray.remote
     def function(self, splice_data):
         T = [1]
-        splice_data = create_return(splice_data, windows=T)
+        splice_data = create_return(splice_data, T)
         splice_data = splice_data.fillna(0)
 
         for t in T:
@@ -50,7 +58,7 @@ class FactorMFRet(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [30, 60]
             for window in windows:
-                betas = rolling_ols_beta_res(price=splice_data, factor_data=self.mf, factor_col=self.factor_col, window=window, name=f'{t:02}_MF_RET', ret=ret)
+                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.pca_data, factor_col=self.factor_col, window=window, name=f'{t:02}_PCA_RET', ret=ret)
                 splice_data = splice_data.join(betas)
 
         return splice_data

@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorClustIndMom(Factor):
+class FactorClustIndMomFama(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -22,20 +22,20 @@ class FactorClustIndMom(Factor):
                  cluster: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         price_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
-        ind_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_ind.parquet.brotli')
+        ind_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_ind_fama.parquet.brotli')
         combine = pd.concat([price_data, ind_data], axis=1)
 
         t = 1
-        ret = create_return(combine, windows=[t])[[f'RET_{t:02}', 'wrds_ind']]
-        avg_ret = ret.groupby(['wrds_ind', ret.index.get_level_values('date')])[f'RET_{t:02}'].mean()
+        ret = create_return(combine, windows=[t])[[f'RET_{t:02}', 'fama_ind']]
+        avg_ret = ret.groupby(['fama_ind', ret.index.get_level_values('date')])[f'RET_{t:02}'].mean()
         ret = ret.reset_index()
-        ret = pd.merge(ret, avg_ret.rename('indRET').reset_index(), on=['wrds_ind', 'date'], how='left')
-        ret[f'IndMomWRDS_{t:02}'] = ret[f'RET_{t:02}'] / ret['indRET']
-        ind_mom = ret.set_index([self.join, 'date'])[[f'IndMomWRDS_{t:02}']]
+        ret = pd.merge(ret, avg_ret.rename('indRET').reset_index(), on=['fama_ind', 'date'], how='left')
+        ret[f'IndMomFama_{t:02}'] = ret[f'RET_{t:02}'] / ret['indRET']
+        ind_mom = ret.set_index([self.join, 'date'])[[f'IndMomFama_{t:02}']]
         self.factor_data = ind_mom
         self.cluster = cluster
         # Create returns and convert stock index to columns
-        self.factor_data = self.factor_data['IndMomWRDS_01'].unstack(self.join)
+        self.factor_data = self.factor_data['IndMomFama_01'].unstack(self.join)
 
     @ray.remote
     def function(self, splice_data):
@@ -53,6 +53,6 @@ class FactorClustIndMom(Factor):
         # Create a dataframe that matches cluster to stock
         cols = splice_data.columns
         date = splice_data.index[0]
-        splice_data = pd.DataFrame(cluster, columns=[f'ind_mom_wrds_cluster'], index=[[date] * len(cols), cols])
+        splice_data = pd.DataFrame(cluster, columns=[f'ind_mom_fama_cluster'], index=[[date] * len(cols), cols])
         splice_data.index.names = ['date', self.join]
         return splice_data

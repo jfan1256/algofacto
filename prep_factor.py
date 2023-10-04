@@ -9,6 +9,7 @@ warnings.filterwarnings('ignore')
 
 class PrepFactor:
     def __init__(self, factor_name: str = None,
+                 group: str = None,
                  interval: str = 'D',
                  kind: str = 'price',
                  div: bool = False,
@@ -17,6 +18,7 @@ class PrepFactor:
                  end: str = '2022-01-01',
                  save: bool = False):
         self.data = None
+        self.group = group
         self.interval = interval  # specify the interval of the data being prepped
         self.kind = kind  # type of factor (price, industry)
         self.div = div  # divide factor by closing price
@@ -55,11 +57,16 @@ class PrepFactor:
         else:
             # Resample from not daily to daily
             date_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_date.parquet.brotli')
-            stocks = read_stock(get_load_data_large_dir() / 'permno_to_train.csv')
             date_data = set_timeframe(date_data, self.start, self.end)
-            self.data = pd.merge(date_data.loc[stocks], self.data, left_index=True, right_index=True, how='left')
+            self.data = pd.merge(date_data.loc[self.stock], self.data, left_index=True, right_index=True, how='left')
             self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
-            self.data = self.data.groupby('permno').ffill()
+            collect = []
+            for _, df in self.data.groupby('permno'):
+                df = df.reset_index().set_index('date')
+                df = ffill_max_days(df, max_days=31)
+                df = df.reset_index().set_index(['permno', 'date']).sort_index(level=['permno', 'date'])
+                collect.append(df)
+            self.data = pd.concat(collect, axis=0)
             return self.data
 
     def div_price(self):
@@ -77,6 +84,9 @@ class PrepFactor:
         #     if self.data[column].isnull().sum() > 0.50 * len(self.data[column]):
         #         self.data = self.data.drop(column, axis=1)
         self.data = self.data.replace([np.inf, -np.inf], np.nan)
+        self.data = (self.data.groupby(self.group).apply(lambda x: x.iloc[:-1]))
+        self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
+        self.data.index = self.data.index.droplevel(0)
         return self.data
 
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Creating {self.factor_name}', animation=spinner_animation, post_func=print_data_shape)

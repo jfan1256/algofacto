@@ -38,8 +38,6 @@ class Factor:
         self.window = window
 
         assert group == 'permno' or group == 'ticker' or group == 'date' or group is None, ValueError('group parameter must be either ''permno'', ''ticker'', or ''date''')
-        if self.group == 'date' and self.stock:
-            raise ValueError('if group parameter is set to date then stock parameter must be None')
         if self.group == 'date' and self.join == None:
             raise ValueError('if group parameter is set to date then specify join parameter to either ''permno'' or ''ticker''')
 
@@ -179,7 +177,10 @@ class Factor:
         else:
             if not self.general and self.group != 'date':
                 if self.stock != 'all':
-                    self.factor_data = get_stocks_data(self.factor_data, self.stock)
+                    if self.group == 'date':
+                        self.factor_data = self.factor_data.loc[:, (slice(None), self.stock)]
+                    else:
+                        self.factor_data = get_stocks_data(self.factor_data, self.stock)
             splice_data = self._splice_data()
             batch_data = self._batch_data(splice_data)
             self.parallel_processing(batch_data)

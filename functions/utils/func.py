@@ -39,6 +39,19 @@ def remove_date(df, threshold):
     valid_dates = dates_with_counts[dates_with_counts >= threshold].index.tolist()
     return df[df.index.get_level_values('date').isin(valid_dates)]
 
+# ffill for a certain amount of days
+def ffill_max_days(df, max_days):
+    df = df.sort_index()
+    mask = df.index.to_series().diff() > pd.Timedelta(days=max_days)
+
+    for col in df.columns:
+        # Set a sentinel value for the next value after a gap of more than max_days
+        sentinel = -99999
+        df.loc[mask.shift(-1).fillna(False), col] = sentinel
+        # Forward fill, but replace sentinel values with NaN afterwards
+        df[col] = df[col].ffill().replace(sentinel, np.nan)
+    return df
+
 # Returns a list of all stocks in a dataframe
 def get_stock_idx(data):
     return [stock for stock, df in data.groupby(data.index.names[0], group_keys=False)]

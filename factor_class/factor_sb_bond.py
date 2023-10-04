@@ -26,7 +26,6 @@ class FactorSBBond(Factor):
         bond_df = bond_df.stack().swaplevel().sort_index()
         bond_df.index.names = ['ticker', 'date']
         bond_df = bond_df.astype(float)
-        # T = [1, 6, 30]
         T = [1]
         bond_df = create_return(bond_df, T)
         bond_df = bond_df.drop(['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
@@ -44,13 +43,12 @@ class FactorSBBond(Factor):
         splice_data = create_return(splice_data, windows=T)
         splice_data = splice_data.fillna(0)
 
-        t = 1
-        ret = f'RET_{t:02}'
-
-        # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
-        windows = [30, 60]
-        for window in windows:
-            betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.bond_data, factor_col=self.factor_col, window=window, name='BOND', ret=ret)
-            splice_data = splice_data.join(betas)
+        for t in T:
+            ret = f'RET_{t:02}'
+            # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
+            windows = [30, 60]
+            for window in windows:
+                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.bond_data, factor_col=self.factor_col, window=window, name=f'{t:02}_BOND', ret=ret)
+                splice_data = splice_data.join(betas)
 
         return splice_data

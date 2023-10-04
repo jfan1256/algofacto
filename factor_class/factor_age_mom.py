@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorSBETF(Factor):
+class FactorAgeMom(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -21,25 +21,26 @@ class FactorSBETF(Factor):
                  window: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
-        self.etf_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_etf.parquet.brotli')
-        self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        self.etf_data = pd.concat([self.etf_data, self.fama_data['RF']], axis=1)
-        self.etf_data = self.etf_data.loc[self.start:self.end]
-        self.etf_data = self.etf_data.fillna(0)
-        self.factor_col = self.etf_data.columns[:-1]
 
     @ray.remote
     def function(self, splice_data):
         T = [1]
         splice_data = create_return(splice_data, windows=T)
         splice_data = splice_data.fillna(0)
+        splice_data['tempage'] = splice_data.groupby(self.group).cumcount() + 1
+        def compound_return(group, day):
+            compound_return = 1
+            for i in range(1, day+1):
+                compound_return *= (1 + group['RET_01'].shift(i))
+            return compound_return - 1
 
-        for t in T:
-            ret = f'RET_{t:02}'
-            # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
-            windows = [30, 60]
-            for window in windows:
-                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.etf_data, factor_col=self.factor_col, window=window, name=f'{t:02}_ETF', ret=ret)
-                splice_data = splice_data.join(betas)
+        # Scaling factor for daily data
+        scale_factor = 21
 
+        splice_data['FirmAgeMom'] = splice_data.groupby(self.group).apply(compound_return, day=5*scale_factor).reset_index(level=0, drop=True)
+        splice_data.loc[(splice_data['Close'].abs() < 5) | (splice_data['tempage'] < 12*scale_factor), 'FirmAgeMom'] = np.nan
+        # splice_data['FirmAgeMom'] = splice_data.groupby(self.group).apply(compound_return, day=5).reset_index(level=0, drop=True)
+        # splice_data.loc[(splice_data['Close'].abs() < 5) | (splice_data['tempage'] < 21), 'FirmAgeMom'] = np.nan
+
+        splice_data = splice_data[['FirmAgeMom']]
         return splice_data

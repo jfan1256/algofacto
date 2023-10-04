@@ -22,7 +22,7 @@ class FactorSBSector(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        sector_df = yf.download(['XLSR', 'XLC', 'XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLRE', 'XLK', 'XLU'], start=self.start, end=self.end)
+        sector_df = yf.download(['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU'], start=self.start, end=self.end)
         sector_df = sector_df.stack().swaplevel().sort_index()
         sector_df.index.names = ['ticker', 'date']
         sector_df = sector_df.astype(float)
@@ -32,10 +32,10 @@ class FactorSBSector(Factor):
         sector_df = sector_df.unstack('ticker').swaplevel(axis=1)
         sector_df.columns = ['_'.join(col).strip() for col in sector_df.columns.values]
 
-        # Execute Rolling PCA
-        window_size = 60
-        num_components = 5
-        sector_df = rolling_pca(data=sector_df, window_size=window_size, num_components=num_components, name='sector')
+        # # Execute Rolling PCA
+        # window_size = 60
+        # num_components = 5
+        # sector_df = rolling_pca(data=sector_df, window_size=window_size, num_components=num_components, name='sector')
 
         self.sector_data = sector_df
         self.sector_data = pd.concat([self.sector_data, self.fama_data['RF']], axis=1)
@@ -45,14 +45,12 @@ class FactorSBSector(Factor):
 
     @ray.remote
     def function(self, splice_data):
-
         T = [1]
         splice_data = create_return(splice_data, windows=T)
         splice_data = splice_data.fillna(0)
 
         for t in T:
             ret = f'RET_{t:02}'
-
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [30, 60]
             for window in windows:

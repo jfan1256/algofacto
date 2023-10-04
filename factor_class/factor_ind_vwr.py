@@ -30,11 +30,11 @@ class FactorIndVWR(Factor):
         ind_data = create_return(ind_data, windows=T)
         collect = []
         ind_data['value_permno'] = ind_data['Close'] * ind_data['out_share']
-        ind_data['value_ind'] = ind_data.groupby(['ind', 'date'])['value_permno'].transform('sum')
+        ind_data['value_ind'] = ind_data.groupby(['wrds_ind', 'date'])['value_permno'].transform('sum')
         ind_data['vwr_weight'] = ind_data['value_permno'] / ind_data['value_ind']
 
         for t in T:
-            ind_data[f'vwr_{t:02}'] = ind_data['vwr_weight'] * ind_data[f'RET_{t:02}']
-            collect.append(ind_data[[f'vwr_{t:02}']])
+            ind_data[f'vwr_wrds_{t:02}'] = ind_data['vwr_weight'] * ind_data[f'RET_{t:02}']
+            collect.append(ind_data[[f'vwr_wrds_{t:02}']])
 
         self.factor_data = pd.concat(collect, axis=1)

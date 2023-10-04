@@ -20,4 +20,9 @@ class FactorFundQ(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_q.parquet.brotli')
+        columns = ['fqtr']
+        fund_q = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli', columns=columns)
+        fund_q = get_stocks_data(fund_q, stock)
+        fund_q = fund_q.fillna(-1)
+        fund_q = fund_q.astype(int)
+        self.factor_data = fund_q
