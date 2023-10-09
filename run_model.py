@@ -410,8 +410,8 @@ alpha.add_factor(clust_ind_mom_sub, categorical=True)
 del clust_ind_mom_sub
 
 rank_sb_fama = PrepFactor(factor_name='factor_rank_sb_fama', group='permno', interval='D', kind='rank', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(clust_ind_mom_sub, categorical=True)
-del clust_ind_mom_sub
+alpha.add_factor(rank_sb_fama, categorical=True)
+del rank_sb_fama
 
 rank_sb_lag_bond = PrepFactor(factor_name='factor_rank_sb_lag_bond', group='permno', interval='D', kind='rank', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(rank_sb_lag_bond, categorical=True)
