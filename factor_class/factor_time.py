@@ -28,7 +28,7 @@ class FactorTime(Factor):
         splice_data['Month'] = splice_data.index.get_level_values('date').month
         splice_data['Weekday'] = splice_data.index.get_level_values('date').weekday
         splice_data['Halloween'] = splice_data.index.get_level_values('date').map(lambda x: 1 if 5 <= x.month <= 10 else 0)
-        # # splice_data['Day'] = splice_data.index.get_level_values('date').day - 1
+        # splice_data['Day'] = splice_data.index.get_level_values('date').day - 1
         splice_data['is_january'] = (splice_data.index.get_level_values('date').month == 1).astype(int)
         splice_data['is_friday'] = (splice_data.index.get_level_values('date').dayofweek == 4).astype(int)
         return splice_data

@@ -29,7 +29,7 @@ class FactorCondIndMomFama(Factor):
         collect = []
 
         for t in T:
-            grouped = ret.groupby(['fama_ind', ret.index.get_level_values('date')])
+            grouped = ret.groupby(['IndustryFama', ret.index.get_level_values('date')])
 
             # Compute average returns just once
             avg_ret = grouped[f'RET_{t:02}'].transform('mean')

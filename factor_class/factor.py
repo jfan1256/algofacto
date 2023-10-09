@@ -156,7 +156,7 @@ class Factor:
             factor_data = factor_data.set_index([self.group, 'date'])
             factor_data = factor_data.sort_index(level=[self.group, 'date'])
         print(f"Exporting {self.file_name}...")
-        factor_data.to_parquet(get_root_dir() / f'factor_data/{self.file_name}.parquet.brotli', compression='brotli')
+        factor_data.to_parquet(get_factor_data_dir() / f'{self.file_name}.parquet.brotli', compression='brotli')
         elapsed_time = time.time() - start_time
         print(f"Time to create {self.file_name}: {round(elapsed_time)} seconds")
         print("-" * 60)
@@ -172,15 +172,19 @@ class Factor:
             print(f"Exporting {self.file_name}...")
             if self.stock != 'all':
                 self.factor_data = get_stocks_data(self.factor_data, self.stock)
-            self.factor_data.to_parquet(get_root_dir() / f'factor_data/{self.file_name}.parquet.brotli', compression='brotli')
+            self.factor_data.to_parquet(get_factor_data_dir() / f'{self.file_name}.parquet.brotli', compression='brotli')
             print("-" * 60)
         else:
-            if not self.general and self.group != 'date':
-                if self.stock != 'all':
-                    if self.group == 'date':
-                        self.factor_data = self.factor_data.loc[:, (slice(None), self.stock)]
-                    else:
-                        self.factor_data = get_stocks_data(self.factor_data, self.stock)
+            if not self.general and self.stock != 'all':
+                if self.group == 'date':
+                    try:
+                        # If multindex column (unstacking multiple columns)
+                        self.factor_data.loc[:, (slice(None), self.stock)]
+                    except:
+                        # If multindex column (unstacking one column)
+                        self.factor_data = self.factor_data[self.stock]
+                else:
+                    self.factor_data = get_stocks_data(self.factor_data, self.stock)
             splice_data = self._splice_data()
             batch_data = self._batch_data(splice_data)
             self.parallel_processing(batch_data)

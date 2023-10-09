@@ -30,7 +30,7 @@ class FactorIndMomFama(Factor):
         collect = []
 
         for t in T:
-            ret[f'IndMomFama_{t:02}'] = ret.groupby(['fama_ind', 'date'])[f'RET_{t:02}'].transform('mean')
+            ret[f'IndMomFama_{t:02}'] = ret.groupby(['IndustryFama', 'date'])[f'RET_{t:02}'].transform('mean')
             ind_mom = ret[[f'IndMomFama_{t:02}']]
             collect.append(ind_mom)
 

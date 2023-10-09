@@ -22,7 +22,6 @@ class FactorFundRaw(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['atq', 'lctq', 'cheq', 'ivstq', 'ltq', 'ceqq', 'niq', 'saleq', 'cogsq', 'invtq', 'apq', 'prccq', 'cshoq', 'dpq', 'xintq', 'piq', 'revtq']
         fund_raw = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli', columns=columns)
-        fund_raw = get_stocks_data(fund_raw, stock)
         fund_raw['current_ratio'] = fund_raw['atq'] / fund_raw['lctq']
         fund_raw['quick_ratio'] = (fund_raw['cheq'] + fund_raw['ivstq']) / fund_raw['lctq']
         fund_raw['cash_ratio'] = fund_raw['cheq'] / fund_raw['lctq']

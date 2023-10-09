@@ -20,50 +20,108 @@ class FactorTrendFactor(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
-        lag_data = self.factor_data
+        factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
+        factor_data = get_stocks_data(factor_data, self.stock)
+        lag_data = factor_data.copy(deep=True)
         # Create Lag Price Rolling Mean Predictors
-        self.T = [3, 5, 10, 20, 50, 100, 200, 400, 600, 800, 1000]
-        for lag in self.T:
-            lag_data[lag] = lag_data['Close'].rolling(window=lag).mean()
+        T = [3, 5, 7, 10, 20, 35, 50, 75, 100, 200, 300, 400]
+        for lag in T:
+            # Calculate rolling mean
+            rolling_mean = lag_data.groupby('permno')['Close'].rolling(window=lag).mean().reset_index(level=0, drop=True)
+            # Normalize the rolling mean by the daily closing price
+            normalized_rolling_mean = rolling_mean / lag_data['Close']
+            # Store the normalized rolling mean in the dataframe
+            lag_data[f'ma_{lag}'] = normalized_rolling_mean
+
+        # Convert the start date to a datetime object
+        start = datetime.strptime(self.start, '%Y-%m-%d')
+        # Add two years to the start date
+        start = start + timedelta(days=252 * 2)
+        # Convert the end date back to a string in the desired format
+        start = start.strftime('%Y-%m-%d')
+
+        lag_data = lag_data.replace([np.inf, -np.inf], np.nan)
         lag_data = lag_data.drop(['Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
-        self.lag = lag_data
-        self.lag = set_timeframe(self.lag, self.start, self.end)
+        columns = lag_data.columns
+        lag_data = set_timeframe(lag_data, start, self.end)
+        lag_data = lag_data.unstack('permno')
+        lag_data = lag_data.fillna(0)
 
-    @ray.remote
+        factor_data = create_return(factor_data, windows=[1])
+        factor_data = factor_data[[f'RET_01']]
+        factor_data = set_timeframe(factor_data, start, self.end)
+        factor_data = factor_data['RET_01'].unstack('permno')
+        factor_data = factor_data.fillna(0)
+
+        betas = {}
+        dates = factor_data.index
+
+        # Iterate over each moving average column
+        for ma_column in columns:
+            betas_for_ma = []
+            print(f'\nProcessing: {ma_column} column')
+            # For each date in our dataset
+            for date in dates:
+                # Extract the dependent variable (returns) for the given date
+                y = factor_data.loc[date]
+                X = lag_data[ma_column].loc[date]
+                model = sm.OLS(y, sm.add_constant(X), missing='drop').fit()
+                betas_for_ma.append(model.params[date])
+
+            # Store the betas in the dictionary
+            betas[ma_column] = betas_for_ma
+
+        # Convert the dictionary to a DataFrame
+        rolling_betas = pd.DataFrame(betas, index=dates)
+        rolling_betas = rolling_betas.rolling(window=60).mean()
+        total = []
+        for col in rolling_betas.columns:
+            result = lag_data[col].multiply(rolling_betas[col], axis=0).stack().swaplevel().to_frame()
+            result.columns = [col]
+            total.append(result)
+        total = pd.concat(total, axis=1)
+        total = total.sort_index(level=['permno', 'date'])
+        total['TrendFactor'] = total.sum(axis=1)
+        total['TrendFactor'] = total['TrendFactor'] - total['TrendFactor'].mean()
+        self.factor_data = total[['TrendFactor']]
+
+
+    """@ray.remote
     def function(self, splice_data):
-        T = [1]
-        splice_data = create_return(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
+        betas = {}
+        dates = self.factor_data.index
+        # Iterate over each moving average column
+        for ma_column in self.columns:
+            betas_for_ma = []
 
-        ret = f'RET_01'
-        # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
-        window = 120
-        collect = []
-        for indicator, df in splice_data.groupby(splice_data.index.names[0], group_keys=False):
-            lag_data = get_stock_data(self.lag, indicator)
-            lag_data = lag_data.unstack(self.group).swaplevel(axis=1)
-            lag_data.columns = ['_'.join(str(col)).strip() for col in lag_data.columns.values]
-            lag_data = lag_data.fillna(0)
-            factor_col = lag_data.columns
-            model_data = df[[ret]].merge(lag_data, on='date').dropna()
-            collect_betas = []
+            # For each date in our dataset
+            for date in dates:
+                # Extract the dependent variable (returns) for the given date
+                y = self.factor_data.loc[date]
+                X = self.lag_data[ma_column].loc[date]
+                model = sm.OLS(y, sm.add_constant(X), missing='drop').fit()
+                betas_for_ma.append(model.params[date])
 
-            # Run Univariate Regression on each Lagged Price Rolling Mean
-            for i, col in enumerate(factor_col):
-                rolling_ols = RollingOLS(endog=model_data[ret], exog=sm.add_constant(model_data[col]), window=window)
-                factor_model = rolling_ols.fit(params_only=True).params.rename(columns={'const': 'ALPHA'})
-                # Compute predictions of stock's return
-                beta_coef = factor_model[col]
-                beta_coef = beta_coef.rolling(window=self.T[i]).mean()
-                collect_betas.append(beta_coef)
+            # Store the betas in the dictionary
+            betas[ma_column] = betas_for_ma
 
-            betas = pd.concat(collect_betas, axis=1)
-            result = (betas * lag_data).sum(axis=1)
-            result = result.to_frame()
-            result[self.group] = indicator
-            result = result.reset_index().set_index([self.group, 'date'])
-            result.columns = ['TrendFactor']
-            collect.append(result)
-        splice_data = pd.concat(collect, axis=0)
-        return splice_data
+        # Convert the dictionary to a DataFrame
+        rolling_betas = pd.DataFrame(betas, index=dates)
+        # Calculate E[B]
+        rolling_betas = rolling_betas.rolling(window=60).mean()
+
+        # Multiple E[B] * MA per column
+        total = []
+        for col in rolling_betas.columns:
+            result = self.lag_data[col].multiply(rolling_betas[col], axis=0).stack().swaplevel().to_frame()
+            result.columns = [col]
+            total.append(result)
+        total = pd.concat(total, axis=1)
+        total = total.sort_index(level=['permno', 'date'])
+
+        # Calculate TrendFactor
+        total['TrendFactor'] = total.sum(axis=1)
+        # Center around 0
+        total['TrendFactor'] = total['TrendFactor'] - total['TrendFactor'].mean()
+        splice_data = total
+        return splice_data"""

@@ -30,8 +30,8 @@ class FactorIndMom(Factor):
         collect = []
 
         for t in T:
-            ret[f'IndMomWRDS_{t:02}'] = ret.groupby(['wrds_ind', 'date'])[f'RET_{t:02}'].transform('mean')
-            ind_mom = ret[[f'IndMomWRDS_{t:02}']]
+            ret[f'IndMom_{t:02}'] = ret.groupby(['Industry', 'date'])[f'RET_{t:02}'].transform('mean')
+            ind_mom = ret[[f'IndMom_{t:02}']]
             collect.append(ind_mom)
 
         self.factor_data = pd.concat(collect, axis=1)

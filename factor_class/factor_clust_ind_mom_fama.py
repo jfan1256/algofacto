@@ -26,10 +26,10 @@ class FactorClustIndMomFama(Factor):
         combine = pd.concat([price_data, ind_data], axis=1)
 
         t = 1
-        ret = create_return(combine, windows=[t])[[f'RET_{t:02}', 'fama_ind']]
-        avg_ret = ret.groupby(['fama_ind', ret.index.get_level_values('date')])[f'RET_{t:02}'].mean()
+        ret = create_return(combine, windows=[t])[[f'RET_{t:02}', 'IndustryFama']]
+        avg_ret = ret.groupby(['IndustryFama', ret.index.get_level_values('date')])[f'RET_{t:02}'].mean()
         ret = ret.reset_index()
-        ret = pd.merge(ret, avg_ret.rename('indRET').reset_index(), on=['fama_ind', 'date'], how='left')
+        ret = pd.merge(ret, avg_ret.rename('indRET').reset_index(), on=['IndustryFama', 'date'], how='left')
         ret[f'IndMomFama_{t:02}'] = ret[f'RET_{t:02}'] / ret['indRET']
         ind_mom = ret.set_index([self.join, 'date'])[[f'IndMomFama_{t:02}']]
         self.factor_data = ind_mom

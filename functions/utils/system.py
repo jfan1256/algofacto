@@ -11,7 +11,7 @@ def get_root_dir() -> Path:
 
 
 def get_factor_data_dir() -> Path:
-    return get_root_dir() / 'factor_data'
+    return get_root_dir() / 'load_data' / 'factor'
 
 
 def get_load_data_parquet_dir() -> Path:

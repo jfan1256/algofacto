@@ -23,6 +23,9 @@ class FactorRankIndMom(Factor):
 
         price_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         ind_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_ind.parquet.brotli')
+        price_data = get_stocks_data(price_data, self.stock)
+        ind_data = get_stocks_data(ind_data, self.stock)
+
         combine = pd.concat([price_data, ind_data], axis=1)
 
         T = [1, 2, 5, 10, 30, 60]
@@ -30,15 +33,15 @@ class FactorRankIndMom(Factor):
         collect = []
 
         for t in T:
-            ret[f'IndMomWRDS_{t:02}'] = ret.groupby(['wrds_ind', 'date'])[f'RET_{t:02}'].transform('mean')
-            ret[f'indMomWRDS_{t:02}_rank'] =  ret.groupby(['date'])[f'IndMomWRDS_{t:02}'].rank()
+            ret[f'IndMom_{t:02}'] = ret.groupby(['Industry', 'date'])[f'RET_{t:02}'].transform('mean')
+            ret[f'indMom_{t:02}_rank'] =  ret.groupby(['Industry', 'date'])[f'IndMom_{t:02}'].rank()
 
-            bin_size = 3.9
-            max_compressed_rank = (ret[f'indMomWRDS_{t:02}_rank'].max() + bin_size - 1) // bin_size
-            ret[f'indMomWRDS_{t:02}_rank'] = np.ceil(ret[f'indMomWRDS_{t:02}_rank'] / bin_size)
-            ret[f'indMomWRDS_{t:02}_rank'] = ret[f'indMomWRDS_{t:02}_rank'].apply(lambda x: min(x, max_compressed_rank))
-            ret[f'indMomWRDS_{t:02}_rank'] = ret[f'indMomWRDS_{t:02}_rank'].replace({np.nan: -1, np.inf: max_compressed_rank}).astype(int)
-            ind_mom = ret[[f'indMomWRDS_{t:02}_rank']]
+            bin_size = 1.2
+            max_compressed_rank = (ret[f'indMom_{t:02}_rank'].max() + bin_size - 1) // bin_size
+            ret[f'indMom_{t:02}_rank'] = np.ceil(ret[f'indMom_{t:02}_rank'] / bin_size)
+            ret[f'indMom_{t:02}_rank'] = ret[f'indMom_{t:02}_rank'].apply(lambda x: min(x, max_compressed_rank))
+            ret[f'indMom_{t:02}_rank'] = ret[f'indMom_{t:02}_rank'].replace({np.nan: -1, np.inf: max_compressed_rank}).astype(int)
+            ind_mom = ret[[f'indMom_{t:02}_rank']]
             collect.append(ind_mom)
 
         self.factor_data = pd.concat(collect, axis=1)

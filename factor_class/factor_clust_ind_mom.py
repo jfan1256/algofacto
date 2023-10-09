@@ -26,10 +26,10 @@ class FactorClustIndMom(Factor):
         combine = pd.concat([price_data, ind_data], axis=1)
 
         t = 1
-        ret = create_return(combine, windows=[t])[[f'RET_{t:02}', 'wrds_ind']]
-        avg_ret = ret.groupby(['wrds_ind', ret.index.get_level_values('date')])[f'RET_{t:02}'].mean()
+        ret = create_return(combine, windows=[t])[[f'RET_{t:02}', 'Industry']]
+        avg_ret = ret.groupby(['Industry', ret.index.get_level_values('date')])[f'RET_{t:02}'].mean()
         ret = ret.reset_index()
-        ret = pd.merge(ret, avg_ret.rename('indRET').reset_index(), on=['wrds_ind', 'date'], how='left')
+        ret = pd.merge(ret, avg_ret.rename('indRET').reset_index(), on=['Industry', 'date'], how='left')
         ret[f'IndMomWRDS_{t:02}'] = ret[f'RET_{t:02}'] / ret['indRET']
         ind_mom = ret.set_index([self.join, 'date'])[[f'IndMomWRDS_{t:02}']]
         self.factor_data = ind_mom
@@ -53,6 +53,6 @@ class FactorClustIndMom(Factor):
         # Create a dataframe that matches cluster to stock
         cols = splice_data.columns
         date = splice_data.index[0]
-        splice_data = pd.DataFrame(cluster, columns=[f'ind_mom_wrds_cluster'], index=[[date] * len(cols), cols])
+        splice_data = pd.DataFrame(cluster, columns=[f'ind_mom_cluster'], index=[[date] * len(cols), cols])
         splice_data.index.names = ['date', self.join]
         return splice_data

@@ -22,7 +22,7 @@ class FactorAssetGrowth(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['atq']
         growth = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli', columns=columns)
-        growth = get_stocks_data(growth, stock)
-        growth['AssetGrowth'] = (growth['atq'] - growth.groupby('permno')['atq'].shift(12)) / growth.groupby('permno')['atq'].shift(12)
+        growth = get_stocks_data(growth, self.stock)
+        growth['AssetGrowth'] = (growth['atq'] - growth.groupby('permno')['atq'].shift(6)) / growth.groupby('permno')['atq'].shift(6)
         growth = growth[['AssetGrowth']]
         self.factor_data = growth

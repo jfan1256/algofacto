@@ -30,7 +30,7 @@ class FactorSBFama(Factor):
     def function(self, splice_data):
         T = [1]
         splice_data = create_return(splice_data, T)
-        splice_data.fillna(0)
+        splice_data = splice_data.fillna(0)
 
         for t in T:
             ret = f'RET_{t:02}'

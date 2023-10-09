@@ -45,8 +45,7 @@ class FactorEarningStreak(Factor):
         combined = combined.rename(columns={'oftic': 'ticker'})
         # Convert ticker to permno
         ticker = pd.read_parquet(get_load_data_parquet_dir() / 'data_ticker.parquet.brotli')
-        stock = read_stock(get_load_data_large_dir() / 'permno_to_train_fund.csv')
-        ticker = get_stock_data(ticker, stock)
+        ticker = get_stocks_data(ticker, self.stock)
         ticker = ticker.reset_index()
         ticker['date'] = ticker['date'].dt.to_period('M')
         ticker = ticker.set_index(['permno', 'date'])

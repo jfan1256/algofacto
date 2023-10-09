@@ -22,7 +22,7 @@ class FactorRankFundRaw(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['atq', 'lctq', 'cheq', 'ivstq', 'ltq', 'ceqq', 'niq', 'saleq', 'cogsq', 'invtq', 'apq', 'prccq', 'cshoq', 'dpq', 'xintq', 'piq', 'revtq']
         fund_raw = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli', columns=columns)
-        fund_raw = get_stocks_data(fund_raw, stock)
+        fund_raw = get_stocks_data(fund_raw, self.stock)
 
         fund_raw['current_ratio'] = fund_raw['atq'] / fund_raw['lctq']
         fund_raw['quick_ratio'] = (fund_raw['cheq'] + fund_raw['ivstq']) / fund_raw['lctq']
@@ -57,7 +57,7 @@ class FactorRankFundRaw(Factor):
         fund_raw = fund_raw.replace([np.inf, -np.inf], np.nan)
 
         # Ranking by each column
-        fund_rank = fund_raw[['current_ratio']]
+        fund_rank = fund_raw[[fund_raw.columns[0]]]
         for col in fund_raw.columns:
             fund_rank[f'{col}_rank'] = fund_raw.groupby('date')[col].rank()
 
@@ -67,5 +67,5 @@ class FactorRankFundRaw(Factor):
             fund_rank[f'{col}_rank'] = fund_rank[f'{col}_rank'].apply(lambda x: min(x, max_compressed_rank))
             fund_rank[f'{col}_rank'] = fund_rank[f'{col}_rank'].replace({np.nan: -1, np.inf: max_compressed_rank}).astype(int)
 
-        fund_rank = fund_rank.drop(['current_ratio'], axis=1)
+        fund_rank = fund_rank.drop(fund_raw.columns[0], axis=1)
         self.factor_data = fund_rank

@@ -25,12 +25,13 @@ class FactorMomSeasonShort(Factor):
     @ray.remote
     def function(self, splice_data):
         T = [1]
-        splice_data = create_return(splice_data, windows=T)
+        splice_data = create_return(splice_data, T)
         splice_data = splice_data.fillna(0)
         # Scaling factor for daily data
         scale_factor = 21
+        def compute_shifted_return(group):
+            group['MomSeasonShort'] = group['RET_01'].shift(1 * scale_factor)
+            return group[['MomSeasonShort']]
 
-        splice_data['MomSeasonShort'] = splice_data['RET_01'].shift(11 * scale_factor)
-        # splice_data['MomSeasonShort'] = splice_data['RET_01'].shift(1 * scale_factor)
-        splice_data = splice_data[['MomSeasonShort']]
-        return splice_data
+        result = splice_data.groupby(self.group).apply(compute_shifted_return).reset_index(level=0, drop=True)
+        return result

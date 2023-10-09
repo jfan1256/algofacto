@@ -29,7 +29,7 @@ class FactorCondIndMom(Factor):
         collect = []
 
         for t in T:
-            grouped = ret.groupby(['wrds_ind', ret.index.get_level_values('date')])
+            grouped = ret.groupby(['Industry', ret.index.get_level_values('date')])
 
             # Compute average returns just once
             avg_ret = grouped[f'RET_{t:02}'].transform('mean')
@@ -46,8 +46,8 @@ class FactorCondIndMom(Factor):
                     (ret_shifted_2 > avg_ret_shifted_2)
             )
 
-            ret[f'cond_indmom_wrds_{t:02}'] = np.where(condition, 1, 0)
-            ind_mom = ret[[f'cond_indmom_wrds_{t:02}']]
+            ret[f'cond_indmom_{t:02}'] = np.where(condition, 1, 0)
+            ind_mom = ret[[f'cond_indmom_{t:02}']]
             collect.append(ind_mom)
 
         self.factor_data = pd.concat(collect, axis=1)

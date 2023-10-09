@@ -23,7 +23,17 @@ class FactorRFRet(Factor):
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
 
         # PCA
-        pca_df = pd.read_parquet(get_load_data_parquet_dir() / 'data_pca_ret.parquet.brotli')
+        pca_df = self.factor_data.copy(deep=True)
+        # Create returns and convert ticker index to columns
+        pca_df = create_return(pca_df, windows=[1])
+        ret = pca_df[['RET_01']]
+        ret = ret['RET_01'].unstack(pca_df.index.names[0])
+        ret.iloc[0] = ret.iloc[0].fillna(0)
+
+        # Execute Rolling PCA
+        window_size = 60
+        num_components = 5
+        pca_df = rolling_pca(data=ret, window_size=window_size, num_components=num_components, name='Return')
 
         # Sector ETF
         sector_df = yf.download(['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU'], start=self.start, end=self.end)
@@ -57,7 +67,7 @@ class FactorRFRet(Factor):
 
         # Execute Rolling PCA
         window_size = 60
-        num_components = 7
+        num_components = 5
         self.all_rf = rolling_pca(data=all_rf, window_size=window_size, num_components=num_components, name='all_rf')
         self.all_rf = pd.concat([self.all_rf, rf], axis=1)
         self.all_rf = self.all_rf.fillna(0)

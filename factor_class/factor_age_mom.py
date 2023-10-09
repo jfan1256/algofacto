@@ -35,7 +35,7 @@ class FactorAgeMom(Factor):
             return compound_return - 1
 
         # Scaling factor for daily data
-        scale_factor = 21
+        scale_factor = 1
 
         splice_data['FirmAgeMom'] = splice_data.groupby(self.group).apply(compound_return, day=5*scale_factor).reset_index(level=0, drop=True)
         splice_data.loc[(splice_data['Close'].abs() < 5) | (splice_data['tempage'] < 12*scale_factor), 'FirmAgeMom'] = np.nan

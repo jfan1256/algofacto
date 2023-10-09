@@ -37,33 +37,33 @@ class FactorCondRet(Factor):
         condition2 = (splice_data['RET_05'] > splice_data['RET_10']) & (splice_data['RET_10'] > splice_data['RET_40'])
         splice_data['strong_momentum'] = np.where(condition2, 1, 0)
 
-        # # Mean Reversion
-        # splice_data['mean_reversion'] = np.where((splice_data['RET_05'] < 0) & (splice_data['RET_60'] > 0), 1, 0)
-        #
-        # # Volatility Clustering
-        # splice_data['high_volatility'] = np.where(splice_data['RET_05'].rolling(window=10).std() > splice_data['RET_05'].rolling(window=60).std(), 1, 0)
-        #
-        # # Price above Moving Average
-        # splice_data['MA_20'] = splice_data['RET_05'].rolling(window=20).mean()
-        # splice_data['price_above_ma'] = np.where(splice_data['RET_05'] > splice_data['MA_20'], 1, 0)
-        # splice_data = splice_data.drop('MA_20', axis=1)
-        #
-        # # Relative Strength Index (RSI)
-        # delta = splice_data['RET_05'].diff()
-        # gain = (delta.where(delta > 0, 0)).fillna(0)
-        # loss = (-delta.where(delta < 0, 0)).fillna(0)
-        # avg_gain = gain.rolling(window=14).mean()
-        # avg_loss = loss.rolling(window=14).mean()
-        # rs = avg_gain / avg_loss
-        # splice_data['RSI'] = 100 - (100 / (1 + rs))
-        # splice_data['rsi_oversold'] = np.where(splice_data['RSI'] < 30, 1, 0)
-        # splice_data = splice_data.drop('RSI', axis=1)
-        #
-        # # Consecutive Gains
-        # splice_data['consecutive_gains'] = np.where((splice_data['RET_05'] > 0) & (splice_data['RET_10'] > 0) & (splice_data['RET_40'] > 0), 1, 0)
+        # Mean Reversion
+        splice_data['mean_reversion'] = np.where((splice_data['RET_05'] < 0) & (splice_data['RET_60'] > 0), 1, 0)
 
-        # # Extreme
-        # splice_data['extreme'] = np.where((splice_data['RET_01'] > 0) & (splice_data['RET_02'] > 0) & (splice_data['RET_03'] > 0) & (splice_data['RET_04']), 1, 0)
+        # Volatility Clustering
+        splice_data['high_volatility'] = np.where(splice_data['RET_05'].rolling(window=10).std() > splice_data['RET_05'].rolling(window=60).std(), 1, 0)
+
+        # Price above Moving Average
+        splice_data['MA_20'] = splice_data['RET_05'].rolling(window=20).mean()
+        splice_data['price_above_ma'] = np.where(splice_data['RET_05'] > splice_data['MA_20'], 1, 0)
+        splice_data = splice_data.drop('MA_20', axis=1)
+
+        # Relative Strength Index (RSI)
+        delta = splice_data['RET_05'].diff()
+        gain = (delta.where(delta > 0, 0)).fillna(0)
+        loss = (-delta.where(delta < 0, 0)).fillna(0)
+        avg_gain = gain.rolling(window=14).mean()
+        avg_loss = loss.rolling(window=14).mean()
+        rs = avg_gain / avg_loss
+        splice_data['RSI'] = 100 - (100 / (1 + rs))
+        splice_data['rsi_oversold'] = np.where(splice_data['RSI'] < 30, 1, 0)
+        splice_data = splice_data.drop('RSI', axis=1)
+
+        # Consecutive Gains
+        splice_data['consecutive_gains'] = np.where((splice_data['RET_05'] > 0) & (splice_data['RET_10'] > 0) & (splice_data['RET_40'] > 0), 1, 0)
+
+        # Extreme
+        splice_data['extreme'] = np.where((splice_data['RET_01'] > 0) & (splice_data['RET_02'] > 0) & (splice_data['RET_03'] > 0) & (splice_data['RET_04']), 1, 0)
 
         for t in T:
             splice_data = splice_data.drop([f'RET_{t:02}'], axis=1)

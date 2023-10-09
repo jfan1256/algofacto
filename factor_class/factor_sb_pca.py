@@ -22,16 +22,7 @@ class FactorSBPCA(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        crsp = self.factor_data
-        pca_ret = crsp[['PERMNO', 'date', 'PRC']]
-        pca_ret['date'] = pd.to_datetime(pca_ret['date'])
-        pca_ret = pca_ret.rename(columns={'PERMNO': 'permno', 'PRC': 'Close'})
-        pca_ret = pca_ret.set_index(['permno', 'date']).sort_index(level=['permno', 'date'])
-        pca_ret = pca_ret[~pca_ret.index.duplicated(keep='first')]
-        pca_ret = get_stocks_data(pca_ret, stock)
-        pca_ret = pca_ret.dropna(subset='Close')
-        pca_ret = pca_ret[pca_ret['Close'] >= 0]
-
+        pca_ret = self.factor_data.copy(deep=True)
         # Create returns and convert ticker index to columns
         pca_ret = create_return(pca_ret, windows=[1])
         ret = pca_ret[['RET_01']]

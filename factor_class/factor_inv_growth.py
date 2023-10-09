@@ -22,7 +22,7 @@ class FactorInvGrowth(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['invtq']
         inv_growth = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli', columns=columns)
-        inv_growth = get_stocks_data(inv_growth, stock)
+        inv_growth = get_stocks_data(inv_growth, self.stock)
 
         # Convert CPI to multiindex
         medianCPI = pd.read_csv(get_load_data_large_dir() / 'macro' / 'medianCPI.csv')
@@ -31,13 +31,16 @@ class FactorInvGrowth(Factor):
         medianCPI['date'] = (medianCPI['date'] + pd.DateOffset(months=1))
         medianCPI = medianCPI.set_index('date')
         medianCPI = medianCPI[~medianCPI.index.duplicated(keep='first')]
-        factor_values = pd.concat([medianCPI] * len(stock), ignore_index=True).values
-        multi_index = pd.MultiIndex.from_product([stock, medianCPI.index])
+        factor_values = pd.concat([medianCPI] * len(self.stock), ignore_index=True).values
+        multi_index = pd.MultiIndex.from_product([self.stock, medianCPI.index])
         multi_index_factor = pd.DataFrame(factor_values, columns=medianCPI.columns, index=multi_index)
         multi_index_factor.index = multi_index_factor.index.set_names(['permno', 'date'])
 
-        inv_growth = inv_growth.merge(multi_index_factor, left_index=True, right_index=True, how='left')
+        multi_index_factor = multi_index_factor.sort_index()
+        inv_growth = inv_growth.sort_index()
+        multi_index_factor_reindexed = multi_index_factor.reindex(inv_growth.index, method='ffill')
+        inv_growth = inv_growth.merge(multi_index_factor_reindexed, left_index=True, right_index=True)
         inv_growth['invtq'] = inv_growth['invtq'] / inv_growth['medCPI']
-        inv_growth['InvGrowth'] = inv_growth['invtq'] / inv_growth.groupby('permno')['invtq'].shift(12) - 1
+        inv_growth['InvGrowth'] = inv_growth['invtq'] / inv_growth.groupby('permno')['invtq'].shift(6) - 1
         inv_growth = inv_growth[['InvGrowth']]
         self.factor_data = inv_growth

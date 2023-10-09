@@ -2,6 +2,7 @@ from functions.utils.system import *
 from sklearn.cluster import KMeans
 from statsmodels.regression.rolling import RollingOLS
 from sklearn.decomposition import PCA
+from datetime import datetime, timedelta
 from sklearn.linear_model import Ridge
 from timebudget import timebudget
 from statsmodels.regression.linear_model import OLS
@@ -41,16 +42,24 @@ def remove_date(df, threshold):
 
 # ffill for a certain amount of days
 def ffill_max_days(df, max_days):
-    df = df.sort_index()
-    mask = df.index.to_series().diff() > pd.Timedelta(days=max_days)
+    # Create a new dataframe to store the filled values
+    df_filled = df.copy()
 
+    # Loop through all columns in the dataframe
     for col in df.columns:
-        # Set a sentinel value for the next value after a gap of more than max_days
-        sentinel = -99999
-        df.loc[mask.shift(-1).fillna(False), col] = sentinel
-        # Forward fill, but replace sentinel values with NaN afterwards
-        df[col] = df[col].ffill().replace(sentinel, np.nan)
-    return df
+        last_valid_idx = None
+
+        for idx in df_filled.index:
+            # If the current row contains a NaN value
+            if pd.isna(df_filled.at[idx, col]):
+                # If we've seen a valid index before and the gap is within max_days
+                if (last_valid_idx is not None and
+                        (idx - last_valid_idx).days <= max_days):
+                    df_filled.at[idx, col] = df_filled.at[last_valid_idx, col]
+            else:
+                last_valid_idx = idx
+
+    return df_filled
 
 # Returns a list of all stocks in a dataframe
 def get_stock_idx(data):
@@ -221,90 +230,7 @@ def rolling_kmean_pca(data, window_size, n_clusters, name):
 
     return results_clusters_combined
 
-
-# Rolling LR to calculate beta coefficients + predictions + alpha
-def rolling_ols_beta(price, factor_data, factor_col, window, name, ret):
-    betas = []
-    for stock, df in price.groupby(price.index.names[0], group_keys=False):
-        model_data = df[[ret]].merge(factor_data, on='date').dropna()
-        model_data[ret] -= model_data.RF
-        rolling_ols = RollingOLS(endog=model_data[ret],
-                                 exog=sm.add_constant(model_data[factor_col]), window=window)
-        factor_model = rolling_ols.fit(params_only=True).params.rename(columns={'const': 'ALPHA'})
-
-        # Compute predictions of stock's return
-        alpha = factor_model['ALPHA']
-        beta_coef = factor_model[factor_col]
-        factor_ret = model_data[factor_col]
-
-        predictions = []
-        for index, row in factor_ret.iterrows():
-            predictions.append(row @ beta_coef.loc[index] + alpha.loc[index])
-
-        result = factor_model.assign(**{price.index.names[0]: stock}).set_index(price.index.names[0], append=True).swaplevel()
-        result['PRED'] = predictions
-        betas.append(result)
-
-    return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
-
-# Rolling LR to calculate beta coefficients + predictions + alpha
-def rolling_ols_sb_test(price, factor_data, factor_col, window, name, ret):
-    betas = []
-    for stock, df in price.groupby(price.index.names[0], group_keys=False):
-        model_data = df[[ret]].merge(factor_data, on='date').dropna()
-        rolling_ols = RollingOLS(endog=model_data[ret],
-                                 exog=sm.add_constant(model_data[factor_col]), window=window)
-        factor_model = rolling_ols.fit(params_only=True).params.rename(columns={'const': 'ALPHA'})
-
-        # Compute predictions of stock's return
-        alpha = factor_model['ALPHA']
-        beta_coef = factor_model[factor_col]
-        factor_ret = model_data[factor_col]
-
-        predictions = []
-        for index, row in factor_ret.iterrows():
-            predictions.append(row @ beta_coef.loc[index] + alpha.loc[index])
-
-        result = factor_model.assign(**{price.index.names[0]: stock}).set_index(price.index.names[0], append=True).swaplevel()
-        result['PRED'] = predictions
-        betas.append(result)
-
-    return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
-
-
-# Rolling LR to calculate beta coefficients + predictions + alpha + epilson
-def rolling_ols_beta_res(price, factor_data, factor_col, window, name, ret):
-    betas = []
-    for stock, df in price.groupby(price.index.names[0], group_keys=False):
-        model_data = df[[ret]].merge(factor_data, on='date').dropna()
-        model_data[ret] -= model_data.RF
-        rolling_ols = RollingOLS(endog=model_data[ret],
-                                 exog=sm.add_constant(model_data[factor_col]), window=window)
-        factor_model = rolling_ols.fit(params_only=True).params.rename(columns={'const': 'ALPHA'})
-
-        # Compute predictions of stock's return
-        alpha = factor_model['ALPHA']
-        beta_coef = factor_model[factor_col]
-        factor_ret = model_data[factor_col]
-        stock_ret = df.reset_index(price.index.names[0]).drop(columns=price.index.names[0], axis=1)[ret]
-
-        predictions = []
-        epsilons = []
-        for index, row in factor_ret.iterrows():
-            prediction = row @ beta_coef.loc[index] + alpha.loc[index]
-            epsilon = stock_ret.loc[index] - prediction
-            predictions.append(prediction)
-            epsilons.append(epsilon)
-
-        result = factor_model.assign(**{price.index.names[0]: stock}).set_index(price.index.names[0], append=True).swaplevel()
-        result['PRED'] = predictions
-        result['EPSIL'] = epsilons
-        result['EPSIL'] = result['EPSIL'].rolling(window=window).sum() / result['EPSIL'].rolling(window=window).std()
-        betas.append(result)
-
-    return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
-
-# Rolling LR to calculate beta coefficients + predictions + alpha + epilson + idiosyncratic risk
+# Rolling LR to calculate beta coefficients + predictions + alpha + residual momentum + idiosyncratic risk
 def rolling_ols_beta_res_syn(price, factor_data, factor_col, window, name, ret):
     betas = []
     for stock, df in price.groupby(price.index.names[0], group_keys=False):
@@ -331,8 +257,12 @@ def rolling_ols_beta_res_syn(price, factor_data, factor_col, window, name, ret):
         result = factor_model.assign(**{price.index.names[0]: stock}).set_index(price.index.names[0], append=True).swaplevel()
         result['PRED'] = predictions
         result['EPSIL'] = epsilons
-        result['EPSIL_Z'] = result['EPSIL'].rolling(window=window).sum() / result['EPSIL'].rolling(window=window).std()
-        result['IDIO_VOL'] = result['EPSIL'].rolling(window=window).std()
+        result['RESID_MOM_30'] = result['EPSIL'].rolling(window=30).sum() / result['EPSIL'].rolling(window=30).std()
+        result['RESID_MOM_60'] = result['EPSIL'].rolling(window=60).sum() / result['EPSIL'].rolling(window=60).std()
+        result['IDIO_VOL_30'] = result['EPSIL'].rolling(window=30).std()
+        result['IDIO_VOL_60'] = result['EPSIL'].rolling(window=60).std()
+        # result = result.drop('EPSIL', axis=1)
+        # result = result.shift(1)
         betas.append(result)
 
     return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
@@ -370,39 +300,6 @@ def rolling_ols_beta_res_syn(price, factor_data, factor_col, window, name, ret):
     #     betas.append(result)
     #
     # return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
-
-# Rolling LR to calculate predictions + alpha + epilson + idiosyncratic risk
-def rolling_ols_res_syn(price, factor_data, factor_col, window, name, ret):
-    betas = []
-    for stock, df in price.groupby(price.index.names[0], group_keys=False):
-        model_data = df[[ret]].merge(factor_data, on='date').dropna()
-        model_data[ret] -= model_data.RF
-        rolling_ols = RollingOLS(endog=model_data[ret],
-                                 exog=sm.add_constant(model_data[factor_col]), window=window)
-        factor_model = rolling_ols.fit(params_only=True).params.rename(columns={'const': 'ALPHA'})
-
-        # Compute predictions of stock's return
-        alpha = factor_model['ALPHA']
-        beta_coef = factor_model[factor_col]
-        factor_ret = model_data[factor_col]
-        stock_ret = df.reset_index(price.index.names[0]).drop(columns=price.index.names[0], axis=1)[ret]
-
-        predictions = []
-        epsilons = []
-        for index, row in factor_ret.iterrows():
-            prediction = row @ beta_coef.loc[index] + alpha.loc[index]
-            epsilon = stock_ret.loc[index] - prediction
-            predictions.append(prediction)
-            epsilons.append(epsilon)
-
-        result = factor_model.assign(**{price.index.names[0]: stock}).set_index(price.index.names[0], append=True).swaplevel()
-        result['PRED'] = predictions
-        result['EPSIL'] = epsilons
-        result['IDIO_VOL'] = result['EPSIL'].rolling(window=window).std()
-        result = result[['ALPHA', 'PRED', 'EPSIL', 'IDIO_VOL']]
-        betas.append(result)
-
-    return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
 
 def rolling_ridge_res_syn(price, factor_data, factor_col, window, name, ret, alpha=1.0):
     results = []

@@ -28,15 +28,16 @@ class FactorMomSeason(Factor):
         splice_data = create_return(splice_data, windows=T)
         splice_data = splice_data.fillna(0)
         # Scaling factor for daily data
-        scale_factor = 21
+        scale_factor = 1
 
-        for n in range(23 * scale_factor, 60 * scale_factor, 12 * scale_factor):
-            splice_data[f'temp{n}'] = splice_data['RET_01'].shift(n)
-        # for n in range(2*scale_factor, 5*scale_factor, 1*scale_factor):
-        #     splice_data[f'temp{n}'] = splice_data['RET_01'].shift(n)
+        def compute_mom(group):
+            for n in range(23 * scale_factor, 60 * scale_factor, 12 * scale_factor):
+                group[f'temp{n}'] = group['RET_01'].shift(n)
 
-        splice_data['retTemp1'] = splice_data[[col for col in splice_data.columns if 'temp' in col]].sum(axis=1, skipna=True)
-        splice_data['retTemp2'] = splice_data[[col for col in splice_data.columns if 'temp' in col]].count(axis=1)
-        splice_data['MomSeason'] = splice_data['retTemp1'] / splice_data['retTemp2']
-        splice_data = splice_data[['MomSeason']]
-        return splice_data
+            group['retTemp1'] = group[[col for col in group.columns if 'temp' in col]].sum(axis=1, skipna=True)
+            group['retTemp2'] = group[[col for col in group.columns if 'temp' in col]].count(axis=1)
+            group['MomSeason'] = group['retTemp1'] / group['retTemp2']
+            return group[['MomSeason']]
+
+        result = splice_data.groupby(self.group).apply(compute_mom).reset_index(level=0, drop=True)
+        return result

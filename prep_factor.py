@@ -60,13 +60,17 @@ class PrepFactor:
             date_data = set_timeframe(date_data, self.start, self.end)
             self.data = pd.merge(date_data.loc[self.stock], self.data, left_index=True, right_index=True, how='left')
             self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
-            collect = []
-            for _, df in self.data.groupby('permno'):
-                df = df.reset_index().set_index('date')
-                df = ffill_max_days(df, max_days=31)
-                df = df.reset_index().set_index(['permno', 'date']).sort_index(level=['permno', 'date'])
-                collect.append(df)
-            self.data = pd.concat(collect, axis=0)
+            # collect = []
+            # for _, df in self.data.groupby('permno'):
+                # df = df.reset_index().set_index('date')
+                # df = ffill_max_days(df, max_days=21)
+                # df = df.reset_index().set_index(['permno', 'date']).sort_index(level=['permno', 'date'])
+            #     collect.append(df)
+            # self.data = pd.concat(collect, axis=0)
+            self.data = self.data.groupby('permno').fillna(method='ffill', limit=93)
+
+            if self.kind == 'fundamental':
+                self.data = self.data.groupby('permno').rolling(window=30).mean().reset_index(level=0, drop=True)
             return self.data
 
     def div_price(self):

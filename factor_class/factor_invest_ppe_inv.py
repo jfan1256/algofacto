@@ -22,10 +22,10 @@ class FactorInvestPPEInv(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['atq', 'invtq', 'ppegtq']
         invest = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli', columns=columns)
-        invest = get_stocks_data(invest, stock)
+        invest = get_stocks_data(invest, self.stock)
 
-        invest['tempPPE'] = invest['ppegtq'] - invest.groupby('permno')['ppegtq'].shift(12)
-        invest['tempInv'] = invest['invtq'] - invest.groupby('permno')['invtq'].shift(12)
-        invest['InvestPPEInv'] = (invest['tempPPE'] + invest['tempInv']) / invest.groupby('permno')['atq'].shift(12)
+        invest['tempPPE'] = invest['ppegtq'] - invest.groupby('permno')['ppegtq'].shift(6)
+        invest['tempInv'] = invest['invtq'] - invest.groupby('permno')['invtq'].shift(6)
+        invest['InvestPPEInv'] = (invest['tempPPE'] + invest['tempInv']) / invest.groupby('permno')['atq'].shift(6)
         invest = invest[['InvestPPEInv']]
         self.factor_data = invest

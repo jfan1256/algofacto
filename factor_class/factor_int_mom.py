@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorSBSPYInv(Factor):
+class FactorIntMom(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -21,27 +21,22 @@ class FactorSBSPYInv(Factor):
                  window: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
-        self.spy_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_spy.parquet.brotli')
-        self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        self.spy_data = pd.concat([self.spy_data, self.fama_data['RF']], axis=1)
-        self.spy_data = self.spy_data.loc[self.start:self.end]
-        self.spy_data = self.spy_data.fillna(0)
-        self.factor_col = self.spy_data.columns[:-1]
 
     @ray.remote
     def function(self, splice_data):
         T = [1]
         splice_data = create_return(splice_data, windows=T)
         splice_data = splice_data.fillna(0)
+        # Scaling factor for daily data
+        scale_factor = 1
 
-        for t in T:
-            ret = f'RET_{t:02}'
-            # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
-            windows = [30, 60]
-            for window in windows:
-                betas = rolling_ols_beta(price=splice_data, factor_data=self.spy_data, factor_col=self.factor_col, window=window, name=f'{t:02}_INV_SPY', ret=ret)
-                betas = betas[[col for col in betas.columns if col.startswith('spyRet')]]
-                betas = betas.rdiv(1)
-                splice_data = splice_data.join(betas)
+        def compute_intmom(group):
+            group['RET_01'].fillna(0, inplace=True)
+            group['IntMom'] = (1 + group['RET_01'].shift(7)) * (1 + group['RET_01'].shift(8)) * \
+                              (1 + group['RET_01'].shift(9)) * (1 + group['RET_01'].shift(10)) * \
+                              (1 + group['RET_01'].shift(11)) * (1 + group['RET_01'].shift(12)) - 1
+            return group
 
+        result = splice_data.groupby(self.group).apply(compute_intmom).reset_index(level=0, drop=True)
+        splice_data = result[['IntMom']]
         return splice_data
