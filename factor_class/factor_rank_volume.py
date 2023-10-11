@@ -29,14 +29,8 @@ class FactorRankVolume(Factor):
         crsp = crsp.fillna(0)
         collect = []
         for t in T:
-            crsp[f'RANK_VOL_{t:02}'] = crsp[f'VOL_{t:02}'].groupby('date').rank()
+            crsp[f'RANK_VOL_{t:02}'] = crsp[f'VOL_{t:02}'].groupby('date').rank(method='dense')
             crsp = crsp.drop([f'VOL_{t:02}'], axis=1)
-
-            bin_size = 3.4
-            max_compressed_rank = (crsp[f'RANK_VOL_{t:02}'].max() + bin_size - 1) // bin_size
-            crsp[f'RANK_VOL_{t:02}'] = np.ceil(crsp[f'RANK_VOL_{t:02}'] / bin_size)
-            crsp[f'RANK_VOL_{t:02}'] = crsp[f'RANK_VOL_{t:02}'].apply(lambda x: min(x, max_compressed_rank))
-            crsp[f'RANK_VOL_{t:02}'] = crsp[f'RANK_VOL_{t:02}'].replace({np.nan: -1, np.inf: max_compressed_rank}).astype(int)
             rank = crsp[[f'RANK_VOL_{t:02}']]
             collect.append(rank)
         self.factor_data = pd.concat(collect, axis=1)

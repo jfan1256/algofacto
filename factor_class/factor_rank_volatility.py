@@ -29,15 +29,9 @@ class FactorRankVolatility(Factor):
         collect = []
         for t in T:
             crsp[f'VOLATILITY_{t:02}'] = crsp.groupby('permno')[f'RET_{t:02}'].rolling(window=60).std().reset_index(level=0, drop=True)
-            crsp[f'RANK_VOLATILITY_{t:02}'] = crsp[f'VOLATILITY_{t:02}'].groupby('date').rank()
+            crsp[f'RANK_VOLATILITY_{t:02}'] = crsp[f'VOLATILITY_{t:02}'].groupby('date').rank(method='dense')
             crsp = crsp.drop(f'RET_{t:02}', axis=1)
             crsp = crsp.drop(f'VOLATILITY_{t:02}', axis=1)
-
-            bin_size = 3.4
-            max_compressed_rank = (crsp[f'RANK_VOLATILITY_{t:02}'].max() + bin_size - 1) // bin_size
-            crsp[f'RANK_VOLATILITY_{t:02}'] = np.ceil(crsp[f'RANK_VOLATILITY_{t:02}'] / bin_size)
-            crsp[f'RANK_VOLATILITY_{t:02}'] = crsp[f'RANK_VOLATILITY_{t:02}'].apply(lambda x: min(x, max_compressed_rank))
-            crsp[f'RANK_VOLATILITY_{t:02}'] = crsp[f'RANK_VOLATILITY_{t:02}'].replace({np.nan: -1, np.inf: max_compressed_rank}).astype(int)
             rank = crsp[[f'RANK_VOLATILITY_{t:02}']]
             collect.append(rank)
         self.factor_data = pd.concat(collect, axis=1)

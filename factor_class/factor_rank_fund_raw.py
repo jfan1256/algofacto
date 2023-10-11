@@ -59,13 +59,7 @@ class FactorRankFundRaw(Factor):
         # Ranking by each column
         fund_rank = fund_raw[[fund_raw.columns[0]]]
         for col in fund_raw.columns:
-            fund_rank[f'{col}_rank'] = fund_raw.groupby('date')[col].rank()
-
-            bin_size = 3.4
-            max_compressed_rank = (fund_rank[f'{col}_rank'].max() + bin_size - 1) // bin_size
-            fund_rank[f'{col}_rank'] = np.ceil(fund_rank[f'{col}_rank'] / bin_size)
-            fund_rank[f'{col}_rank'] = fund_rank[f'{col}_rank'].apply(lambda x: min(x, max_compressed_rank))
-            fund_rank[f'{col}_rank'] = fund_rank[f'{col}_rank'].replace({np.nan: -1, np.inf: max_compressed_rank}).astype(int)
+            fund_rank[f'{col}_rank'] = fund_raw.groupby('date')[col].rank(method='dense')
 
         fund_rank = fund_rank.drop(fund_raw.columns[0], axis=1)
         self.factor_data = fund_rank

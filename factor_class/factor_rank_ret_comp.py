@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorRankIndMom(Factor):
+class FactorRankRetComp(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -20,23 +20,13 @@ class FactorRankIndMom(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-
-        price_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
-        ind_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_ind.parquet.brotli')
-        price_data = get_stocks_data(price_data, self.stock)
-        ind_data = get_stocks_data(ind_data, self.stock)
-
-        combine = pd.concat([price_data, ind_data], axis=1)
-
-        T = [1, 2, 5, 10, 30, 60]
-        ret = create_return(combine, windows=T)
-
+        ret_comp = pd.read_parquet(get_factor_data_dir() / 'factor_ret_comp.parquet.brotli')
+        ret_comp = get_stocks_data(ret_comp, self.stock)
         collect = []
-        for t in T:
-            ret[f'IndMom_{t:02}'] = ret.groupby(['Industry', 'date'])[f'RET_{t:02}'].transform('mean')
-            ret[f'indMom_{t:02}_rank'] = ret.groupby(['date'])[f'IndMom_{t:02}'].rank(method='dense')
-            ind_mom = ret[[f'indMom_{t:02}_rank']]
-            collect.append(ind_mom)
+        ret_comp = ret_comp.drop(['Open', 'High', 'Close', 'Low', 'Volume'], axis=1)
+        for col in ret_comp:
+            ret_comp[f'{col}_rank'] = ret_comp[col].groupby('date').rank(method='dense')
+            rank = ret_comp[[f'{col}_rank']]
+            collect.append(rank)
 
         self.factor_data = pd.concat(collect, axis=1)
-

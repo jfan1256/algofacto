@@ -83,9 +83,20 @@ class AlphaModel:
 
     # Renumber Category data to consecutive numbers
     @staticmethod
-    def renumber_cat(factor):
+    def renumber_cat(factor, date):
         category_mapping = {}
+        max_categories = 259
         for col in factor.columns:
+            if date:
+                # Set max bin size to 259
+                max_rank = factor[col].max()
+                bin_size = np.ceil(max_rank / max_categories) + 0.2
+                max_compressed_rank = (max_rank + bin_size - 1) // bin_size
+                factor[col] = np.ceil(factor[col] / bin_size)
+                factor[col] = factor[col].apply(lambda x: min(x, max_compressed_rank))
+                factor[col] = factor[col].replace({np.nan: -1, np.inf: max_compressed_rank}).astype(int)
+
+            # Convert to lightgbm format (0, 1, 2.....)
             unique_categories = factor[col].unique()
             category_mapping[col] = {category: i for i, category in enumerate(unique_categories)}
             factor[col] = factor[col].map(category_mapping[col])
@@ -117,20 +128,29 @@ class AlphaModel:
                 self.data = self.data.dropna(subset=[f'TARGET_{self.lookahead}D'])
 
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Adding to {self.model_name}', animation=spinner_animation)
-    def add_factor(self, factor, categorical=False, normalize=False):
+    def add_factor(self, factor, categorical=False, normalize=False, date=False):
         # If self.data is None then concat, else join
-        def condition_add():
+        def condition_add(factor):
             if self.data is None:
-                self.data = pd.concat([self.data, factor], axis=1)
+                self.data = factor
             else:
-                self.data = pd.merge(self.data, factor, left_index=True, right_index=True, how='left')
-                self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
+                self.data = self.data.merge(factor, left_index=True, right_index=True, how='left')
+                # Shouldn't need to do this as PrepFactor handles all duplicate indices
+                # self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
+
+                # The stupidest **** I've seen in regard to pandas (merge converts int datatypes to float????)
+                if all(col in self.categorical for col in factor.columns):
+                    self.data[factor.columns] = self.data[factor.columns].fillna(-9999).astype(int)
 
         if categorical:
             self.categorical = self.categorical + factor.columns.tolist()
-            factor = self.renumber_cat(factor)
-            """self.data = pd.concat([self.data, factor], axis=1)"""
-            condition_add()
+            if 'lightgbm' in self.model_name:
+                factor = self.renumber_cat(factor, date)
+                condition_add(factor)
+            elif 'catboost' in self.model_name:
+                factor = factor * 2
+                factor = factor.fillna(-9999).astype(int)
+                condition_add(factor)
         else:
             if normalize:
                 factor = factor.replace([np.inf, -np.inf], np.nan)
@@ -141,12 +161,10 @@ class AlphaModel:
                     return pd.DataFrame(value, index=group.index, columns=group.columns)
 
                 factor = factor.groupby(level='date').apply(normalize)
-                """self.data = pd.concat([self.data, factor], axis=1)"""
-                condition_add()
+                condition_add(factor)
 
             else:
-                """self.data = pd.concat([self.data, factor], axis=1)"""
-                condition_add()
+                condition_add(factor)
 
     @staticmethod
     def pretrain(data, pretrain_len):
@@ -207,44 +225,8 @@ class AlphaModel:
             yield train_idx, test_idx
 
     @staticmethod
-    def get_feature_gain(model):
-        fi = model.feature_importance(importance_type='gain')
-        return pd.Series(fi / fi.sum(), index=model.feature_name())
-
-    @staticmethod
-    def get_feature_split(model):
-        fi = model.feature_importance(importance_type='split')
-        return pd.Series(fi / fi.sum(), index=model.feature_name())
-
-    def plot_beeswarm_gbm(self, sv, explainer, X, key, i):
-        if self.pred == 'price':
-            shap.plots.beeswarm(sv, max_display=80, show=False)
-            plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
-            plt.close()
-        elif self.pred == 'sign':
-            values = explainer.shap_values(X)
-            shap.summary_plot(values, feature_names=X.columns.tolist(), max_display=80, show=False)
-            plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
-            plt.close()
-
-    def plot_waterfall_gbm(self, sv, key, i):
-        shap.plots.waterfall(sv[0], max_display=80, show=False)
-        plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{key}' / f'waterfall_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
-        plt.close()
-
-    def plot_beeswarm_cb(self, sv, X, key, i):
-        shap.summary_plot(sv, X, max_display=80, show=False)
-        plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
-        plt.close()
-
-    def plot_waterfall_cb(self, sv, key, i):
-        shap.plots.waterfall(sv[0], max_display=80, show=False)
-        plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{key}' / f'waterfall_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
-        plt.close()
-
-    @staticmethod
     def plot_histo(pred, ret, date):
-        pred = pred['150'].loc[pred.index.get_level_values('date') == date]
+        pred = pred[pred.columns[0]].loc[pred.index.get_level_values('date') == date]
         ret = ret.RET_01.loc[ret.index.get_level_values('date') == date]
         plt.hist(pred, bins='auto', edgecolor='black', alpha=0.5, label=f"Pred: {date}")
         plt.hist(ret, bins='auto', edgecolor='red', alpha=0.5, label=f"Real: {date}")
@@ -257,9 +239,33 @@ class AlphaModel:
     def lightgbm(self):
         print('List of categorical inputs:')
         print(self.categorical)
+        print(f'Length: {len(self.categorical)}')
         def model_training(trial):
             # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
             # ------------------------------------------------------------------FUNCTIONS WITHIN MODEL_TRAINING------------------------------------------------------------------------------
+            def plot_beeswarm_gbm(sv, explainer, X, key, i):
+                if self.pred == 'price':
+                    shap.plots.beeswarm(sv, max_display=80, show=False)
+                    plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                    plt.close()
+                elif self.pred == 'sign':
+                    values = explainer.shap_values(X)
+                    shap.summary_plot(values, feature_names=X.columns.tolist(), max_display=80, show=False)
+                    plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                    plt.close()
+
+            def plot_waterfall_gbm(sv, key, i):
+                shap.plots.waterfall(sv[0], max_display=80, show=False)
+                plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{key}' / f'waterfall_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                plt.close()
+            def get_feature_gain(model):
+                fi = model.feature_importance(importance_type='gain')
+                return pd.Series(fi / fi.sum(), index=model.feature_name())
+
+            def get_feature_split(model):
+                fi = model.feature_importance(importance_type='split')
+                return pd.Series(fi / fi.sum(), index=model.feature_name())
+
             def custom_loss(y_pred, dataset):
                 y_true = dataset.get_label()
                 penalty = 0.1
@@ -343,8 +349,12 @@ class AlphaModel:
 
                 if self.pretrain_len > 0:
                     # Pre-train model
+                    print("-" * 60)
                     print("Pretrain model......")
                     print("-" * 60)
+                    start_train = data_pretrain.index.get_level_values('date')[pretrain_idx[0]].strftime('%Y-%m-%d')
+                    end_train = data_pretrain.index.get_level_values('date')[pretrain_idx[-1]].strftime('%Y-%m-%d')
+                    print(f'Pretraining from {start_train} to {end_train}:')
                     lgb_pretrain = lgb_data_pretrain.subset(used_indices=pretrain_idx.tolist()).construct()
                     prev_model = lgb.train(params=params, train_set=lgb_pretrain, num_boost_round=1000)
 
@@ -361,6 +371,10 @@ class AlphaModel:
 
                 # Iterate over wfo periods
                 for i, (train_idx, test_idx) in enumerate(opt):
+                    start_train = data_train.index.get_level_values('date')[train_idx[0]].strftime('%Y-%m-%d')
+                    end_train = data_train.index.get_level_values('date')[test_idx[-1]].strftime('%Y-%m-%d')
+                    print(f'Training/Testing from {start_train} to {end_train}:')
+
                     if self.early:
                         # Select train subset save last 30 for validation
                         lgb_train = lgb_data_train.subset(used_indices=train_idx.tolist()[:-self.valid_len]).construct()
@@ -368,15 +382,16 @@ class AlphaModel:
                         lgb_early_stop = lgb.early_stopping(100)
 
                         # Early stop on MSE
+                        print('Start training......')
                         track_training = time.time()
                         evals = {}
                         if self.incr:
                             model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000,
                                               callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
 
-                            # Retrain on entire dataset with less num_boost_round
+                            """# Retrain on entire dataset with less num_boost_round
                             whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
-                            model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)
+                            model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)"""
 
                             # Store this model for next fold
                             prev_model = model
@@ -389,6 +404,7 @@ class AlphaModel:
                     else:
                         # Select train subset
                         lgb_train = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
+                        print('Start training......')
                         track_training = time.time()
                         if self.incr:
                             model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, num_boost_round=1000)
@@ -414,11 +430,11 @@ class AlphaModel:
                     test_ret = test_set.loc[:, ret]
                     if self.pred == 'price':
                         print('Predicting......')
-                        test_pred_ret = {str(n): model.predict(test_factors, num_iteration=n) for n in num_iterations}
+                        test_pred_ret = {str(n): model.predict(test_factors) if n == 1000 else model.predict(test_factors, num_iteration=n) for n in num_iterations}
                         print("-" * 60)
                     elif self.pred == 'sign':
                         print('Predicting......')
-                        test_pred_ret = {str(n): (2 * (model.predict(test_factors, num_iteration=n) >= 0.5).astype(int) - 1) for n in num_iterations}
+                        test_pred_ret = {str(n): (2 * (model.predict(test_factors) >= 0.5).astype(int) - 1) if n == 1000 else (2 * (model.predict(test_factors, num_iteration=n) >= 0.5).astype(int) - 1) for n in num_iterations}
                         print("-" * 60)
 
                     # Record predictions for each fold
@@ -433,18 +449,19 @@ class AlphaModel:
                         print('Exporting beeswarm and waterfall SHAP plot......')
                         explainer = shap.TreeExplainer(model)
                         sv = explainer(test_factors)
-                        self.plot_beeswarm_gbm(sv, explainer, test_factors, export_key, i)
+                        plot_beeswarm_gbm(sv, explainer, test_factors, export_key, i)
                         if self.pred == 'price':
-                            self.plot_waterfall_gbm(sv, export_key, i)
-                        print("-" * 60)
+                            plot_waterfall_gbm(sv, export_key, i)
 
                     # Log feature importance and SHAP values
                     if i == 0:
-                        gain = self.get_feature_gain(model).to_frame()
-                        split = self.get_feature_split(model).to_frame()
+                        gain = get_feature_gain(model).to_frame()
+                        split = get_feature_split(model).to_frame()
                     else:
-                        gain[i] = self.get_feature_gain(model)
-                        split[i] = self.get_feature_split(model)
+                        gain[i] = get_feature_gain(model)
+                        split[i] = get_feature_split(model)
+                    print("-" * 60)
+
 
                 if self.early:
                     #Plot training loss and validation loss and track training time
@@ -515,7 +532,7 @@ class AlphaModel:
 
             params = get_parameters()
             param_names = list(params.keys())
-            num_iterations = [150, 200, 300, 400, 500]
+            num_iterations = [150, 200, 300, 400, 500, 750, 1000]
             metric_cols = (param_names + ['time'] + ["dIC_mean_" + str(n) for n in num_iterations])
 
             # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -525,7 +542,7 @@ class AlphaModel:
 
             # Get list of target and features
             ret = sorted(self.data.filter(like='TARGET').columns)
-            factors = self.data.columns.difference(ret).tolist()
+            factors = [col for col in self.data.columns if col not in ret]
 
             # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
             # --------------------------------------------------------------------------PRETRAIN OR NOT--------------------------------------------------------------------------------------
@@ -653,168 +670,301 @@ class AlphaModel:
 
     def catboost(self):
         assert not self.incr, 'Cannot run incremental training with catboost'
-        # Create forward returns
-        self.create_fwd()
+        print('List of categorical inputs:')
+        print(self.categorical)
+        print(f'Length: {len(self.categorical)}')
 
-        # Hyperparameter Options used for GridSearch
-        base_params = dict(task_type='GPU', verbose=150)
+        def model_training(trial):
+            # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            # ------------------------------------------------------------------FUNCTIONS WITHIN MODEL_TRAINING------------------------------------------------------------------------------
+            def plot_beeswarm_cb(sv, X, key, i):
+                shap.summary_plot(sv, X, max_display=80, show=False)
+                plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                plt.close()
 
-        if self.tuning:
-            max_depths = [3, 5, 7, 9]
-            num_leaves_opts = [15]
-            min_child_samples = [20, 250, 500]
-            learning_rate_opts = [.15]
-            l2_leaf_reg_opts = [0.01]
-        else:
-            max_depths = [10]
-            num_leaves_opts = [15]
-            min_child_samples = [60]
-            learning_rate_opts = [.15]
-            l2_leaf_reg_opts = [0.01]
+            def plot_waterfall_cb(sv, key, i):
+                shap.plots.waterfall(sv[0], max_display=80, show=False)
+                plt.savefig(str(get_result() / f'{self.model_name}' / f'params_{key}' / f'waterfall_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                plt.close()
 
-        param_names = ['max_depth', 'learning_rate', 'num_leaves', 'min_child_samples', 'l2_leaf_reg']
-        cv_params = list(product(max_depths, learning_rate_opts, num_leaves_opts, min_child_samples, l2_leaf_reg_opts))
-        n_params = len(cv_params)
+            def get_feature_gain(model):
+                fi = model.get_feature_importance(type="FeatureImportance")
+                feature_names = model.feature_names_
+                return pd.Series(fi / fi.sum(), index=feature_names)
 
-        # Get list of target and features
-        ret = sorted(self.data.filter(like='TARGET').columns)
-        factors = self.data.columns.difference(ret).tolist()
+            def get_feature_split(model):
+                fi = model.get_feature_importance(type="PredictionValuesChange")
+                feature_names = model.feature_names_
+                return pd.Series(fi / fi.sum(), index=feature_names)
 
-        # Iterations for mode boosting
-        num_iterations = [150, 175, 200, 250, 300]
-        """num_iterations = [150, 250, 500, 1000]"""
+            def get_parameters():
+                if self.tuning[0] == 'optuna':
+                    params = {}
+                    for key, spec in self.parameter_specs.items():
+                        method_name = spec['optuna'][0]
+                        if method_name == 'suggest_float':
+                            low, high, *rest = spec['optuna'][1:]
+                            log_val = rest[0] if rest else False
+                            params[key] = trial.suggest_float(key, low, high, log=log_val)
+                        else:
+                            params[key] = getattr(trial, method_name)(key, *spec['optuna'][1:])
+                    return params
+                elif self.tuning[0] == 'gridsearch':
+                    return {key: spec['gridsearch'] for key, spec in self.parameter_specs.items()}
+                elif self.tuning == 'default':
+                    return {key: spec['default'] for key, spec in self.parameter_specs.items()}
 
-        # Metric column names for export
-        if self.pred == 'price':
-            metric_cols = (param_names + ['time'] + ["dIC_mean_" + str(n) for n in num_iterations])
-        elif self.pred == 'sign':
-            metric_cols = (param_names + ['time'] + ["dAS_mean_" + str(n) for n in num_iterations])
+            def train_model(export_key, param_name_train, param_val_train):
+                params = dict(zip(param_name_train, param_val_train))
+                params.update(base_params)
+                # Set up cross-validation and track time
+                T = 0
 
-        # Create new directory named (modelName)
-        shutil.rmtree(get_result() / f'{self.model_name}', ignore_errors=True)
-        os.makedirs(get_result() / f'{self.model_name}')
+                track_wfo = time.time()
 
-        # Randomized grid search
-        if n_params == 1:
-            cvp = [0]
-        else:
-            cvp = np.random.choice(list(range(n_params)), size=int(n_params / 2), replace=False)
-        cv_params_ = [cv_params[i] for i in cvp][:40]
-        print("Number of grid search iterations: " + str(len(cv_params_)))
+                opt_pred, gain, split = [], [], []
+                if self.opt == 'wfo':
+                    n_splits = (get_timeframe_length(data_train) - self.train_len) // self.test_len
+                    opt = self.wfo(data=data_train, n_splits=n_splits, lookahead=self.lookahead, train_period_length=self.train_len, test_period_length=self.test_len)
+                elif self.opt == 'ewo':
+                    n_splits = (get_timeframe_length(data_train)) // self.test_len
+                    opt = self.ewo(data=data_train, n_splits=n_splits, lookahead=self.lookahead, train_period_length=self.train_len, test_period_length=self.test_len)
 
-        # Get start date and end date for train data
-        data_train = self.data.loc[:, factors + ret]
-        start_date_train = str(data_train.index.get_level_values('date')[0].date())
-        end_date_train = str(data_train.index.get_level_values('date')[-1].date())
-        print("Train: " + str(start_date_train) + " --> " + str(end_date_train))
-        print("-" * 60)
-
-        # Pool dataset
-        catboost_data_train = Pool(data=data_train.drop(ret, axis=1), label=data_train[ret], cat_features=self.categorical)
-
-        # Set up cross-validation and track time
-        T = 0
-        n_splits = (get_timeframe_length(data_train) - self.train_len) // self.test_len
-
-        # Iterate over (shuffled) hyperparameter combinations
-        for p, param_vals in enumerate(cv_params_):
-            key = '_'.join([str(p) for p in param_vals])
-            os.makedirs(get_result() / f'{self.model_name}' / f'params_{key}')
-
-            # Add additional Params
-            params = dict(zip(param_names, param_vals))
-            params.update(base_params)
-
-            if self.pred == 'price':
-                params['loss_function'] = 'RMSE'
-                params['grow_policy'] = 'Lossguide'
-            elif self.pred == 'sign':
-                params['loss_function'] = 'Logloss'
-
-            track_wfo = time.time()
-            wfo_pred, fi = [], []
-            wfo = self.wfo(data=data_train, n_splits=n_splits, lookahead=self.lookahead, train_period_length=self.train_len, test_period_length=self.test_len)
-
-            print("Train model......")
-            print("-" * 60)
-
-            # Iterate over wfo periods
-            for i, (train_idx, test_idx) in enumerate(wfo):
-                # Select train subset save last 30 for validation
-                catboost_train = catboost_data_train.slice(train_idx[:-30].tolist())
-                catboost_val = catboost_data_train.slice(train_idx[-30:].tolist())
-
-                # Early stop on MSE
-                track_early_stopping = time.time()
-                if self.pred == 'price':
-                    model = CatBoostRegressor(iterations=1000, eval_metric='RMSE', **params)
-                elif self.pred == 'sign':
-                    model = CatBoostClassifier(iterations=1000, eval_metric='AUC', **params)
-                model.fit(catboost_train, eval_set=catboost_val, early_stopping_rounds=100)
-                print('Train time:', round(time.time() - track_early_stopping, 2), 'seconds')
+                print("Train model......")
                 print("-" * 60)
 
-                # Capture predictions
-                test_set = data_train.iloc[test_idx, :]
-                test_factors = test_set.loc[:, model.feature_names_]
-                test_ret = test_set.loc[:, ret]
-                if self.pred == 'price':
-                    test_pred_ret = {str(n): model.predict(test_factors, ntree_end=n) for n in num_iterations}
-                elif self.pred == 'sign':
-                    test_pred_ret = {str(n): (model.predict(test_factors, ntree_end=n) >= 0.5).astype(int) for n in num_iterations}
+                # Iterate over wfo periods
+                for i, (train_idx, test_idx) in enumerate(opt):
+                    start_train = data_train.index.get_level_values('date')[train_idx[0]].strftime('%Y-%m-%d')
+                    end_train = data_train.index.get_level_values('date')[test_idx[-1]].strftime('%Y-%m-%d')
+                    print(f'Training/Testing from {start_train} to {end_train}:')
+                    if self.early:
+                        # Select train subset save last 30 for validation
+                        catboost_train = catboost_data_train.slice(train_idx[:-self.valid_len].tolist())
+                        catboost_val = catboost_data_train.slice(train_idx[-self.valid_len:].tolist())
 
-                # Record predictions for each fold
-                wfo_pred.append(test_ret.assign(**test_pred_ret).assign(i=i))
+                        # Early stop on MSE
+                        print('Start training......')
+                        track_early_stopping = time.time()
+                        if self.pred == 'price':
+                            model = CatBoostRegressor(iterations=1000, eval_metric='RMSE', **params)
+                        elif self.pred == 'sign':
+                            model = CatBoostClassifier(iterations=1000, eval_metric='AUC', **params)
 
-                # Record shap value
-                if i == 0 or i == n_splits // 2 or i == n_splits - 1:
-                    print('Exporting beeswarm and waterfall SHAP plot......')
-                    explainer = shap.TreeExplainer(model)
-                    sv = explainer.shap_values(Pool(test_factors, test_ret, cat_features=self.categorical))
-                    sv_wf = explainer(test_factors)
-                    self.plot_beeswarm_cb(sv, test_factors, key, i)
-                    self.plot_waterfall_cb(sv_wf, key, i)
+                        model.fit(catboost_train, eval_set=catboost_val, early_stopping_rounds=100, use_best_model=True)
+
+                        if self.plot_loss:
+                            evals_result = model.get_evals_result()
+                            train_rmse = evals_result['learn']['RMSE']
+                            val_rmse = evals_result['validation']['RMSE']
+                            plt.plot(train_rmse, label='Train RMSE')
+                            plt.plot(val_rmse, label='Validation RMSE')
+                            plt.xlabel('Iterations')
+                            plt.ylabel('RMSE')
+                            plt.legend()
+                            plt.show()
+
+                        print('Train time:', round(time.time() - track_early_stopping, 2), 'seconds')
+                    else:
+                        # Select train subset save last 30 for validation
+                        catboost_train = catboost_data_train.slice(train_idx.tolist())
+
+                        # Early stop on MSE
+                        track_early_stopping = time.time()
+                        if self.pred == 'price':
+                            model = CatBoostRegressor(iterations=1000, eval_metric='RMSE', **params)
+                        elif self.pred == 'sign':
+                            model = CatBoostClassifier(iterations=1000, eval_metric='AUC', **params)
+                        model.fit(catboost_train)
+                        print('Train time:', round(time.time() - track_early_stopping, 2), 'seconds')
+
+                    # Capture predictions
+                    test_set = data_train.iloc[test_idx, :]
+                    test_factors = test_set.loc[:, model.feature_names_]
+                    test_ret = test_set.loc[:, ret]
+                    print('Predicting......')
+                    if self.pred == 'price':
+                        test_pred_ret = {str(n): model.predict(test_factors) for n in num_iterations}
+                        # test_pred_ret = {str(n): model.predict(test_factors, ntree_end=n) for n in num_iterations}
+                    elif self.pred == 'sign':
+                        test_pred_ret = {str(n): (model.predict(test_factors) >= 0.5).astype(int) for n in num_iterations}
+                        # test_pred_ret = {str(n): (model.predict(test_factors, ntree_end=n) >= 0.5).astype(int) for n in num_iterations}
+
+                    # Record predictions for each fold
+                    opt_pred.append(test_ret.assign(**test_pred_ret).assign(i=i))
+
+                    # Plot hist
+                    if self.plot_hist:
+                        self.plot_histo(test_ret.assign(**test_pred_ret).assign(i=i), self.actual_return, data_train.iloc[train_idx].index.get_level_values('date')[-1] + timedelta(days=5))
+
+                    # # Record shap value
+                    # if i == 0 or i == n_splits // 2 or i == n_splits - 1:
+                    #     print('Exporting beeswarm and waterfall SHAP plot......')
+                    #     explainer = shap.TreeExplainer(model)
+                    #     sv = explainer.shap_values(Pool(test_factors, test_ret, cat_features=self.categorical))
+                    #     sv_wf = explainer(test_factors)
+                    #     plot_beeswarm_cb(sv, test_factors, key, i)
+                    #     plot_waterfall_cb(sv_wf, key, i)
+                    #     print("-" * 60)
+
+                    # Log feature importance and SHAP values
+                    if i == 0:
+                        gain = get_feature_gain(model).to_frame()
+                        split = get_feature_split(model).to_frame()
+                    else:
+                        gain[i] = get_feature_gain(model)
+                        split[i] = get_feature_split(model)
                     print("-" * 60)
 
-            # Combine fold results and set params string
-            params = {key: value.__name__ if callable(value) else value for key, value in params.items()}
-            all_pred_ret = pd.concat(wfo_pred).assign(**params)
+                # Combine fold results and set params string
+                params = {key: value.__name__ if callable(value) else value for key, value in params.items()}
+                all_pred_ret = pd.concat(opt_pred).assign(**params)
 
-            # Compute IC or AS per day
-            by_day = all_pred_ret.groupby(level='date')
+                # Compute IC or AS per day
+                by_day = all_pred_ret.groupby(level='date')
+                if self.pred == 'price':
+                    ic_by_day = pd.concat([by_day.apply(lambda x: spearmanr(x[ret], x[str(n)])[0]).to_frame(n) for n in num_iterations], axis=1)
+                    # ic_by_day = pd.concat([by_day.apply(lambda x: spearmanr(x[ret], x[str(n)])[0]).to_frame(n) for n in num_iterations], axis=1)
+                    daily_ic_mean = list(ic_by_day.mean())
+                elif self.pred == 'sign':
+                    as_by_day = pd.concat([by_day.apply(lambda x: accuracy_score(x[ret], x[str(n)])).to_frame(n) for n in num_iterations], axis=1)
+                    daily_as_mean = list(as_by_day.mean())
+
+                # Record training time for this model
+                t = time.time() - track_wfo
+                T += t
+
+                # Collect and print metrics
+                if self.pred == 'price':
+                    metrics = pd.Series(list(param_val_train) + [t] + daily_ic_mean, index=metric_cols)
+                    metrics = metrics.to_frame().T
+                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | dIC_mean max: {ic_by_day.mean().max(): 6.2%}'
+                    ic_by_day.columns = ic_by_day.columns.map(str)
+                    ic_by_day.assign(**params).to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'dailyIC.parquet.brotli', compression='brotli')
+                elif self.pred == 'sign':
+                    metrics = pd.Series(list(param_val_train) + [t] + daily_as_mean, index=metric_cols)
+                    metrics = metrics.to_frame().T
+                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | dAS_mean max: {as_by_day.mean().max(): 6.2%}'
+                    as_by_day.columns = as_by_day.columns.map(str)
+                    as_by_day.assign(**params).to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'dailyAS.parquet.brotli', compression='brotli')
+
+                # Print params
+                for metric_name in param_name_train:
+                    msg += f" | {metric_name}: {metrics[metric_name].iloc[0]}"
+                print(msg)
+                print("-" * 60)
+
+                # Export results
+                self.actual_return.to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'returns.parquet.brotli', compression='brotli')
+                metrics.to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'metrics.parquet.brotli', compression='brotli')
+                gain.T.describe().T.assign(**params).to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'gain.parquet.brotli', compression='brotli')
+                split.T.describe().T.assign(**params).to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'split.parquet.brotli', compression='brotli')
+                all_pred_ret.to_parquet(get_result() / f'{self.model_name}' / f'params_{export_key}' / 'predictions.parquet.brotli', compression='brotli')
+
+                if self.tuning[0] == 'optuna':
+                    if self.pred == 'price':
+                        objective_value = ic_by_day.mean().max()
+                        return objective_value
+                    elif self.pred == 'sign':
+                        objective_value = as_by_day.mean().max()
+                        return objective_value
+
+            # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            # ----------------------------------------------------------------------TUNING PARAMETERS----------------------------------------------------------------------------------------
+            # Hyperparameter Options used for Optuna, GridSearch, or None
             if self.pred == 'price':
-                ic_by_day = pd.concat([by_day.apply(lambda x: spearmanr(x[ret], x[str(n)])[0]).to_frame(n) for n in num_iterations], axis=1)
-                daily_ic_mean = list(ic_by_day.mean())
+                base_params = dict(task_type='GPU', verbose=150, loss_function='RMSE', grow_policy='Lossguide', devices='0')
             elif self.pred == 'sign':
-                as_by_day = pd.concat([by_day.apply(lambda x: accuracy_score(x[ret], x[str(n)])).to_frame(n) for n in num_iterations], axis=1)
-                daily_as_mean = list(as_by_day.mean())
+                base_params = dict(task_type='GPU', verbose=150, loss_function='Logloss', devices='0')
 
-            # Record training time for this model
-            t = time.time() - track_wfo
-            T += t
+            params = get_parameters()
+            param_names = list(params.keys())
+            # num_iterations = [150, 200, 300, 400, 500]
+            num_iterations = [1000]
+            metric_cols = (param_names + ['time'] + ["dIC_mean_" + str(n) for n in num_iterations])
 
-            # Collect and print metrics
-            if self.pred == 'price':
-                metrics = pd.Series(list(param_vals) + [t] + daily_ic_mean, index=metric_cols)
-                metrics = metrics.to_frame().T
-                msg = f'\t{p:3.0f} | {format_time(T)} ({t:3.0f} seconds) | dIC_mean max: {ic_by_day.mean().max(): 6.2%}'
-                ic_by_day.columns = ic_by_day.columns.map(str)
-                ic_by_day.assign(**params).to_parquet(get_result() / f'{self.model_name}' / f'params_{key}' / 'dailyIC.parquet.brotli', compression='brotli')
-            elif self.pred == 'sign':
-                metrics = pd.Series(list(param_vals) + [t] + daily_as_mean, index=metric_cols)
-                metrics = metrics.to_frame().T
-                msg = f'\t{p:3.0f} | {format_time(T)} ({t:3.0f} seconds) | dAS_mean max: {as_by_day.mean().max(): 6.2%}'
-                as_by_day.columns = as_by_day.columns.map(str)
-                as_by_day.assign(**params).to_parquet(get_result() / f'{self.model_name}' / f'params_{key}' / 'dailyAS.parquet.brotli', compression='brotli')
+            # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------CREATING LABELS--------------------------------------------------------------------------------------
+            # Create forward returns
+            self.create_fwd()
 
-            for metric_name in param_names:
-                value = metrics[metric_name].iloc[0]
-                msg += f" | {metric_name}: {value}"
-            print(msg)
+            # Get list of target and features
+            ret = sorted(self.data.filter(like='TARGET').columns)
+            factors = [col for col in self.data.columns if col not in ret]
+
+
+            # Get start date and end date for train data
+            data_train = self.data.loc[:, factors + ret]
+            start_date_train = str(data_train.index.get_level_values('date')[0].date())
+            end_date_train = str(data_train.index.get_level_values('date')[-1].date())
+            print("Train: " + str(start_date_train) + " --> " + str(end_date_train))
             print("-" * 60)
 
-            # Export results
-            self.actual_return.to_parquet(get_result() / f'{self.model_name}' / f'params_{key}' / 'returns.parquet.brotli', compression='brotli')
-            metrics.to_parquet(get_result() / f'{self.model_name}' / f'params_{key}' / 'metrics.parquet.brotli', compression='brotli')
-            fi.T.describe().T.assign(**params).to_parquet(get_result() / f'{self.model_name}' / f'params_{key}' / 'fi.parquet.brotli', compression='brotli')
-            all_pred_ret.to_parquet(get_result() / f'{self.model_name}' / f'params_{key}' / 'predictions.parquet.brotli', compression='brotli')
+            # Pool dataset
+            catboost_data_train = Pool(data=data_train.drop(ret, axis=1), label=data_train[ret], cat_features=self.categorical)
+
+            # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------TRAINING MODEL---------------------------------------------------------------------------------------
+            # Training model with optuna, gridsearch, or none
+            if self.tuning[0] == 'optuna':
+                # Get param values
+                param_vals = list(params.values())
+                key = '_'.join([str(float(p)) for p in param_vals])
+                print(f'Key: {key}')
+                os.makedirs(get_result() / f'{self.model_name}' / f'params_{key}')
+
+                # Train model and return IC score for optuna
+                return train_model(key, param_names, param_vals)
+            elif self.tuning[0] == 'gridsearch':
+                # Create all possible combinations of params
+                cv_params = list(product(*params.values()))
+                n_params = len(cv_params)
+
+                # Randomized grid search
+                cvp = np.random.choice(list(range(n_params)), size=int(n_params / 2), replace=False)
+                cv_params_ = [cv_params[i] for i in cvp][:self.tuning[1]]
+                print("Number of gridsearch iterations: " + str(len(cv_params_)))
+
+                # Iterate over (shuffled) hyperparameter combinations
+                for p, param_vals in enumerate(cv_params_):
+                    key = '_'.join([str(float(p)) for p in param_vals])
+                    print(f'Key: {key}')
+                    os.makedirs(get_result() / f'{self.model_name}' / f'params_{key}')
+
+                    # Train model
+                    train_model(key, param_names, param_vals)
+            elif self.tuning == 'default':
+                # Get param values
+                param_vals = list(params.values())
+                key = '_'.join([str(float(p)) for p in param_vals])
+                print(f'Key: {key}')
+                os.makedirs(get_result() / f'{self.model_name}' / f'params_{key}')
+
+                # Train model
+                train_model(key, param_names, param_vals)
+
+        # ===============================================================================================================================================================================
+        # --------------------------------------------------------------------------MODEL_TRAINING()-------------------------------------------------------------------------------------
+        if self.tuning[0] == 'optuna':
+            # Create new directory named (modelName)
+            shutil.rmtree(get_result() / f'{self.model_name}', ignore_errors=True)
+            os.makedirs(get_result() / f'{self.model_name}')
+
+            # Execute train
+            study = optuna.create_study(direction="maximize")
+            study.optimize(model_training, n_trials=self.tuning[1])
+            print("Number of finished trials: {}".format(len(study.trials)))
+            print("Best trial:")
+            trial = study.best_trial
+            print("     IC: {}".format(trial.value))
+            print("     Params: ")
+            for name, number in trial.params.items():
+                print("         {}: {}".format(name, number))
+            print("-" * 60)
+        else:
+            # Create new directory named (modelName)
+            shutil.rmtree(get_result() / f'{self.model_name}', ignore_errors=True)
+            os.makedirs(get_result() / f'{self.model_name}')
+
+            # Execute train
+            model_training(None)

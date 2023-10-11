@@ -28,13 +28,7 @@ class FactorRankSBLagBond(Factor):
         # Ranking by each column
         sb_rank = sb_lag[[sb_lag.columns[0]]]
         for col in filtered_columns:
-            sb_rank[f'{col}_rank'] = sb_lag.groupby('date')[col].rank()
-
-            bin_size = 3.4
-            max_compressed_rank = (sb_rank[f'{col}_rank'].max() + bin_size - 1) // bin_size
-            sb_rank[f'{col}_rank'] = np.ceil(sb_rank[f'{col}_rank'] / bin_size)
-            sb_rank[f'{col}_rank'] = sb_rank[f'{col}_rank'].apply(lambda x: min(x, max_compressed_rank))
-            sb_rank[f'{col}_rank'] = sb_rank[f'{col}_rank'].replace({np.nan: -1, np.inf: max_compressed_rank}).astype(int)
+            sb_rank[f'{col}_rank'] = sb_lag.groupby('date')[col].rank(method='dense')
 
         sb_rank = sb_rank.drop([sb_lag.columns[0]], axis=1)
         self.factor_data = sb_rank

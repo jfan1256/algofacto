@@ -99,17 +99,18 @@ from factor_class.factor_rank_sb_fama import FactorRankSBFama
 from factor_class.factor_rank_sb_lag_bond import FactorRankSBLagBond
 from factor_class.factor_rank_sb_pca import FactorRankSBPCA
 from factor_class.factor_rank_sb_inverse import FactorRankSBInverse
-
-
+from factor_class.factor_ret_comp import FactorRetComp
+from factor_class.factor_rank_ret_comp import FactorRankRetComp
 
 start = '2005-01-01'
 end = '2023-01-01'
 permno = read_stock(get_load_data_large_dir() / 'permno_to_train_fund.csv')
-# permno = read_stock(get_load_data_large_dir() / 'permno_to_train.csv')
 
 ray.init(num_cpus=16, ignore_reinit_error=True)
 start_time = time.time()
 
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------FACTORS TO CREATE---------------------------------------------------------------------------------
 # FactorRet(file_name='factor_ret', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorSign(file_name='factor_sign', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorVolatility(file_name='factor_volatility', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
@@ -134,18 +135,12 @@ start_time = time.time()
 # FactorClustLoadVolume(file_name='factor_clust_load_volume', stock='all', start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=60, cluster=15).create_factor()
 # FactorTotal(file_name='factor_total', skip=True, stock=permno, start=start, end=end, group='permno').create_factor()
 # FactorInd(file_name='factor_ind', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorIndMom(file_name='factor_ind_mom', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorClustIndMom(file_name='factor_clust_ind_mom', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=60, cluster=15).create_factor()
 # FactorCondIndMom(file_name='factor_cond_ind_mom', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorIndVWR(file_name='factor_ind_vwr', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorIndFama(file_name='factor_ind_fama', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorIndMomFama(file_name='factor_ind_mom_fama', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorClustIndMomFama(file_name='factor_clust_ind_mom_fama', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=60, cluster=15).create_factor()
 # FactorCondIndMomFama(file_name='factor_cond_ind_mom_fama', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorIndVWRFama(file_name='factor_ind_vwr_fama', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorIndSub(file_name='factor_ind_sub', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorIndMomSub(file_name='factor_ind_mom_sub', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorClustIndMomSub(file_name='factor_clust_ind_mom_sub', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=60, cluster=15).create_factor()
 # FactorCondIndMomSub(file_name='factor_cond_ind_mom_sub', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorIndVWRSub(file_name='factor_ind_vwr_sub', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorAgeMom(file_name='factor_age_mom', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
@@ -174,6 +169,7 @@ start_time = time.time()
 # FactorRFRet(file_name='factor_rf_ret', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorSBSector(file_name='factor_sb_sector', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorSBFama(file_name='factor_sb_fama', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorSBPCA(file_name='factor_sb_pca', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorSBLagBond(file_name='factor_sb_lag_bond', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorSBOverall(file_name='factor_sb_overall', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorSBInd(file_name='factor_sb_ind', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
@@ -183,18 +179,25 @@ start_time = time.time()
 # FactorRankVolume(file_name='factor_rank_volume', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorRankVolatility(file_name='factor_rank_volatility', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorRankIndVWR(file_name='factor_rank_ind_vwr', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorRankIndVWRFama(file_name='factor_rank_ind_vwr_fama', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorRankIndVWRSub(file_name='factor_rank_ind_vwr_sub', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorRankIndMom(file_name='factor_rank_ind_mom', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorRankIndMomFama(file_name='factor_rank_ind_mom_fama', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorRankIndVWRFama(file_name='factor_rank_ind_vwr_fama', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorRankIndMomFama(file_name='factor_rank_ind_mom_fama', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorRankIndVWRSub(file_name='factor_rank_ind_vwr_sub', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorRankIndMomSub(file_name='factor_rank_ind_mom_sub', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorRankLoadRet(file_name='factor_rank_load_ret', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorRankLoadVolume(file_name='factor_rank_load_volume', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorRankSBFama(file_name='factor_rank_sb_fama', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorRankSBLagBond(file_name='factor_rank_sb_lag_bond', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorRankSBPCA(file_name='factor_rank_sb_pca', skip=True, stock=permno, start=start, end=end).create_factor()
-FactorRankSBInverse(file_name='factor_rank_sb_inverse', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorRankSBInverse(file_name='factor_rank_sb_inverse', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorRankRetComp(file_name='factor_rank_ret_comp', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorIndMom(file_name='factor_ind_mom', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorIndMomFama(file_name='factor_ind_mom_fama', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorIndMomSub(file_name='factor_ind_mom_sub', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorClustIndMom(file_name='factor_clust_ind_mom', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=60, cluster=15).create_factor()
+# FactorClustIndMomSub(file_name='factor_clust_ind_mom_sub', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=60, cluster=15).create_factor()
+# FactorClustIndMomFama(file_name='factor_clust_ind_mom_fama', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=60, cluster=15).create_factor()
+# FactorRetComp(file_name='factor_ret_comp', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 
 
 
@@ -202,7 +205,8 @@ FactorRankSBInverse(file_name='factor_rank_sb_inverse', skip=True, stock=permno,
 
 
 
-
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------FACTORS TO SKIP----------------------------------------------------------------------------------
 # FactorClustRet30(file_name='factor_clust_ret30', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=60, cluster=15).create_factor()
 # FactorClustRet60(file_name='factor_clust_ret60', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=60, cluster=15).create_factor()
 # FactorSBBond(file_name='factor_sb_bond', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()

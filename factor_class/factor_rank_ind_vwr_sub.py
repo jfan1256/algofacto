@@ -39,7 +39,7 @@ class FactorRankIndVWRSub(Factor):
 
         for t in T:
             ind_data[f'vwr_{t:02}'] = ind_data['vwr_weight'] * ind_data[f'RET_{t:02}']
-            ind_data[f'rank_vwr_sub_{t:02}'] = ind_data.groupby(['Subindustry', 'date'])[f'vwr_{t:02}'].rank()
+            ind_data[f'rank_vwr_sub_{t:02}'] = ind_data.groupby(['Subindustry', 'date'])[f'vwr_{t:02}'].rank(method='dense')
             collect.append(ind_data[[f'rank_vwr_sub_{t:02}']])
 
         self.factor_data = pd.concat(collect, axis=1)

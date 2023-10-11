@@ -27,7 +27,7 @@ class FactorClustIndMomSub(Factor):
 
         t = 1
         ret = create_return(combine, windows=[t])[[f'RET_{t:02}', 'Subindustry']]
-        avg_ret = ret.groupby(['Subindustry', ret.index.get_level_values('date')])[f'RET_{t:02}'].mean()
+        avg_ret = ret.groupby(['Subindustry', 'date'])[f'RET_{t:02}'].mean()
         ret = ret.reset_index()
         ret = pd.merge(ret, avg_ret.rename('indRET').reset_index(), on=['Subindustry', 'date'], how='left')
         ret[f'IndMomSub_{t:02}'] = ret[f'RET_{t:02}'] / ret['indRET']

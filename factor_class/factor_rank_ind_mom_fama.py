@@ -34,7 +34,7 @@ class FactorRankIndMomFama(Factor):
 
         for t in T:
             ret[f'IndMomFama_{t:02}'] = ret.groupby(['IndustryFama', 'date'])[f'RET_{t:02}'].transform('mean')
-            ret[f'indMomFama_{t:02}_rank'] =  ret.groupby(['IndustryFama', 'date'])[f'IndMomFama_{t:02}'].rank()
+            ret[f'indMomFama_{t:02}_rank'] =  ret.groupby(['date'])[f'IndMomFama_{t:02}'].rank(method='dense')
             ind_mom = ret[[f'indMomFama_{t:02}_rank']]
             collect.append(ind_mom)
 

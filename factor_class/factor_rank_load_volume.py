@@ -26,13 +26,7 @@ class FactorRankLoadVolume(Factor):
         # Ranking by each column
         load_rank = load_data[[load_data.columns[0]]]
         for col in load_data.columns:
-            load_rank[f'{col}_rank'] = load_data.groupby('date')[col].rank()
-
-            bin_size = 3.4
-            max_compressed_rank = (load_rank[f'{col}_rank'].max() + bin_size - 1) // bin_size
-            load_rank[f'{col}_rank'] = np.ceil(load_rank[f'{col}_rank'] / bin_size)
-            load_rank[f'{col}_rank'] = load_rank[f'{col}_rank'].apply(lambda x: min(x, max_compressed_rank))
-            load_rank[f'{col}_rank'] = load_rank[f'{col}_rank'].replace({np.nan: -1, np.inf: max_compressed_rank}).astype(int)
+            load_rank[f'{col}_rank'] = load_data.groupby('date')[col].rank(method='dense')
 
         load_rank = load_rank.drop([load_data.columns[0]], axis=1)
         self.factor_data = load_rank
