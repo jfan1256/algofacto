@@ -73,7 +73,7 @@ class FactorClustFundRaw(Factor):
         cluster = kmeans.fit_predict(splice_data)
 
         # Create a dataframe that matches cluster to stock
-        splice_data['clust_fund_raw'] = cluster
-        splice_data = splice_data[['clust_fund_raw']]
+        splice_data['fund_raw_cluster'] = cluster
+        splice_data = splice_data[['fund_raw_cluster']]
         splice_data.index.names = ['date', self.join]
         return splice_data

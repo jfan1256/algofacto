@@ -22,8 +22,8 @@ class FactorCompDebt(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['dlttq', 'dlcq']
         debt = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli', columns=columns)
-        debt = get_stocks_data(debt, stock)
+        debt = get_stocks_data(debt, self.stock)
         debt['tempBD'] = debt['dlttq'] + debt['dlcq']
-        debt['CompositeDebtIssuance'] = np.log(debt['tempBD'] / debt.groupby('permno')['tempBD'].shift(6))
-        debt = debt[['CompositeDebtIssuance']]
+        debt['comp_debt_iss'] = np.log(debt['tempBD'] / debt.groupby('permno')['tempBD'].shift(6))
+        debt = debt[['comp_debt_iss']]
         self.factor_data = debt

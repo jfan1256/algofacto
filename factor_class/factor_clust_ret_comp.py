@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorClustIndMom(Factor):
+class FactorClustRetComp(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -21,8 +21,9 @@ class FactorClustIndMom(Factor):
                  window: int = None,
                  cluster: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.factor_data = pd.read_parquet(get_factor_data_dir() / 'factor_ind_mom.parquet.brotli')
+        self.factor_data = pd.read_parquet(get_factor_data_dir() / 'factor_ret_comp.parquet.brotli')
         self.cluster = cluster
+        self.factor_data = self.factor_data.drop(['Open', 'Close', 'Low', 'Volume', 'High'], axis=1)
         start_date = datetime.strptime(self.start, '%Y-%m-%d')
         new_start_date = start_date + timedelta(days=0)
         new_start_str = new_start_date.strftime('%Y-%m-%d')

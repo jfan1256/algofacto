@@ -36,8 +36,8 @@ class FactorMomSeason11(Factor):
 
             group['retTemp1'] = group[[col for col in group.columns if 'temp' in col]].sum(axis=1, skipna=True)
             group['retTemp2'] = group[[col for col in group.columns if 'temp' in col]].count(axis=1)
-            group['MomSeason11'] = group['retTemp1'] / group['retTemp2']
-            return group[['MomSeason11']]
+            group['mom_season_11'] = group['retTemp1'] / group['retTemp2']
+            return group[['mom_season_11']]
 
         result = splice_data.groupby(self.group).apply(compute_mom).reset_index(level=0, drop=True)
         return result

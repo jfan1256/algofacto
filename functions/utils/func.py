@@ -255,12 +255,12 @@ def rolling_ols_beta_res_syn(price, factor_data, factor_col, window, name, ret):
             epsilons.append(epsilon)
 
         result = factor_model.assign(**{price.index.names[0]: stock}).set_index(price.index.names[0], append=True).swaplevel()
-        result['PRED'] = predictions
-        result['EPSIL'] = epsilons
-        result['RESID_MOM_30'] = result['EPSIL'].rolling(window=30).sum() / result['EPSIL'].rolling(window=30).std()
-        result['RESID_MOM_60'] = result['EPSIL'].rolling(window=60).sum() / result['EPSIL'].rolling(window=60).std()
-        result['IDIO_VOL_30'] = result['EPSIL'].rolling(window=30).std()
-        result['IDIO_VOL_60'] = result['EPSIL'].rolling(window=60).std()
+        result['pred'] = predictions
+        result['epsil'] = epsilons
+        result['resid_mom_21'] = result['epsil'].rolling(window=21).sum() / result['epsil'].rolling(window=21).std()
+        result['resid_mom_126'] = result['epsil'].rolling(window=126).sum() / result['epsil'].rolling(window=126).std()
+        result['idio_vol_21'] = result['epsil'].rolling(window=21).std()
+        result['idio_vol_126'] = result['epsil'].rolling(window=126).std()
         # result = result.drop('EPSIL', axis=1)
         # result = result.shift(1)
         betas.append(result)

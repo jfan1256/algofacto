@@ -24,10 +24,9 @@ class FactorSign(Factor):
 
     @ray.remote
     def function(self, splice_data):
-        T = [1, 6, 30]
+        T = [1, 21, 126, 252]
         splice_data = create_return(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
         for t in T:
-            splice_data[f'SIGN_RET_{t:02}'] = np.sign(splice_data[f'RET_{t:02}'])
+            splice_data[f'sign_ret_{t:02}'] = np.sign(splice_data[f'RET_{t:02}'])
             splice_data = splice_data.drop([f'RET_{t:02}'], axis=1)
         return splice_data

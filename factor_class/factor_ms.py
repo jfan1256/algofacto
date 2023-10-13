@@ -88,7 +88,7 @@ class FactorMS(Factor):
         ms['m8'] = (ms['xrdqint'] > ms['md_xrdqint']).astype(int)
 
         ms['tempMS'] = ms[['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8']].sum(axis=1)
-        ms['MS'] = ms['tempMS']
+        ms['ms'] = ms['tempMS']
         ms.loc[(ms['tempMS'] >= 6) & (ms['tempMS'] <= 8), 'MS'] = 6
-        ms.loc[ms['tempMS'] <= 1, 'MS'] = 1
-        self.factor_data = ms[['MS']]
+        ms.loc[ms['tempMS'] <= 1, 'ms'] = 1
+        self.factor_data = ms[['ms']]

@@ -23,12 +23,11 @@ class FactorRankVolatility(Factor):
         crsp = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         crsp = get_stocks_data(crsp, self.stock)
 
-        T = [1, 2, 5, 10, 30, 60]
-        crsp = crsp.fillna(0)
+        T = [1, 21, 126, 252]
         crsp = create_return(crsp, windows=T)
         collect = []
         for t in T:
-            crsp[f'VOLATILITY_{t:02}'] = crsp.groupby('permno')[f'RET_{t:02}'].rolling(window=60).std().reset_index(level=0, drop=True)
+            crsp[f'VOLATILITY_{t:02}'] = crsp.groupby('permno')[f'RET_{t:02}'].rolling(window=21).std().reset_index(level=0, drop=True)
             crsp[f'RANK_VOLATILITY_{t:02}'] = crsp[f'VOLATILITY_{t:02}'].groupby('date').rank(method='dense')
             crsp = crsp.drop(f'RET_{t:02}', axis=1)
             crsp = crsp.drop(f'VOLATILITY_{t:02}', axis=1)

@@ -25,6 +25,6 @@ class FactorNOA(Factor):
         noa = get_stocks_data(noa, self.stock)
         noa['OA'] = noa['atq'] - noa['cheq']
         noa['OL'] = noa['atq'] - noa['dlttq'] - noa['mibtq'] - noa['dcomq'] - noa['ceqq']
-        noa['NOA'] = (noa['OA'] - noa['OL']) / noa.groupby('permno')['atq'].shift(6)
-        noa = noa[['NOA']]
+        noa['noa'] = (noa['OA'] - noa['OL']) / noa.groupby('permno')['atq'].shift(6)
+        noa = noa[['noa']]
         self.factor_data = noa

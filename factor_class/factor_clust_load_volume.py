@@ -23,6 +23,10 @@ class FactorClustLoadVolume(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_factor_data_dir() / 'factor_load_volume.parquet.brotli')
         self.cluster = cluster
+        start_date = datetime.strptime(self.start, '%Y-%m-%d')
+        new_start_date = start_date + timedelta(days=0)
+        new_start_str = new_start_date.strftime('%Y-%m-%d')
+        self.factor_data = set_timeframe(self.factor_data, new_start_str, self.end)
         self.factor_data = self.factor_data.unstack(self.join)
 
     @ray.remote
@@ -44,7 +48,7 @@ class FactorClustLoadVolume(Factor):
             # Create a dataframe that matches cluster to stock
             cols = load.columns
             date = load.index[0]
-            load = pd.DataFrame(cluster, columns=[f'load_volume{i+1}_cluster_test'], index=[[date] * len(cols), cols])
+            load = pd.DataFrame(cluster, columns=[f'{col}_cluster'], index=[[date] * len(cols), cols])
             load.index.names = ['date', self.join]
             clust_collect.append(load)
 

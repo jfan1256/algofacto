@@ -26,7 +26,7 @@ class FactorAccrual(Factor):
         # Replace missing values in 'txp' with 0
         accrual['tempTXP'] = accrual['txpq'].fillna(0)
         def compute_accruals(group):
-            group['Accruals'] = ((group['actq'] - group['actq'].shift(1))
+            group['accruals'] = ((group['actq'] - group['actq'].shift(1))
                                 - (group['cheq'] - group['cheq'].shift(1))
                                 - ((group['lctq'] - group['lctq'].shift(1)) - (group['dlcq'] - group['dlcq'].shift(1)) - (group['tempTXP'] - group['tempTXP'].shift(1)))
                                 - group['dpq']
@@ -35,4 +35,4 @@ class FactorAccrual(Factor):
 
         # Apply the function to each permno group
         accrual = accrual.groupby('permno').apply(compute_accruals).reset_index(level=0, drop=True)
-        self.factor_data = accrual[['Accruals']]
+        self.factor_data = accrual[['accruals']]

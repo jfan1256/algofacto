@@ -28,7 +28,7 @@ class FactorRankIndMomSub(Factor):
 
         combine = pd.concat([price_data, ind_data], axis=1)
 
-        T = [1, 2, 5, 10, 30, 60]
+        T = [1, 21, 126, 252]
         ret = create_return(combine, windows=T)
         collect = []
 

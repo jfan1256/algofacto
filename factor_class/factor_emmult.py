@@ -29,5 +29,5 @@ class FactorEmmult(Factor):
         price_data_reindexed = price_data.reindex(finance.index, method='ffill')
         finance = finance.merge(price_data_reindexed, left_index=True, right_index=True)
         finance = get_stocks_data(finance, self.stock)
-        finance['EntMult'] = ((finance['outstanding']/1000) + finance['dlttq'] + finance['dlcq'] + finance['drcq'] - finance['cheq']) / finance['oibdpq']
-        self.factor_data = finance[['EntMult']]
+        finance['emmult'] = ((finance['outstanding']/1000) + finance['dlttq'] + finance['dlcq'] + finance['drcq'] - finance['cheq']) / finance['oibdpq']
+        self.factor_data = finance[['emmult']]

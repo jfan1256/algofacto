@@ -26,12 +26,11 @@ class FactorMomSeasonShort(Factor):
     def function(self, splice_data):
         T = [1]
         splice_data = create_return(splice_data, T)
-        splice_data = splice_data.fillna(0)
         # Scaling factor for daily data
         scale_factor = 21
         def compute_shifted_return(group):
-            group['MomSeasonShort'] = group['RET_01'].shift(1 * scale_factor)
-            return group[['MomSeasonShort']]
+            group['mom_season_short'] = group['RET_01'].shift(1 * scale_factor)
+            return group[['mom_season_short']]
 
         result = splice_data.groupby(self.group).apply(compute_shifted_return).reset_index(level=0, drop=True)
         return result

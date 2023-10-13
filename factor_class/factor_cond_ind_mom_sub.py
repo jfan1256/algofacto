@@ -46,8 +46,8 @@ class FactorCondIndMomSub(Factor):
                     (ret_shifted_2 > avg_ret_shifted_2)
             )
 
-            ret[f'cond_indmom_sub_{t:02}'] = np.where(condition, 1, 0)
-            ind_mom = ret[[f'cond_indmom_sub_{t:02}']]
+            ret[f'cond_ind_mom_sub_{t:02}'] = np.where(condition, 1, 0)
+            ind_mom = ret[[f'cond_ind_mom_sub_{t:02}']]
             collect.append(ind_mom)
 
         self.factor_data = pd.concat(collect, axis=1)

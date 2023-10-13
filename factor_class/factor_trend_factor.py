@@ -24,7 +24,7 @@ class FactorTrendFactor(Factor):
         factor_data = get_stocks_data(factor_data, self.stock)
         lag_data = factor_data.copy(deep=True)
         # Create Lag Price Rolling Mean Predictors
-        T = [3, 5, 7, 10, 20, 35, 50, 75, 100, 200, 300, 400]
+        T = [1, 21, 126, 252]
         for lag in T:
             # Calculate rolling mean
             rolling_mean = lag_data.groupby('permno')['Close'].rolling(window=lag).mean().reset_index(level=0, drop=True)
@@ -73,7 +73,7 @@ class FactorTrendFactor(Factor):
 
         # Convert the dictionary to a DataFrame
         rolling_betas = pd.DataFrame(betas, index=dates)
-        rolling_betas = rolling_betas.rolling(window=60).mean()
+        rolling_betas = rolling_betas.rolling(window=21).mean()
         total = []
         for col in rolling_betas.columns:
             result = lag_data[col].multiply(rolling_betas[col], axis=0).stack().swaplevel().to_frame()
@@ -81,9 +81,9 @@ class FactorTrendFactor(Factor):
             total.append(result)
         total = pd.concat(total, axis=1)
         total = total.sort_index(level=['permno', 'date'])
-        total['TrendFactor'] = total.sum(axis=1)
-        total['TrendFactor'] = total['TrendFactor'] - total['TrendFactor'].mean()
-        self.factor_data = total[['TrendFactor']]
+        total['trend_factor'] = total.sum(axis=1)
+        total['trend_factor'] = total['trend_factor'] - total['trend_factor'].mean()
+        self.factor_data = total[['trend_factor']]
 
 
     """@ray.remote

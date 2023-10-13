@@ -25,7 +25,7 @@ class FactorIndVWR(Factor):
         ind = pd.read_parquet(get_load_data_parquet_dir() / 'data_ind.parquet.brotli')
         out = pd.read_parquet(get_load_data_parquet_dir() / 'data_crsp.parquet.brotli', columns=['outstanding'])
 
-        T = [1, 2, 5, 10, 30, 60]
+        T = [1, 5, 21, 126, 252]
         ind_data = pd.merge(ohclv, ind, left_index=True, right_index=True, how='left').merge(out, left_index=True, right_index=True, how='left')
         ind_data = create_return(ind_data, windows=T)
         collect = []

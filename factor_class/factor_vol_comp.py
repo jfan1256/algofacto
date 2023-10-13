@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorEPETF(Factor):
+class FactorVolComp(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -21,24 +21,14 @@ class FactorEPETF(Factor):
                  window: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
-        self.etf_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_etf.parquet.brotli')
-        self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        self.etf_data = pd.concat([self.etf_data, self.fama_data['RF']], axis=1)
-        self.etf_data = self.etf_data.loc[self.start:self.end]
-        self.etf_data = self.etf_data.fillna(0)
-        self.factor_col = self.etf_data.columns[:-1]
 
     @ray.remote
     def function(self, splice_data):
+        T = [1, 5, 21, 126, 252]
+        splice_data = create_volume(splice_data, windows=[1])
 
-        splice_data = create_return(splice_data, windows=[1])
+        for t in T:
+            splice_data[f'vol_comp_{t:01}'] = splice_data.groupby('permno')['VOL_01'].rolling(window=t).apply(lambda x: (1 + x).prod() - 1, raw=True).reset_index(level=0, drop=True)
 
-        t = 1
-        ret = f'RET_{t:02}'
-        # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
-        windows = [30, 60]
-        for window in windows:
-            betas = rolling_ols_res_syn(price=splice_data, factor_data=self.etf_data, factor_col=self.factor_col, window=window, name='ETF', ret=ret)
-            splice_data = splice_data.join(betas)
-
+        splice_data = splice_data.drop('VOL_01', axis=1)
         return splice_data

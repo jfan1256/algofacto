@@ -24,9 +24,8 @@ class FactorRankVolume(Factor):
         crsp = get_stocks_data(crsp, self.stock)
 
 
-        T = [1, 2, 5, 10, 30, 60]
+        T = [1, 21, 126, 252]
         crsp = create_volume(crsp, windows=T)
-        crsp = crsp.fillna(0)
         collect = []
         for t in T:
             crsp[f'RANK_VOL_{t:02}'] = crsp[f'VOL_{t:02}'].groupby('date').rank(method='dense')

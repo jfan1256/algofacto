@@ -26,7 +26,6 @@ class FactorAgeMom(Factor):
     def function(self, splice_data):
         T = [1]
         splice_data = create_return(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
         splice_data['tempage'] = splice_data.groupby(self.group).cumcount() + 1
         def compound_return(group, day):
             compound_return = 1
@@ -37,10 +36,10 @@ class FactorAgeMom(Factor):
         # Scaling factor for daily data
         scale_factor = 1
 
-        splice_data['FirmAgeMom'] = splice_data.groupby(self.group).apply(compound_return, day=5*scale_factor).reset_index(level=0, drop=True)
-        splice_data.loc[(splice_data['Close'].abs() < 5) | (splice_data['tempage'] < 12*scale_factor), 'FirmAgeMom'] = np.nan
+        splice_data['age_mom'] = splice_data.groupby(self.group).apply(compound_return, day=5*scale_factor).reset_index(level=0, drop=True)
+        splice_data.loc[(splice_data['Close'].abs() < 5) | (splice_data['tempage'] < 12*scale_factor), 'age_mom'] = np.nan
         # splice_data['FirmAgeMom'] = splice_data.groupby(self.group).apply(compound_return, day=5).reset_index(level=0, drop=True)
         # splice_data.loc[(splice_data['Close'].abs() < 5) | (splice_data['tempage'] < 21), 'FirmAgeMom'] = np.nan
 
-        splice_data = splice_data[['FirmAgeMom']]
+        splice_data = splice_data[['age_mom']]
         return splice_data

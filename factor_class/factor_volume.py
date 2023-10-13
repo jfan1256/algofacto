@@ -24,7 +24,6 @@ class FactorVolume(Factor):
 
     @ray.remote
     def function(self, splice_data):
-        T = [1, 10, 20, 40, 60]
+        T = [1, 5, 21, 126, 252]
         splice_data = create_volume(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
         return splice_data

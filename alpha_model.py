@@ -69,8 +69,8 @@ class AlphaModel:
             assert self.incr == False, ValueError("incr must be set to False if opt is ewo")
             assert self.pretrain_len == 0, ValueError("pretrain_len must be 0 if opt is ewo")
         assert self.pred == 'price' or self.pred == 'sign', ValueError('Must use either "price" or "sign" for pred parameter')
-        if self.incr:
-            assert self.pretrain_len > 0, ValueError("Pretrain_len must be greater than 0 to use incremental training")
+        if self.incr == False:
+            assert self.pretrain_len == 0, ValueError("Pretrain_len must be 0 if incremental training is false")
         assert self.tuning[0] == 'optuna' or self.tuning[0] == 'gridsearch' or self.tuning == 'default', \
             ValueError("Must use either ['optuna', num_trials=int], ['gridsearch', num_search=int], or 'default' for tuning parameter")
         assert self.lookahead>=1, ValueError('Must be greater than 0')
@@ -386,15 +386,39 @@ class AlphaModel:
                         track_training = time.time()
                         evals = {}
                         if self.incr:
-                            model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000,
-                                              callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
+                            if self.pretrain_len>0:
+                                model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000,
+                                                  callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
 
-                            """# Retrain on entire dataset with less num_boost_round
-                            whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
-                            model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)"""
+                                """# Retrain on entire dataset with less num_boost_round
+                                whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
+                                model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)"""
 
-                            # Store this model for next fold
-                            prev_model = model
+                                # Store this model for next fold
+                                prev_model = model
+                            else:
+                                if i == 0:
+                                    # First model to be trained
+                                    model = lgb.train(params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000,
+                                                      callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
+
+                                    """# Retrain on entire dataset with less num_boost_round
+                                    whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
+                                    model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)"""
+
+                                    # Store this model for next fold
+                                    prev_model = model
+                                else:
+                                    model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000,
+                                                      callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
+
+                                    """# Retrain on entire dataset with less num_boost_round
+                                    whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
+                                    model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)"""
+
+                                    # Store this model for next fold
+                                    prev_model = model
+
                         else:
                             model = lgb.train(params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000, callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
 
@@ -407,10 +431,23 @@ class AlphaModel:
                         print('Start training......')
                         track_training = time.time()
                         if self.incr:
-                            model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, num_boost_round=1000)
+                            if self.pretrain_len > 0:
+                                model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, num_boost_round=1000)
 
-                            # Store this model for next fold
-                            prev_model = model
+                                # Store this model for next fold
+                                prev_model = model
+                            else:
+                                if i == 0:
+                                    # First model to be trained
+                                    model = lgb.train(params=params, train_set=lgb_train, num_boost_round=1000)
+
+                                    # Store this model for next fold
+                                    prev_model = model
+                                else:
+                                    model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, num_boost_round=1000)
+
+                                    # Store this model for next fold
+                                    prev_model = model
                         else:
                             model = lgb.train(params=params, train_set=lgb_train, num_boost_round=1000)
 

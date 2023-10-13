@@ -26,7 +26,6 @@ class FactorMomSeason6(Factor):
     def function(self, splice_data):
         T = [1]
         splice_data = create_return(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
         # Scaling factor for daily data
         scale_factor = 1
 
@@ -36,8 +35,8 @@ class FactorMomSeason6(Factor):
 
             group['retTemp1'] = group[[col for col in group.columns if 'temp' in col]].sum(axis=1, skipna=True)
             group['retTemp2'] = group[[col for col in group.columns if 'temp' in col]].count(axis=1)
-            group['MomSeason6'] = group['retTemp1'] / group['retTemp2']
-            return group[['MomSeason6']]
+            group['mom_season_6'] = group['retTemp1'] / group['retTemp2']
+            return group[['mom_season_6']]
 
         result = splice_data.groupby(self.group).apply(compute_mom).reset_index(level=0, drop=True)
         return result

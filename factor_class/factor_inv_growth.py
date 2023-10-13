@@ -41,6 +41,6 @@ class FactorInvGrowth(Factor):
         multi_index_factor_reindexed = multi_index_factor.reindex(inv_growth.index, method='ffill')
         inv_growth = inv_growth.merge(multi_index_factor_reindexed, left_index=True, right_index=True)
         inv_growth['invtq'] = inv_growth['invtq'] / inv_growth['medCPI']
-        inv_growth['InvGrowth'] = inv_growth['invtq'] / inv_growth.groupby('permno')['invtq'].shift(6) - 1
-        inv_growth = inv_growth[['InvGrowth']]
+        inv_growth['inv_growth'] = inv_growth['invtq'] / inv_growth.groupby('permno')['invtq'].shift(6) - 1
+        inv_growth = inv_growth[['inv_growth']]
         self.factor_data = inv_growth

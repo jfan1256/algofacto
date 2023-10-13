@@ -21,38 +21,37 @@ class FactorClustIndMomSub(Factor):
                  window: int = None,
                  cluster: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        price_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
-        ind_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_ind_sub.parquet.brotli')
-        combine = pd.concat([price_data, ind_data], axis=1)
-
-        t = 1
-        ret = create_return(combine, windows=[t])[[f'RET_{t:02}', 'Subindustry']]
-        avg_ret = ret.groupby(['Subindustry', 'date'])[f'RET_{t:02}'].mean()
-        ret = ret.reset_index()
-        ret = pd.merge(ret, avg_ret.rename('indRET').reset_index(), on=['Subindustry', 'date'], how='left')
-        ret[f'IndMomSub_{t:02}'] = ret[f'RET_{t:02}'] / ret['indRET']
-        ind_mom = ret.set_index([self.join, 'date'])[[f'IndMomSub_{t:02}']]
-        self.factor_data = ind_mom
+        self.factor_data = pd.read_parquet(get_factor_data_dir() / 'factor_ind_mom_sub.parquet.brotli')
         self.cluster = cluster
-        # Create returns and convert stock index to columns
-        self.factor_data = self.factor_data['IndMomSub_01'].unstack(self.join)
+        start_date = datetime.strptime(self.start, '%Y-%m-%d')
+        new_start_date = start_date + timedelta(days=0)
+        new_start_str = new_start_date.strftime('%Y-%m-%d')
+        self.factor_data = set_timeframe(self.factor_data, new_start_str, self.end)
+        self.factor_data = self.factor_data.unstack(self.join)
 
     @ray.remote
     def function(self, splice_data):
-        # Normalize data
-        splice_data = (splice_data - splice_data.mean()) / splice_data.std()
+        clust_collect = []
+        for i, col in enumerate(splice_data.columns.get_level_values(0).unique()):
+            data = splice_data[col]
+            # Normalize data
+            data = (data - data.mean()) / data.std()
 
-        # Drop columns that have more than half of missing data
-        splice_data = splice_data.drop(columns=splice_data.columns[splice_data.isna().sum() > len(splice_data) / 2])
-        splice_data = splice_data.fillna(0)
+            # Drop columns that have more than half of missing data
+            data = data.drop(columns=data.columns[data.isna().sum() > len(data) / 2])
+            data = data.fillna(0)
 
-        # Run kmeans
-        kmeans = KMeans(n_clusters=self.cluster, init='k-means++', random_state=0, n_init=10)
-        cluster = kmeans.fit_predict(splice_data.T)
+            # Run kmeans
+            kmeans = KMeans(n_clusters=self.cluster, init='k-means++', random_state=0, n_init=10)
+            cluster = kmeans.fit_predict(data.T)
 
-        # Create a dataframe that matches cluster to stock
-        cols = splice_data.columns
-        date = splice_data.index[0]
-        splice_data = pd.DataFrame(cluster, columns=[f'ind_mom_sub_cluster'], index=[[date] * len(cols), cols])
-        splice_data.index.names = ['date', self.join]
+            # Create a dataframe that matches cluster to stock
+            cols = data.columns
+            date = data.index[0]
+            data = pd.DataFrame(cluster, columns=[f'{col}_cluster'], index=[[date] * len(cols), cols])
+            data.index.names = ['date', self.join]
+            clust_collect.append(data)
+            break
+
+        splice_data = pd.concat(clust_collect, axis=1)
         return splice_data

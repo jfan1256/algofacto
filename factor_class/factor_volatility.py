@@ -24,10 +24,10 @@ class FactorVolatility(Factor):
 
     @ray.remote
     def function(self, splice_data):
-        T = [1, 2, 3, 4, 5, 10, 20, 40, 60, 120, 210]
+        T = [1, 5, 21, 126, 252]
         ret = create_return(splice_data, windows=T)
         for t in T:
-            splice_data[f'Volatility_{t:02}'] = ret.groupby(self.group)[f'RET_{t:02}'].rolling(window=60).std().reset_index(level=0, drop=True)
+            splice_data[f'volatility_{t:02}'] = ret.groupby(self.group)[f'RET_{t:02}'].rolling(window=21).std().reset_index(level=0, drop=True)
             splice_data = splice_data.drop(f'RET_{t:02}', axis=1)
         return splice_data
 

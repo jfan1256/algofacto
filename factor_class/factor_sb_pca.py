@@ -30,7 +30,7 @@ class FactorSBPCA(Factor):
         ret.iloc[0] = ret.iloc[0].fillna(0)
 
         # Execute Rolling PCA
-        window_size = 60
+        window_size = 21
         num_components = 5
         self.pca_data = rolling_pca(data=ret, window_size=window_size, num_components=num_components, name='Return')
         self.pca_data = pd.concat([self.pca_data, self.fama_data['RF']], axis=1)
@@ -47,9 +47,9 @@ class FactorSBPCA(Factor):
         for t in T:
             ret = f'RET_{t:02}'
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
-            windows = [30, 60]
+            windows = [21, 126]
             for window in windows:
-                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.pca_data, factor_col=self.factor_col, window=window, name=f'{t:02}_PCA_RET', ret=ret)
+                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.pca_data, factor_col=self.factor_col, window=window, name=f'ret_pca_{t:02}', ret=ret)
                 splice_data = splice_data.join(betas)
 
         return splice_data

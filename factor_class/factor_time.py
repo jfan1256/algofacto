@@ -25,10 +25,10 @@ class FactorTime(Factor):
 
     @ray.remote
     def function(self, splice_data):
-        splice_data['Month'] = splice_data.index.get_level_values('date').month
-        splice_data['Weekday'] = splice_data.index.get_level_values('date').weekday
-        splice_data['Halloween'] = splice_data.index.get_level_values('date').map(lambda x: 1 if 5 <= x.month <= 10 else 0)
-        # splice_data['Day'] = splice_data.index.get_level_values('date').day - 1
+        splice_data['month'] = splice_data.index.get_level_values('date').month
+        splice_data['weekday'] = splice_data.index.get_level_values('date').weekday
+        splice_data['is_halloween'] = splice_data.index.get_level_values('date').map(lambda x: 1 if 5 <= x.month <= 10 else 0)
+        splice_data['Day'] = splice_data.index.get_level_values('date').day - 1
         splice_data['is_january'] = (splice_data.index.get_level_values('date').month == 1).astype(int)
         splice_data['is_friday'] = (splice_data.index.get_level_values('date').dayofweek == 4).astype(int)
         return splice_data

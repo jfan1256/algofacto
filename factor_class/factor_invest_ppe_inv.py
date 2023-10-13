@@ -26,6 +26,6 @@ class FactorInvestPPEInv(Factor):
 
         invest['tempPPE'] = invest['ppegtq'] - invest.groupby('permno')['ppegtq'].shift(6)
         invest['tempInv'] = invest['invtq'] - invest.groupby('permno')['invtq'].shift(6)
-        invest['InvestPPEInv'] = (invest['tempPPE'] + invest['tempInv']) / invest.groupby('permno')['atq'].shift(6)
-        invest = invest[['InvestPPEInv']]
+        invest['invest_ppe_inv'] = (invest['tempPPE'] + invest['tempInv']) / invest.groupby('permno')['atq'].shift(6)
+        invest = invest[['invest_ppe_inv']]
         self.factor_data = invest

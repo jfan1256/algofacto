@@ -25,13 +25,13 @@ class FactorIndMomFama(Factor):
         ind_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_ind_fama.parquet.brotli')
         combine = pd.concat([price_data, ind_data], axis=1)
 
-        T = [1, 2, 5, 10, 30, 60]
+        T = [1, 5, 21, 126, 252]
         ret = create_return(combine, windows=T)
         collect = []
 
         for t in T:
-            ret[f'IndMomFama_{t:02}'] = ret.groupby(['IndustryFama', 'date'])[f'RET_{t:02}'].transform('mean')
-            ind_mom = ret[[f'IndMomFama_{t:02}']]
+            ret[f'ind_mom_fama_{t:02}'] = ret.groupby(['IndustryFama', 'date'])[f'RET_{t:02}'].transform('mean')
+            ind_mom = ret[[f'ind_mom_fama_{t:02}']]
             collect.append(ind_mom)
 
         self.factor_data = pd.concat(collect, axis=1)

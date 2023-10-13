@@ -27,7 +27,6 @@ class FactorCondRet(Factor):
         T = [1, 2, 3, 4, 5, 10, 40, 60]
 
         splice_data = create_return(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
 
         # Streversal
         condition1 = (splice_data['RET_05'] > 0) & (splice_data['RET_60'] < 0) & (splice_data['RET_40'] > 0)
@@ -52,8 +51,8 @@ class FactorCondRet(Factor):
         delta = splice_data['RET_05'].diff()
         gain = (delta.where(delta > 0, 0)).fillna(0)
         loss = (-delta.where(delta < 0, 0)).fillna(0)
-        avg_gain = gain.rolling(window=14).mean()
-        avg_loss = loss.rolling(window=14).mean()
+        avg_gain = gain.rolling(window=21).mean()
+        avg_loss = loss.rolling(window=21).mean()
         rs = avg_gain / avg_loss
         splice_data['RSI'] = 100 - (100 / (1 + rs))
         splice_data['rsi_oversold'] = np.where(splice_data['RSI'] < 30, 1, 0)

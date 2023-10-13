@@ -24,12 +24,11 @@ class FactorRetComp(Factor):
 
     @ray.remote
     def function(self, splice_data):
-        T = [1, 2, 3, 4, 5, 10, 20, 40, 60, 120, 210]
+        T = [1, 5, 21, 126, 252]
         splice_data = create_return(splice_data, windows=[1])
-        splice_data = splice_data.fillna(0)
 
         for t in T:
-            splice_data[f'CompRet_{t:01}'] = splice_data.groupby('permno')['RET_01'].rolling(window=t).apply(lambda x: (1 + x).prod() - 1, raw=True).reset_index(level=0, drop=True)
+            splice_data[f'ret_comp_{t:01}'] = splice_data.groupby('permno')['RET_01'].rolling(window=t).apply(lambda x: (1 + x).prod() - 1, raw=True).reset_index(level=0, drop=True)
 
         splice_data = splice_data.drop('RET_01', axis=1)
         return splice_data

@@ -26,17 +26,15 @@ class FactorIntMom(Factor):
     def function(self, splice_data):
         T = [1]
         splice_data = create_return(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
         # Scaling factor for daily data
         scale_factor = 1
 
         def compute_intmom(group):
-            group['RET_01'].fillna(0, inplace=True)
-            group['IntMom'] = (1 + group['RET_01'].shift(7)) * (1 + group['RET_01'].shift(8)) * \
+            group['int_mom'] = (1 + group['RET_01'].shift(7)) * (1 + group['RET_01'].shift(8)) * \
                               (1 + group['RET_01'].shift(9)) * (1 + group['RET_01'].shift(10)) * \
                               (1 + group['RET_01'].shift(11)) * (1 + group['RET_01'].shift(12)) - 1
             return group
 
         result = splice_data.groupby(self.group).apply(compute_intmom).reset_index(level=0, drop=True)
-        splice_data = result[['IntMom']]
+        splice_data = result[['int_mom']]
         return splice_data

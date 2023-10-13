@@ -24,7 +24,6 @@ class FactorMomVol(Factor):
         T = [1]
         self.factor_data = create_return(self.factor_data, windows=T)
         self.factor_data = get_stocks_data(self.factor_data, self.stock)
-        self.factor_data = self.factor_data.fillna(0)
 
         def compute_momentum(x):
             return ((1 + x['RET_01'].shift(1)) * (1 + x['RET_01'].shift(2)) * (1 + x['RET_01'].shift(3))
@@ -36,6 +35,6 @@ class FactorMomVol(Factor):
         self.factor_data['temp'] = self.factor_data.groupby('permno')['Volume'].transform(lambda x: x.rolling(window=6, min_periods=5).mean())
         self.factor_data = self.factor_data.fillna(0)
         self.factor_data['catVol'] = self.factor_data.groupby('date')['temp'].transform(lambda x: pd.qcut(x, 3, labels=False, duplicates='drop'))
-        self.factor_data['MomVol'] = self.factor_data.apply(lambda x: x['catMom'] if x['catVol'] == 2 else None, axis=1)
-        self.factor_data['MomVol'] = self.factor_data.groupby(['permno', 'date']).cumcount().where(lambda x: x >= 24, self.factor_data['MomVol'])
-        self.factor_data = self.factor_data[['MomVol']]
+        self.factor_data['mom_vol'] = self.factor_data.apply(lambda x: x['catMom'] if x['catVol'] == 2 else None, axis=1)
+        self.factor_data['mom_vol'] = self.factor_data.groupby(['permno', 'date']).cumcount().where(lambda x: x >= 24, self.factor_data['mom_vol'])
+        self.factor_data = self.factor_data[['mom_vol']]

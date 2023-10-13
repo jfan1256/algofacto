@@ -66,9 +66,9 @@ class FactorEarningStreak(Factor):
         ibes_permno['month_diff'] = (index_timestamp - anndats_act_timestamp).dt.days / 30.44
         ibes_permno = ibes_permno[ibes_permno['month_diff'] <= 6]
         # Assign the signal
-        ibes_permno['EarningsStreak'] = ibes_permno['surp'].where(ibes_permno['streak'] == 1).fillna(method='ffill')
+        ibes_permno['earning_streak'] = ibes_permno['surp'].where(ibes_permno['streak'] == 1).fillna(method='ffill')
         ibes_permno = ibes_permno.reset_index()
         ibes_permno.date = ibes_permno.date.dt.to_timestamp("M")
         ibes_permno = ibes_permno.set_index(['permno', 'date'])
-        ibes_permno = ibes_permno[['EarningsStreak']]
+        ibes_permno = ibes_permno[['earning_streak']]
         self.factor_data = ibes_permno

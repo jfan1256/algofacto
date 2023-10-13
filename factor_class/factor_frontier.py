@@ -67,9 +67,9 @@ class FactorFrontier(Factor):
 
             frontier.loc[mask_date, 'logmefit_NS'] = predictions
 
-        frontier['Frontier'] = frontier['YtempBM'] - frontier['logmefit_NS']
-        frontier['Frontier'] = -1 * frontier['Frontier']
+        frontier['frontier'] = frontier['YtempBM'] - frontier['logmefit_NS']
+        frontier['frontier'] = -1 * frontier['frontier']
 
         # Filters
         frontier.drop(frontier[(frontier['ceqq'].isna()) | (frontier['ceqq'] < 0)].index, inplace=True)
-        self.factor_data = frontier[['Frontier']]
+        self.factor_data = frontier[['frontier']]

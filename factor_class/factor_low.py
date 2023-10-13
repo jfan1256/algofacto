@@ -26,5 +26,4 @@ class FactorLow(Factor):
     def function(self, splice_data):
         T = [1, 10, 20, 40, 60]
         splice_data = create_low(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
         return splice_data

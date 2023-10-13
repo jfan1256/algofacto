@@ -24,7 +24,6 @@ class FactorRet(Factor):
 
     @ray.remote
     def function(self, splice_data):
-        T = [1, 2, 3, 4, 5, 10, 20, 40, 60, 120, 210]
+        T = [1, 5, 21, 126, 252]
         splice_data = create_return(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
         return splice_data

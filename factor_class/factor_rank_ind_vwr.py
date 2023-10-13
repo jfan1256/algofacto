@@ -29,7 +29,7 @@ class FactorRankIndVWR(Factor):
         ind = get_stocks_data(ind, self.stock)
         out = get_stocks_data(out, self.stock)
 
-        T = [1, 2, 5, 10, 30, 60]
+        T = [1, 21, 126, 252]
         ind_data = pd.merge(ohclv, ind, left_index=True, right_index=True, how='left').merge(out, left_index=True, right_index=True, how='left')
         ind_data = create_return(ind_data, windows=T)
         collect = []

@@ -23,9 +23,8 @@ class FactorRankRet(Factor):
         crsp = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         crsp = get_stocks_data(crsp, self.stock)
 
-        T = [1, 2, 5, 10, 30, 60]
+        T = [1, 21, 126, 252]
         crsp = create_return(crsp, windows=T)
-        crsp = crsp.fillna(0)
         collect = []
 
         for t in T:

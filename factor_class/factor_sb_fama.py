@@ -35,9 +35,9 @@ class FactorSBFama(Factor):
         for t in T:
             ret = f'RET_{t:02}'
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
-            windows = [30, 60]
+            windows = [21, 126]
             for window in windows:
-                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.fama_data, factor_col=self.factor_col, window=window, name=f'{t:02}_FAMA', ret=ret)
+                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.fama_data, factor_col=self.factor_col, window=window, name=f'fama_{t:02}', ret=ret)
                 splice_data = splice_data.join(betas)
 
         return splice_data

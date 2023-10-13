@@ -26,6 +26,10 @@ class FactorLoadRet(Factor):
         # Create returns and convert stock index to columns
         self.factor_data = create_return(self.factor_data, windows=[1])
         self.factor_data = self.factor_data[[f'RET_01']]
+        start_date = datetime.strptime(self.start, '%Y-%m-%d')
+        new_start_date = start_date + timedelta(days=0)
+        new_start_str = new_start_date.strftime('%Y-%m-%d')
+        self.factor_data = set_timeframe(self.factor_data, new_start_str, self.end)
         self.factor_data = self.factor_data['RET_01'].unstack(self.join)
 
 
@@ -45,6 +49,6 @@ class FactorLoadRet(Factor):
         # Create a dataframe that matches loadings to stock
         cols = splice_data.columns
         date = splice_data.index[0]
-        splice_data = pd.DataFrame(loading, columns=[f'ret_loading_{i + 1}' for i in range(5)], index=[[date] * len(cols), cols])
+        splice_data = pd.DataFrame(loading, columns=[f'load_ret_{i + 1}' for i in range(5)], index=[[date] * len(cols), cols])
         splice_data.index.names = ['date', self.join]
         return splice_data

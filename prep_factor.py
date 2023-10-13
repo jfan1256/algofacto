@@ -70,7 +70,7 @@ class PrepFactor:
             self.data = self.data.groupby('permno').fillna(method='ffill', limit=93)
 
             if self.kind == 'fundamental':
-                self.data = self.data.groupby('permno').rolling(window=30).mean().reset_index(level=0, drop=True)
+                self.data = self.data.groupby('permno').rolling(window=21).mean().reset_index(level=0, drop=True)
             return self.data
 
     def div_price(self):
