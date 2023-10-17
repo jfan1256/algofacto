@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorMomSeason6(Factor):
+class FactorMomOffSeason11(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -29,14 +29,28 @@ class FactorMomSeason6(Factor):
         # Scaling factor for daily data
         scale_factor = 1
 
+        # Grouping function to compute both mom_season and MomOffSeason
         def compute_mom(group):
-            for n in range(71 * scale_factor, 121 * scale_factor, 12 * scale_factor):
+            # Generating lagged returns for use in MomOffSeason calculation
+            for n in range(131 * scale_factor, 180 * scale_factor, 12 * scale_factor):
                 group[f'temp{n}'] = group['RET_01'].shift(n)
 
-            group['retTemp1'] = group[[col for col in group.columns if 'temp' in col]].sum(axis=1, skipna=True)
-            group['retTemp2'] = group[[col for col in group.columns if 'temp' in col]].count(axis=1)
-            group['mom_season_6'] = group['retTemp1'] / group['retTemp2']
-            return group[['mom_season_6']]
+            group['retTemp1'] = group[[f'temp{i}' for i in range(131 * scale_factor, 180 * scale_factor, 12 * scale_factor)]].sum(axis=1, skipna=True)
+            group['retTemp2'] = group[[f'temp{i}' for i in range(131 * scale_factor, 180 * scale_factor, 12 * scale_factor)]].notna().sum(axis=1)
 
-        splice_data = splice_data.groupby(self.group).apply(compute_mom).reset_index(level=0, drop=True)
+            # Computing MomOffSeason
+            group['retLagTemp'] = group['RET_01'].shift(21)
+            group['retLagTemp_sum60'] = group['retLagTemp'].rolling(126).sum()
+            group['retLagTemp_count60'] = group['retLagTemp'].rolling(126).count()
+            group['mom_off_season11'] = (group['retLagTemp_sum60'] - group['retTemp1']) / (group['retLagTemp_count60'] - group['retTemp2'])
+
+            return group[['mom_off_season11']]
+
+        splice_data = splice_data.groupby('permno').apply(compute_mom).reset_index(level=0, drop=True)
         return splice_data
+
+
+
+
+
+

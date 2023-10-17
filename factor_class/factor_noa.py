@@ -28,3 +28,13 @@ class FactorNOA(Factor):
         noa['noa'] = (noa['OA'] - noa['OL']) / noa.groupby('permno')['atq'].shift(6)
         noa = noa[['noa']]
         self.factor_data = noa
+
+        # columns = ['at', 'ceq', 'che', 'dltt', 'mib', 'dc']
+        # noa = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        # noa = get_stocks_data(noa, self.stock)
+        # noa['OA'] = noa['at'] - noa['che']
+        # noa['OL'] = noa['at'] - noa['dltt'] - noa['mib'] - noa['dc'] - noa['ceq']
+        # noa['noa'] = (noa['OA'] - noa['OL']) / noa.groupby('permno')['at'].shift(12)
+        # noa = noa[['noa']]
+        # self.factor_data = noa
+

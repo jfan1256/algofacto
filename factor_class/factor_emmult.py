@@ -31,3 +31,15 @@ class FactorEmmult(Factor):
         finance = get_stocks_data(finance, self.stock)
         finance['emmult'] = ((finance['outstanding']/1000) + finance['dlttq'] + finance['dlcq'] + finance['drcq'] - finance['cheq']) / finance['oibdpq']
         self.factor_data = finance[['emmult']]
+
+        # columns = ['dltt', 'dlc', 'che', 'oibdp', 'drc']
+        # finance = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        # outstanding = ['outstanding']
+        # price_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_crsp.parquet.brotli', columns=outstanding)
+        # finance = finance.sort_index()
+        # price_data = price_data.sort_index()
+        # price_data_reindexed = price_data.reindex(finance.index, method='ffill')
+        # finance = finance.merge(price_data_reindexed, left_index=True, right_index=True)
+        # finance = get_stocks_data(finance, self.stock)
+        # finance['emmult'] = ((finance['outstanding'] / 1000) + finance['dltt'] + finance['dlc'] + finance['drc'] - finance['che']) / finance['oibdp']
+        # self.factor_data = finance[['emmult']]

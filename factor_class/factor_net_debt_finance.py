@@ -28,3 +28,12 @@ class FactorNetDebtFinance(Factor):
         net_debt.loc[net_debt['net_debt_fin'].abs() > 1, 'net_debt_fin'] = None
         net_debt = net_debt[['net_debt_fin']]
         self.factor_data = net_debt
+
+        # columns = ['dlcch', 'dltis', 'dltr', 'at']
+        # net_debt = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        # net_debt = get_stocks_data(net_debt, self.stock)
+        #
+        # net_debt['net_debt_fin'] = (net_debt['dltis'] - net_debt['dltr'] + net_debt['dlcch']) / (0.5 * (net_debt['at'] + net_debt.groupby('permno')['at'].shift(12)))
+        # net_debt.loc[net_debt['net_debt_fin'].abs() > 1, 'net_debt_fin'] = None
+        # net_debt = net_debt[['net_debt_fin']]
+        # self.factor_data = net_debt

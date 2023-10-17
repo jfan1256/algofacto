@@ -32,5 +32,5 @@ class FactorMomSeasonShort(Factor):
             group['mom_season_short'] = group['RET_01'].shift(1 * scale_factor)
             return group[['mom_season_short']]
 
-        result = splice_data.groupby(self.group).apply(compute_shifted_return).reset_index(level=0, drop=True)
-        return result
+        splice_data = splice_data.groupby(self.group).apply(compute_shifted_return).reset_index(level=0, drop=True)
+        return splice_data

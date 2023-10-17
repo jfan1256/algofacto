@@ -29,3 +29,14 @@ class FactorInvestPPEInv(Factor):
         invest['invest_ppe_inv'] = (invest['tempPPE'] + invest['tempInv']) / invest.groupby('permno')['atq'].shift(6)
         invest = invest[['invest_ppe_inv']]
         self.factor_data = invest
+
+        # columns = ['at', 'invt', 'ppegt']
+        # invest = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        # invest = get_stocks_data(invest, self.stock)
+        #
+        # invest['tempPPE'] = invest['ppegt'] - invest.groupby('permno')['ppegt'].shift(12)
+        # invest['tempInv'] = invest['invt'] - invest.groupby('permno')['invt'].shift(12)
+        # invest['invest_ppe_inv'] = (invest['tempPPE'] + invest['tempInv']) / invest.groupby('permno')['at'].shift(12)
+        # invest = invest[['invest_ppe_inv']]
+        # self.factor_data = invest
+

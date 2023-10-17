@@ -26,3 +26,10 @@ class FactorChEQ(Factor):
         equity['cheq'] = equity['ceqq'] / equity.groupby('permno')['ceqq'].shift(6)
         equity = equity[(equity['ceqq'] > 0) & (equity.groupby('permno')['ceqq'].shift(6) > 0)]
         self.factor_data = equity[['cheq']]
+        #
+        # columns = ['ceq', 'at']
+        # equity = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        # equity = get_stocks_data(equity, self.stock)
+        # equity['cheq'] = equity['ceq'] / equity.groupby('permno')['ceq'].shift(12)
+        # equity = equity[(equity['ceq'] > 0) & (equity.groupby('permno')['ceq'].shift(12) > 0)]
+        # self.factor_data = equity[['cheq']]

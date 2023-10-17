@@ -24,13 +24,14 @@ class FactorAbnormalAccrual(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['fopty', 'oancfy', 'actq', 'cheq', 'dlcq', 'lctq', 'ibq', 'saleq', 'atq', 'ppegtq', 'sic', 'fyearq', 'niq']
         accrual = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli', columns=columns)
-        accrual = get_stocks_data(accrual, self.stock)
+        accrual = get_stocks_data(accrual, stock)
+
         # Define a function to compute temp columns based on permno grouping
         def compute_temp_cols(group):
             group['tempCFO'] = group['oancfy'].fillna(group['fopty'] - (group['actq'] - group['actq'].shift(1))
-                                                     + (group['cheq'] - group['cheq'].shift(1))
-                                                     - (group['lctq'] - group['lctq'].shift(1))
-                                                     + (group['dlcq'] - group['dlcq'].shift(1)))
+                                                      + (group['cheq'] - group['cheq'].shift(1))
+                                                      - (group['lctq'] - group['lctq'].shift(1))
+                                                      + (group['dlcq'] - group['dlcq'].shift(1)))
 
             group['tempAccruals'] = (group['ibq'] - group['tempCFO']) / group['atq'].shift(1)
             group['tempInvTA'] = 1 / group['atq'].shift(1)
@@ -42,10 +43,10 @@ class FactorAbnormalAccrual(Factor):
         merged_data = accrual.groupby('permno').apply(compute_temp_cols).reset_index(level=0, drop=True)
         merged_data = merged_data.sort_values(by='fyearq')
 
-        # Winsorize Data
-        for column in merged_data.columns:
-            if column.startswith('temp'):
-                merged_data[column] = winsorize(merged_data[column], limits=[0.001, 0.001])
+        # # Winsorize Data
+        # for column in merged_data.columns:
+        #     if column.startswith('temp'):
+        #         merged_data[column] = winsorize(merged_data[column], limits=[0.001, 0.001])
 
         merged_data['sic2'] = merged_data['sic'] // 100
 
@@ -62,13 +63,13 @@ class FactorAbnormalAccrual(Factor):
             # Run regression only if there's no missing data
             if not X.isnull().values.any() and not y.isnull().values.any():
                 model = sm.OLS(y, X, missing='drop').fit()
-                group['fitted'] = model.fittedvalues
+                group['AbnormalAccruals'] = model.fittedvalues
             else:
-                group['fitted'] = None
+                group['AbnormalAccruals'] = None
 
             return group
 
-        result = merged_data.groupby(['fyearq', 'sic2']).apply(run_regression).reset_index(level=0, drop=True)
+        result = merged_data.groupby(['fyearq', 'sic2']).apply(run_regression).reset_index(level=[0, 1], drop=True)
 
         group_counts = result.groupby(['fyearq', 'sic2']).size()
         drop_indices = group_counts[group_counts < 6].index
@@ -82,7 +83,7 @@ class FactorAbnormalAccrual(Factor):
         result = result.drop_duplicates(subset=['permno', 'fyearq'], keep='first')
 
         # Compute AbnormalAccrualsPercent
-        result['AbnormalAccrualsPercent'] = result['AbnormalAccruals'] * result['atq'].shift(1) / abs(result['niq'])
+        result['abnormal_accrual_pct'] = result['AbnormalAccruals'] * result['atq'].shift(1) / abs(result['niq'])
         result = result.sort_index(level=['permno', 'date'])
         result = result.reset_index()
 
@@ -92,4 +93,4 @@ class FactorAbnormalAccrual(Factor):
         result.set_index(['permno', 'date'], inplace=True)
         result = result.groupby(['permno', 'date']).last()
         result = result.sort_index(level=['permno', 'date'])
-        self.factor_data = result[['AbnormalAccrualsPercent']]
+        self.factor_data = result[['abnormal_accrual_pct']]

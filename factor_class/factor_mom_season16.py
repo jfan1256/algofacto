@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorMomSeason6(Factor):
+class FactorMomSeason16(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -30,13 +30,13 @@ class FactorMomSeason6(Factor):
         scale_factor = 1
 
         def compute_mom(group):
-            for n in range(71 * scale_factor, 121 * scale_factor, 12 * scale_factor):
+            for n in range(191 * scale_factor, 239 * scale_factor, 12 * scale_factor):
                 group[f'temp{n}'] = group['RET_01'].shift(n)
 
             group['retTemp1'] = group[[col for col in group.columns if 'temp' in col]].sum(axis=1, skipna=True)
             group['retTemp2'] = group[[col for col in group.columns if 'temp' in col]].count(axis=1)
-            group['mom_season_6'] = group['retTemp1'] / group['retTemp2']
-            return group[['mom_season_6']]
+            group['mom_season_16'] = group['retTemp1'] / group['retTemp2']
+            return group[['mom_season_16']]
 
         splice_data = splice_data.groupby(self.group).apply(compute_mom).reset_index(level=0, drop=True)
         return splice_data

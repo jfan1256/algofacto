@@ -39,5 +39,5 @@ class FactorMomSeason11(Factor):
             group['mom_season_11'] = group['retTemp1'] / group['retTemp2']
             return group[['mom_season_11']]
 
-        result = splice_data.groupby(self.group).apply(compute_mom).reset_index(level=0, drop=True)
-        return result
+        splice_data = splice_data.groupby(self.group).apply(compute_mom).reset_index(level=0, drop=True)
+        return splice_data

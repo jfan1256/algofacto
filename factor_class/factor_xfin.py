@@ -25,3 +25,10 @@ class FactorXFIN(Factor):
         finance = get_stocks_data(finance, self.stock)
         finance['xfin'] = (finance['sstky'] - finance['dvy'] - finance['prstkcy'] + finance['dltisy'] - finance['dltry'] + finance['dlcchy']) / finance['atq']
         self.factor_data = finance[['xfin']]
+
+        # columns = ['sstk', 'dv', 'at', 'prstkc', 'dltis', 'dltr', 'dlcch']
+        # finance = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        # finance = get_stocks_data(finance, self.stock)
+        # finance['xfin'] = (finance['sstk'] - finance['dv'] - finance['prstkc'] + finance['dltis'] - finance['dltr'] + finance['dlcch']) / finance['at']
+        # self.factor_data = finance[['xfin']]
+

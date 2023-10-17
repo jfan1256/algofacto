@@ -22,6 +22,7 @@ class FactorSBFama(Factor):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
         self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
+        # self.fama_data = self.fama_data[['MARKET', 'SMB', 'HML', 'RF']]
         self.fama_data = self.fama_data.loc[self.start:self.end]
         self.fama_data = self.fama_data.fillna(0)
         self.factor_col = self.fama_data.columns[:-1]

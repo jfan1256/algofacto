@@ -14,9 +14,9 @@ lightgbm_params = {
     'max_depth':         {'optuna': ('suggest_categorical', [6]),               'gridsearch': [4, 6, 8],                     'default': 6},
     'learning_rate':     {'optuna': ('suggest_float', 0.10, 0.50, False),       'gridsearch': [0.005, 0.01, 0.1, 0.15],      'default': 0.15},
     'num_leaves':        {'optuna': ('suggest_int', 5, 150),                    'gridsearch': [20, 40, 60],                  'default': 15},
-    'feature_fraction':  {'optuna': ('suggest_float', 0.5, 1.0),                'gridsearch': [0.7, 0.8, 0.9],               'default': 0.85},
+    'feature_fraction':  {'optuna': ('suggest_categorical',[1.0]),              'gridsearch': [0.7, 0.8, 0.9],               'default': 1.0},
     'min_gain_to_split': {'optuna': ('suggest_float', 0.02, 0.02, False),       'gridsearch': [0.0001, 0.001, 0.01],         'default': 0.02},
-    'min_data_in_leaf':  {'optuna': ('suggest_int', 60, 60),                    'gridsearch': [40, 60, 80],                  'default': 60},
+    'min_data_in_leaf':  {'optuna': ('suggest_int', 50, 200),                    'gridsearch': [40, 60, 80],                  'default': 60},
     'lambda_l1':         {'optuna': ('suggest_float', 0, 0, False),             'gridsearch': [0.001, 0.01],                 'default': 0},
     'lambda_l2':         {'optuna': ('suggest_float', 1e-5, 10, True),          'gridsearch': [0.001, 0.01],                 'default': 0.01},
     'bagging_fraction':  {'optuna': ('suggest_float', 1.0, 1.0, True),          'gridsearch': [0.9, 1],                      'default': 1},
@@ -35,8 +35,8 @@ start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = AlphaModel(model_name='lightgbm_trial_54', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
-                   weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=21, test_len=21, **lightgbm_params)
+alpha = AlphaModel(model_name='lightgbm_trial_71', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
+                   weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=126, test_len=21, **lightgbm_params)
 
 # alpha = AlphaModel(model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=False, opt='ewo',
 #                    weight=False, outlier=False, early=True, pretrain_len=0, train_len=1260, valid_len=252, test_len=21, **catboost_params)
@@ -76,13 +76,21 @@ volatility = PrepFactor(factor_name='factor_volatility', group='permno', interva
 alpha.add_factor(volatility)
 del volatility
 
-sign = PrepFactor(factor_name='factor_sign', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(sign, categorical=True)
-del sign
+sign_ret = PrepFactor(factor_name='factor_sign_ret', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(sign_ret, categorical=True)
+del sign_ret
 
-fund_raw = PrepFactor(factor_name='factor_fund_raw', group='permno', interval='D', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(fund_raw)
-del fund_raw
+# sign_volume = PrepFactor(factor_name='factor_sign_volume', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(sign_volume, categorical=True)
+# del sign_volume
+
+# sign_volatility = PrepFactor(factor_name='factor_sign_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(sign_volatility, categorical=True)
+# del sign_volatility
+
+# fund_raw = PrepFactor(factor_name='factor_fund_raw', group='permno', interval='D', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(fund_raw)
+# del fund_raw
 
 # fund_q = PrepFactor(factor_name='factor_fund_q', group='permno', interval='D', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(fund_q, categorical=True)
@@ -154,13 +162,13 @@ ind_mom = PrepFactor(factor_name='factor_ind_mom', group='permno', interval='D',
 alpha.add_factor(ind_mom)
 del ind_mom
 
-# ind_mom_fama = PrepFactor(factor_name='factor_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(ind_mom_fama)
-# del ind_mom_fama
+ind_mom_fama = PrepFactor(factor_name='factor_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(ind_mom_fama)
+del ind_mom_fama
 
-# ind_mom_sub = PrepFactor(factor_name='factor_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(ind_mom_sub)
-# del ind_mom_sub
+ind_mom_sub = PrepFactor(factor_name='factor_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(ind_mom_sub)
+del ind_mom_sub
 
 # ind_vwr = PrepFactor(factor_name='factor_ind_vwr', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(ind_vwr)
@@ -169,14 +177,17 @@ del ind_mom
 # ind_vwr_fama = PrepFactor(factor_name='factor_ind_vwr_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(ind_vwr_fama)
 # del ind_vwr_fama
-#
+
 # ind_vwr_sub = PrepFactor(factor_name='factor_ind_vwr_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(ind_vwr_sub)
 # del ind_vwr_sub
 
+# ind_mom_comp = PrepFactor(factor_name='factor_ind_mom_comp', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(ind_mom_comp)
+# del ind_mom_comp
+
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------OPEN ASSET----------------------------------------------------------------------------------------
-
 age_mom = PrepFactor(factor_name='factor_age_mom', group='permno', interval='D', kind='age', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(age_mom)
 del age_mom
@@ -233,6 +244,10 @@ mom_season11 = PrepFactor(factor_name='factor_mom_season11', group='permno', int
 alpha.add_factor(mom_season11)
 del mom_season11
 
+mom_season16 = PrepFactor(factor_name='factor_mom_season16', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(mom_season16)
+del mom_season16
+
 comp_debt = PrepFactor(factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(comp_debt)
 del comp_debt
@@ -269,9 +284,81 @@ frontier = PrepFactor(factor_name='factor_frontier', group='permno', interval='M
 alpha.add_factor(frontier)
 del frontier
 
-resid_mom = PrepFactor(factor_name='factor_resid_mom', group='permno', interval='D', kind='trend', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(resid_mom)
-del resid_mom
+mom_rev = PrepFactor(factor_name='factor_mom_rev', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(mom_rev, categorical=True)
+del mom_rev
+
+hire = PrepFactor(factor_name='factor_hire', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(hire)
+del hire
+
+rds = PrepFactor(factor_name='factor_rds', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(rds)
+del rds
+
+pcttoacc = PrepFactor(factor_name='factor_pcttotacc', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(pcttoacc)
+del pcttoacc
+
+accrual_bm = PrepFactor(factor_name='factor_accrual_bm', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(accrual_bm)
+del accrual_bm
+
+div_season = PrepFactor(factor_name='factor_div_season', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(div_season, categorical=True)
+del div_season
+
+# grcapx = PrepFactor(factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(grcapx)
+# del grcapx
+#
+# gradexp = PrepFactor(factor_name='factor_gradexp', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(gradexp)
+# del gradexp
+
+# ret_skew = PrepFactor(factor_name='factor_ret_skew', group='permno', interval='D', kind='skew', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(ret_skew)
+# del ret_skew
+
+# size = PrepFactor(factor_name='factor_size', group='permno', interval='D', kind='size', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(size)
+# del size
+
+# ret_max = PrepFactor(factor_name='factor_ret_max', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(ret_max)
+# del ret_max
+
+# mom_season9 = PrepFactor(factor_name='factor_mom_season9', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(mom_season9)
+# del mom_season9
+
+# mom_season21 = PrepFactor(factor_name='factor_mom_season21', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(mom_season21)
+# del mom_season21
+
+# mom_season_shorter = PrepFactor(factor_name='factor_mom_season_shorter', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(mom_season_shorter)
+# del mom_season_shorter
+
+# earning_disparity = PrepFactor(factor_name='factor_earning_disparity', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(earning_disparity)
+# del earning_disparity
+#
+# mom_off_season = PrepFactor(factor_name='factor_mom_off_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(mom_off_season)
+# del mom_off_season
+#
+# mom_off_season6 = PrepFactor(factor_name='factor_mom_off_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(mom_off_season6)
+# del mom_off_season6
+#
+# mom_off_season11 = PrepFactor(factor_name='factor_mom_off_season11', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(mom_off_season11)
+# del mom_off_season11
+#
+# resid_mom = PrepFactor(factor_name='factor_resid_mom', group='permno', interval='D', kind='trend', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(resid_mom)
+# del resid_mom
 
 # abnormal_accrual = PrepFactor(factor_name='factor_abnormal_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(abnormal_accrual)
@@ -279,25 +366,25 @@ del resid_mom
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------BETAS---------------------------------------------------------------------------------------------
-# sb_fama = PrepFactor(factor_name='factor_sb_fama', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(sb_fama)
-# del sb_fama
+sb_fama = PrepFactor(factor_name='factor_sb_fama', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(sb_fama)
+del sb_fama
 
-# sb_bond = PrepFactor(factor_name='factor_sb_bond', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(sb_bond)
-# del sb_bond
-#
-# sb_pca = PrepFactor(factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(sb_pca)
-# del sb_pca
-#
-# sb_sector = PrepFactor(factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(sb_sector)
-# del sb_sector
+sb_bond = PrepFactor(factor_name='factor_sb_bond', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(sb_bond)
+del sb_bond
 
-# sb_inverse = PrepFactor(factor_name='factor_sb_inverse', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(sb_inverse)
-# del sb_inverse
+sb_pca = PrepFactor(factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(sb_pca)
+del sb_pca
+
+sb_sector = PrepFactor(factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(sb_sector)
+del sb_sector
+
+sb_inverse = PrepFactor(factor_name='factor_sb_inverse', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(sb_inverse)
+del sb_inverse
 
 # sb_oil = PrepFactor(factor_name='factor_sb_oil', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(sb_oil)
@@ -438,6 +525,10 @@ del clust_ind_mom_fama
 clust_ind_mom_sub = PrepFactor(factor_name='factor_clust_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(clust_ind_mom_sub, categorical=True)
 del clust_ind_mom_sub
+
+# clust_mom_season = PrepFactor(factor_name='factor_clust_mom_season', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(clust_mom_season, categorical=True)
+# del clust_mom_season
 
 # clust_ret_comp = PrepFactor(factor_name='factor_clust_ret_comp', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(clust_ret_comp, categorical=True)

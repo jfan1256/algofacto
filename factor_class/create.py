@@ -5,7 +5,7 @@ from factor_class.factor_ind import FactorInd
 from factor_class.factor_ind_mom import FactorIndMom
 from factor_class.factor_ret import FactorRet
 from factor_class.factor_rank_ret import FactorRankRet
-from factor_class.factor_sign import FactorSign
+from factor_class.factor_sign_ret import FactorSignRet
 from factor_class.factor_volatility import FactorVolatility
 from factor_class.factor_volume import FactorVolume
 from factor_class.factor_time import FactorTime
@@ -99,6 +99,29 @@ from factor_class.factor_clust_ret_comp import FactorClustRetComp
 from factor_class.factor_vol_comp import FactorVolComp
 from factor_class.factor_ind_naic import FactorIndNAIC
 from factor_class.factor_resid_mom import FactorResidMom
+from factor_class.factor_grcapx import FactorGrcapx
+from factor_class.factor_ret_skew import FactorRetSkew
+from factor_class.factor_earning_disparity import FactorEarningDisparity
+from factor_class.factor_gradexp import FactorGradexp
+from factor_class.factor_mom_off_season import FactorMomOffSeason
+from factor_class.factor_mom_off_season6 import FactorMomOffSeason6
+from factor_class.factor_mom_off_season11 import FactorMomOffSeason11
+from factor_class.factor_mom_season_shorter import FactorMomSeasonShorter
+from factor_class.factor_mom_season16 import FactorMomSeason16
+from factor_class.factor_mom_season21 import FactorMomSeason21
+from factor_class.factor_mom_season9 import FactorMomSeason9
+from factor_class.factor_div_season import FactorDivSeason
+from factor_class.factor_accrual_bm import FactorAccrualBM
+from factor_class.factor_sign_volume import FactorSignVolume
+from factor_class.factor_sign_volatility import FactorSignVolatility
+from factor_class.factor_size import FactorSize
+from factor_class.factor_ret_max import FactorRetMax
+from factor_class.factor_pcttotacc import FactorPctTotAcc
+from factor_class.factor_clust_mom_season import FactorClustMomSeason
+from factor_class.factor_rds import FactorRDS
+from factor_class.factor_hire import FactorHire
+from factor_class.factor_ind_mom_comp import FactorIndMomComp
+from factor_class.factor_mom_rev import FactorMomRev
 
 
 start = '2005-01-01'
@@ -113,10 +136,12 @@ start_time = time.time()
 # FactorRet(file_name='factor_ret', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorRetComp(file_name='factor_ret_comp', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorVolComp(file_name='factor_vol_comp', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-# FactorSign(file_name='factor_sign', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorSignRet(file_name='factor_sign_ret', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorVolatility(file_name='factor_volatility', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorSignVolume(file_name='factor_sign_volume', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorSignVolatility(file_name='factor_sign_volatility', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorVolume(file_name='factor_volume', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-# FactorTime(file_name='factor_time', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+FactorTime(file_name='factor_time', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorMacro(file_name='factor_macro', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno', general=True).create_factor()
 # FactorTalib(file_name='factor_talib', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorFundRaw(file_name='factor_fund_raw', skip=True, stock=permno, start=start, end=end).create_factor()
@@ -144,32 +169,53 @@ start_time = time.time()
 # FactorIndVWR(file_name='factor_ind_vwr', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorIndVWRFama(file_name='factor_ind_vwr_fama', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorIndVWRSub(file_name='factor_ind_vwr_sub', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorIndMomComp(file_name='factor_ind_mom_comp', skip=True, stock=permno, start=start, end=end).create_factor()
 # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # # ---------------------------------------------------------------------------------OPEN ASSET------------------------------------------------------------------------------------
-# FactorDividend(file_name='factor_dividend', skip=False, stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-# FactorAgeMom(file_name='factor_age_mom', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorAccrual(file_name='factor_accrual', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorNetDebtFinance(file_name='factor_net_debt_finance', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorCHTax(file_name='factor_chtax', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorHire(file_name='factor_hire', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorAssetGrowth(file_name='factor_asset_growth', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorMomSeasonShort(file_name='factor_mom_season_short', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-# FactorMomSeason(file_name='factor_mom_season', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorNOA(file_name='factor_noa', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorInvestPPEInv(file_name='factor_invest_ppe_inv', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorInvGrowth(file_name='factor_inv_growth', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorEarningStreak(file_name='factor_earning_streak', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorCompDebt(file_name='factor_comp_debt', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorMomVol(file_name='factor_mom_vol', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorMS(file_name='factor_ms', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorMomSeason6(file_name='factor_mom_season6', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-# FactorMomSeason11(file_name='factor_mom_season11', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-# FactorIntMom(file_name='factor_int_mom', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorChEQ(file_name='factor_cheq', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorXFIN(file_name='factor_xfin', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorEmmult(file_name='factor_emmult', skip=True, stock=permno, start=start, end=end).create_factor()
-# FactorAccrual(file_name='factor_accrual', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorGrcapx(file_name='factor_grcapx', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorGradexp(file_name='factor_gradexp', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorAccrualBM(file_name='factor_accrual_bm', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorPctTotAcc(file_name='factor_pcttotacc', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorRDS(file_name='factor_rds', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorFrontier(file_name='factor_frontier', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorEarningStreak(file_name='factor_earning_streak', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorDividend(file_name='factor_dividend', skip=False, stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorAgeMom(file_name='factor_age_mom', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorMomVol(file_name='factor_mom_vol', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorMS(file_name='factor_ms', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorMomSeasonShort(file_name='factor_mom_season_short', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorMomSeason(file_name='factor_mom_season', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorMomSeason6(file_name='factor_mom_season6', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorMomSeason9(file_name='factor_mom_season9', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorMomSeason11(file_name='factor_mom_season11', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorMomSeason16(file_name='factor_mom_season16', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorMomSeason21(file_name='factor_mom_season21', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorIntMom(file_name='factor_int_mom', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorTrendFactor(file_name='factor_trend_factor', skip=True, stock=permno, start=start, end=end).create_factor()
-FactorResidMom(file_name='factor_resid_mom', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorResidMom(file_name='factor_resid_mom', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorEarningDisparity(file_name='factor_earning_disparity', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorMomOffSeason(file_name='factor_mom_off_season', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorMomOffSeason6(file_name='factor_mom_off_season6', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorMomOffSeason11(file_name='factor_mom_off_season11', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorMomSeasonShorter(file_name='factor_mom_season_shorter', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorDivSeason(file_name='factor_div_season', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorSize(file_name='factor_size', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorRetSkew(file_name='factor_ret_skew', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorRetMax(file_name='factor_ret_max', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorAbnormalAccrual(file_name='factor_abnormal_accrual', skip=True, stock=permno, start=start, end=end).create_factor()
+# FactorMomRev(file_name='factor_mom_rev', skip=True, stock=permno, start=start, end=end).create_factor()
 # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # # ---------------------------------------------------------------------------------BETAS-----------------------------------------------------------------------------------------
 # FactorSBSector(file_name='factor_sb_sector', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
@@ -208,7 +254,7 @@ FactorResidMom(file_name='factor_resid_mom', skip=True, stock=permno, start=star
 # FactorClustIndMom(file_name='factor_clust_ind_mom', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
 # FactorClustIndMomSub(file_name='factor_clust_ind_mom_sub', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
 # FactorClustIndMomFama(file_name='factor_clust_ind_mom_fama', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
-"""FactorAbnormalAccrual(file_name='factor_abnormal_accrual', skip=True, stock=permno, start=start, end=end).create_factor()"""
+# FactorClustMomSeason(file_name='factor_clust_mom_season', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------FACTORS TO SKIP----------------------------------------------------------------------------------
 # FactorHigh(file_name='factor_high', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()

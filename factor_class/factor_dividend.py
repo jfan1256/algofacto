@@ -76,7 +76,7 @@ class FactorDividend(Factor):
         # return splice_data
         def create_dividend(data):
             df = data.copy(deep=True)
-            df['div_season'] = 0  # Initialize the column with 0
+            df['div_pay'] = 0  # Initialize the column with 0
 
             # For rows with valid dividend dates, set the corresponding month's expdate to 1
             for row in df.iterrows():
@@ -84,9 +84,9 @@ class FactorDividend(Factor):
                     current_date_year = row[1]['paydt'].year
                     current_date_month = row[1]['paydt'].month
                     mask = (df.index.get_level_values(1).year == current_date_year) & (df.index.get_level_values(1).month == current_date_month)
-                    df.loc[mask, 'div_season'] = 1
+                    df.loc[mask, 'div_pay'] = 1
 
-            return df[['div_season']]
+            return df[['div_pay']]
 
         collect = []
         for _, df in splice_data.groupby(self.group):

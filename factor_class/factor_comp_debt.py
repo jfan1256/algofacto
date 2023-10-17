@@ -27,3 +27,11 @@ class FactorCompDebt(Factor):
         debt['comp_debt_iss'] = np.log(debt['tempBD'] / debt.groupby('permno')['tempBD'].shift(6))
         debt = debt[['comp_debt_iss']]
         self.factor_data = debt
+
+        # columns = ['dltt', 'dlc']
+        # debt = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        # debt = get_stocks_data(debt, self.stock)
+        # debt['tempBD'] = debt['dltt'] + debt['dlc']
+        # debt['comp_debt_iss'] = np.log(debt['tempBD'] / debt.groupby('permno')['tempBD'].shift(60))
+        # debt = debt[['comp_debt_iss']]
+        # self.factor_data = debt

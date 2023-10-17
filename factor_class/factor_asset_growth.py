@@ -26,3 +26,10 @@ class FactorAssetGrowth(Factor):
         growth['asset_growth'] = (growth['atq'] - growth.groupby('permno')['atq'].shift(6)) / growth.groupby('permno')['atq'].shift(6)
         growth = growth[['asset_growth']]
         self.factor_data = growth
+
+        # columns = ['at']
+        # growth = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        # growth = get_stocks_data(growth, self.stock)
+        # growth['asset_growth'] = (growth['at'] - growth.groupby('permno')['at'].shift(12)) / growth.groupby('permno')['at'].shift(12)
+        # growth = growth[['asset_growth']]
+        # self.factor_data = growth

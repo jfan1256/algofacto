@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorSign(Factor):
+class FactorMomSeason21(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -24,9 +24,19 @@ class FactorSign(Factor):
 
     @ray.remote
     def function(self, splice_data):
-        T = [1, 21, 126, 252]
+        T = [1]
         splice_data = create_return(splice_data, windows=T)
-        for t in T:
-            splice_data[f'sign_ret_{t:02}'] = np.sign(splice_data[f'RET_{t:02}'])
-            splice_data = splice_data.drop([f'RET_{t:02}'], axis=1)
+        # Scaling factor for daily data
+        scale_factor = 1
+
+        def compute_mom(group):
+            for n in range(241 * scale_factor, 300 * scale_factor, 12 * scale_factor):
+                group[f'temp{n}'] = group['RET_01'].shift(n)
+
+            group['retTemp1'] = group[[col for col in group.columns if 'temp' in col]].sum(axis=1, skipna=True)
+            group['retTemp2'] = group[[col for col in group.columns if 'temp' in col]].count(axis=1)
+            group['mom_season_21'] = group['retTemp1'] / group['retTemp2']
+            return group[['mom_season_21']]
+
+        splice_data = splice_data.groupby(self.group).apply(compute_mom).reset_index(level=0, drop=True)
         return splice_data

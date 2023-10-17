@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorResidMom(Factor):
+class FactorHire(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -20,7 +20,15 @@ class FactorResidMom(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        crsp = pd.read_parquet(get_factor_data_dir() / 'factor_sb_fama.parquet.brotli')
-        filtered_columns = [col for col in crsp.columns if col.startswith('resid')][2:]
-        self.factor_data = crsp[filtered_columns]
-        # self.factor_data = self.factor_data.groupby('permno').shift(1)
+        columns = ['emp']
+        hire = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        hire = get_stocks_data(hire, self.stock)
+        def compute_hire(group):
+            group['hire'] = (group['emp'] - group['emp'].shift(12)) / (0.5 * (group['emp'] + group['emp'].shift(12)))
+            return group
+
+        hire = hire.groupby('permno').apply(compute_hire).reset_index(level=0, drop=True)
+
+        # Replace 'hire' with 0 where 'emp' or its lag by 12 periods is NaN
+        hire.loc[hire['emp'].isna() | hire['emp'].shift(12).isna(), 'hire'] = 0
+        self.factor_data = hire[['hire']]
