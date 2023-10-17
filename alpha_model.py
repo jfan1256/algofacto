@@ -115,7 +115,7 @@ class AlphaModel:
                 factor[col] = factor[col].apply(lambda x: min(x, max_compressed_rank))
                 factor[col] = factor[col].replace({np.nan: -1, np.inf: max_compressed_rank}).astype(int)
 
-            # Convert to lightgbm format (0, 1, 2.....)
+            # Convert to lightgbm format, start from 0 (1, 2, 3.....)
             unique_categories = factor[col].unique()
             category_mapping[col] = {category: i for i, category in enumerate(unique_categories)}
             factor[col] = factor[col].map(category_mapping[col])
@@ -239,7 +239,7 @@ class AlphaModel:
                 condition_add(factor)
             # Must renumber fill NAN values for catboost
             elif 'catboost' in self.model_name:
-                factor = factor * 2
+                factor = (factor + 1) * 2
                 factor = factor.fillna(-9999).astype(int)
                 condition_add(factor)
         else:
@@ -386,6 +386,7 @@ class AlphaModel:
                         evals = {}
                         if self.incr:
                             if self.pretrain_len>0:
+                                # Pretrain the model
                                 model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000,
                                                   callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
                                 """# Retrain on entire dataset with less num_boost_round
