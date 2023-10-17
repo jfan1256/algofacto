@@ -53,7 +53,7 @@ class Factor:
         window_df = [pd.DataFrame(data=item, index=[key] * len(item), columns=cols) for key, item in window_data_dict.items()]
         return window_df
 
-    # Creating multi index
+    # Convert general factor to multiindex stock/date pair
     def _create_multi_index(self, stock):
         factor_values = pd.concat([self.factor_data] * len(stock), ignore_index=True).values
         multi_index = pd.MultiIndex.from_product([stock, self.factor_data.index])
@@ -61,30 +61,36 @@ class Factor:
         multi_index_factor.index = multi_index_factor.index.set_names([self.group, 'date'])
         return multi_index_factor
 
-    # Splice data into smaller dataframes of with size (splice_size)
+    # Splice data into dataframes with splice_size number of stocks or dates
     def _splice_data(self):
         data_spliced = {}
         splice = 1
 
+        # If self.general, create multiindex
         if self.general:
             if 'ticker' in self.factor_data.index.names or 'permno' in self.factor_data.index.names:
                 raise TypeError('if general parameter is set to True then there cannot be ''ticker'' or ''permno'' in the index')
             self.factor_data = self._create_multi_index(self.stock)
 
+        # If self.group is ticker or permno
         if self.group == 'ticker' or self.group == 'permno':
             count = 0
             splice_all = []
 
+            # Iterate through groups
             for _, df in self.factor_data.groupby(self.group, group_keys=False):
+                # Append data to collection
                 splice_all.append(df)
                 count += 1
+                # If number of dataframes in collection is equal to splice_size, then add to dictionary and reset
                 if count == self.splice_size:
                     name = f'splice{splice}'
                     data_spliced[name] = pd.concat(splice_all, axis=0)
                     splice_all = []
                     splice += 1
                     count = 0
-            if splice_all:  # Concatenate any remaining data
+            # Append any remaining data
+            if splice_all:
                 name = f'splice{splice}'
                 data_spliced[name] = pd.concat(splice_all, axis=0)
             return data_spliced
@@ -93,6 +99,7 @@ class Factor:
             if 'ticker' in self.factor_data.index.names:
                 raise ValueError('if group parameter is set to ''date'' then ''ticker'' or ''permno'' cannot be in the index. Must only have ''date'' in index')
 
+            # Get the rolling window groups, append to collection, and add to dictionary once size of collection is equal to splice_size
             window_data = self._rolling_window()
             for i in range(0, len(window_data), self.splice_size):
                 name = f'splice{splice}'
@@ -100,14 +107,19 @@ class Factor:
                 splice += 1
             return data_spliced
 
-    # Converts each splice into a batch of multiple splices with (batch_size)
+    # Create batches of spliced data with size batch_size
     def _batch_data(self, splice_data):
         batch = []
         factor_batch = {}
         batch_num = 1
         count = 1
+
+        # Iterate through splice_data
         for i, item in enumerate(splice_data):
+            # Append items to batch
             batch.append(splice_data[item])
+
+            # Once size of batch is equal to batch_size, add to dictionary and reset
             if count == self.batch_size:
                 name = f'batch{batch_num}'
                 if self.group == 'ticker' or self.group == 'permno':
@@ -119,17 +131,19 @@ class Factor:
                 batch = []
             count = count + 1
 
-        name = f'batch{batch_num}'  # Excess data
+        # Append any remaining data
+        name = f'batch{batch_num}'
         if self.group == 'ticker' or self.group == 'permno':
             factor_batch[name] = batch
         elif self.group == 'date':
             factor_batch[name] = list(chain.from_iterable(batch))
         return factor_batch
 
-    # Feed in batch data and (function) will execute on all splices within the batch at the same time
+    # Feed in batch data and (function) will execute on all spliced data within the batch at the same time
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Executing creation', animation=spinner_animation)
     def _execute_creation(self, operation, batch_data):
+        # Execute parallel processing
         results = ray.get([operation.remote(self, splice_data) for splice_data in batch_data])
         return results
 
@@ -139,14 +153,18 @@ class Factor:
         start_time = time.time()
         nested_data_all = []
 
+        # Iterate through each batch and run the parallel processing function
         for i, item in enumerate(batch_data):
             i += 1
             data = (self._execute_creation(self.function, batch_data[item]))
             nested_data_all.append(data)
             print(f"Completed batch: {str(i)}")
 
+        # Make the data iterable so that it can be exported (problem when self.group='date')
         flattened_data_all = list(chain.from_iterable(nested_data_all))
         factor_data = pd.concat(flattened_data_all, axis=0)
+
+        # Set and sort index
         if self.group == 'date':
             factor_data = factor_data.reset_index([self.join, 'date'])
             factor_data = factor_data.set_index([self.join, 'date'])
@@ -155,36 +173,50 @@ class Factor:
             factor_data = factor_data.reset_index([self.group, 'date'])
             factor_data = factor_data.set_index([self.group, 'date'])
             factor_data = factor_data.sort_index(level=[self.group, 'date'])
+
+        # Export factor data
         print(f"Exporting {self.file_name}...")
         factor_data.to_parquet(get_factor_data_dir() / f'{self.file_name}.parquet.brotli', compression='brotli')
         elapsed_time = time.time() - start_time
         print(f"Time to create {self.file_name}: {round(elapsed_time)} seconds")
         print("-" * 60)
 
+    # Inherited function that each factor class will edit and specify the required transformations to create the factor
     @ray.remote
     def function(self, splice_data):
         return splice_data
 
+    # Create factor
     def create_factor(self):
+        # Set timeframe
         self.factor_data = set_timeframe(self.factor_data, self.start, self.end)
+
+        # Skip splicing and batching if self.skip is True
         if self.skip:
             print('Skipping splice and batch...')
             print(f"Exporting {self.file_name}...")
+
+            # Get dataframe with list of stocks or not
             if self.stock != 'all':
                 self.factor_data = get_stocks_data(self.factor_data, self.stock)
             self.factor_data.to_parquet(get_factor_data_dir() / f'{self.file_name}.parquet.brotli', compression='brotli')
             print("-" * 60)
         else:
+            # Get dataframe with list of stocks or not
             if not self.general and self.stock != 'all':
                 if self.group == 'date':
                     try:
-                        # If multindex column (unstacking multiple columns)
+                        # If multiindex column (unstacking multiple columns)
                         self.factor_data.loc[:, (slice(None), self.stock)]
                     except:
-                        # If multindex column (unstacking one column)
+                        # If multiindex column (unstacking one column)
                         self.factor_data = self.factor_data[self.stock]
                 else:
                     self.factor_data = get_stocks_data(self.factor_data, self.stock)
+
+            # Create spliced data
             splice_data = self._splice_data()
+            # Create batches
             batch_data = self._batch_data(splice_data)
+            # Execute parallel processing factor creation
             self._parallel_processing(batch_data)
