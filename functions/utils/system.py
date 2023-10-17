@@ -9,10 +9,8 @@ from functools import wraps
 def get_root_dir() -> Path:
     return Path(__file__).resolve().parent.parent.parent
 
-
 def get_factor_data_dir() -> Path:
     return get_root_dir() / 'load_data' / 'factor'
-
 
 def get_load_data_parquet_dir() -> Path:
     return get_root_dir() / 'load_data' / 'parquet'
@@ -29,7 +27,6 @@ def get_result() -> Path:
 
 def get_report() -> Path:
     return get_root_dir() / 'report'
-
 
 def get_result_model(model):
     return get_result() / f'{model}'
@@ -70,7 +67,6 @@ def show_processing_animation(animation: any, message_func=None, post_func=None)
         return wrapper
 
     return decorator
-
 
 def spinner_animation(message: str, stop_event: threading.Event):
     line_position = 60
