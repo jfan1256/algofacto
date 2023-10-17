@@ -35,7 +35,7 @@ start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = AlphaModel(model_name='lightgbm_trial_71', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
+alpha = AlphaModel(model_name='lightgbm_trial_72', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
                    weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=126, test_len=21, **lightgbm_params)
 
 # alpha = AlphaModel(model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=False, opt='ewo',
@@ -131,11 +131,11 @@ del cond_ret
 # cond_ind_mom = PrepFactor(factor_name='factor_cond_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(cond_ind_mom, categorical=True)
 # del cond_ind_mom
-
+#
 # cond_ind_mom_fama = PrepFactor(factor_name='factor_cond_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(cond_ind_mom_fama, categorical=True)
 # del cond_ind_mom_fama
-
+#
 # cond_ind_mom_sub = PrepFactor(factor_name='factor_cond_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(cond_ind_mom_sub, categorical=True)
 # del cond_ind_mom_sub

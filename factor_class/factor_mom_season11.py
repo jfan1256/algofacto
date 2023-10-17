@@ -26,7 +26,6 @@ class FactorMomSeason11(Factor):
     def function(self, splice_data):
         T = [1]
         splice_data = create_return(splice_data, windows=T)
-        splice_data = splice_data.fillna(0)
         # Scaling factor for daily data
         scale_factor = 1
 

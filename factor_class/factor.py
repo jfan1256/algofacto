@@ -134,7 +134,7 @@ class Factor:
         return results
 
     # Executes (function) across all batches and exports the created factor
-    def parallel_processing(self, batch_data):
+    def _parallel_processing(self, batch_data):
         print(f"Creating {self.file_name}...")
         start_time = time.time()
         nested_data_all = []
@@ -187,4 +187,4 @@ class Factor:
                     self.factor_data = get_stocks_data(self.factor_data, self.stock)
             splice_data = self._splice_data()
             batch_data = self._batch_data(splice_data)
-            self.parallel_processing(batch_data)
+            self._parallel_processing(batch_data)

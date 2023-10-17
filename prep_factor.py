@@ -19,27 +19,26 @@ class PrepFactor:
                  save: bool = False):
         self.data = None
         self.group = group
-        self.interval = interval  # specify the interval of the data being prepped
-        self.kind = kind  # type of factor (price, industry)
-        self.div = div  # divide factor by closing price
+        self.interval = interval
+        self.kind = kind
+        self.div = div
         self.factor_name = factor_name
         self.stock = stock
-        self.start = start  # Suggested start date is 2010
-        self.end = end  # Suggested start date is 2022
+        self.start = start
+        self.end = end
         self.path = Path(get_load_data_prep_dir() / f'prep_{self.factor_name}.parquet.brotli')
         self.save = save
 
-    def get_factor(self):
+    # Get factor data
+    def _get_factor(self):
+        # Read in factor data
         data_all = pd.read_parquet(get_factor_data_dir() / f'{self.factor_name}.parquet.brotli')
-
         # Remove OHCLV columns in price factors
         if self.kind == 'price':
             data_all = data_all.drop(['Open', 'Close', 'Low', 'High', 'Volume'], axis=1)
-
-        # Set self.stock to all stocks in the data set
+        # Set self.stock to list of all stocks in dataframe
         if self.stock == 'all':
             self.stock = get_stock_idx(data_all)
-
         # Remove historical returns from factors except for factor_return
         if self.factor_name == 'factor_ret':
             self.data = data_all
@@ -51,7 +50,8 @@ class PrepFactor:
             self.data = get_stocks_data(self.data, self.stock)
             return self.data
 
-    def set_interval(self):
+    # Set data interval
+    def _set_interval(self):
         if self.interval == 'D':
             return self.data
         else:
@@ -60,50 +60,51 @@ class PrepFactor:
             date_data = set_timeframe(date_data, self.start, self.end)
             self.data = pd.merge(date_data.loc[self.stock], self.data, left_index=True, right_index=True, how='left')
             self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
-            # collect = []
-            # for _, df in self.data.groupby('permno'):
-                # df = df.reset_index().set_index('date')
-                # df = ffill_max_days(df, max_days=21)
-                # df = df.reset_index().set_index(['permno', 'date']).sort_index(level=['permno', 'date'])
-            #     collect.append(df)
-            # self.data = pd.concat(collect, axis=0)
+            # Forward Fill by a maximum of 93 days
             self.data = self.data.groupby('permno').fillna(method='ffill', limit=93)
-
+            # If self.kind is set to 'fundamenta', then calculate moving average
             if self.kind == 'fundamental':
                 self.data = self.data.groupby('permno').rolling(window=21).mean().reset_index(level=0, drop=True)
             return self.data
 
-    def div_price(self):
+    # Divided by price
+    def _div_price(self):
+        # Divide factor by closing price
         if self.div:
-            # Divid factor by closing price
-            if self.div:
-                price_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
-                self.data = pd.merge(self.data, price_data.Close.loc[self.stock], left_index=True, right_index=True, how='left')
-                self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
-                self.data.iloc[:, :-1] = self.data.iloc[:, :-1].div(self.data.Close, axis=0)
-                self.data = self.data.drop(['Close'], axis=1)
-        return self.data
-    def handle_data(self):
-        # for column in self.data.columns:
-        #     if self.data[column].isnull().sum() > 0.50 * len(self.data[column]):
-        #         self.data = self.data.drop(column, axis=1)
-        self.data = self.data.replace([np.inf, -np.inf], np.nan)
-        self.data = (self.data.groupby(self.group).apply(lambda x: x.iloc[:-1]))
-        self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
-        self.data.index = self.data.index.droplevel(0)
+            price_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
+            self.data = pd.merge(self.data, price_data.Close.loc[self.stock], left_index=True, right_index=True, how='left')
+            self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
+            self.data.iloc[:, :-1] = self.data.iloc[:, :-1].div(self.data.Close, axis=0)
+            self.data = self.data.drop(['Close'], axis=1)
         return self.data
 
+
+    # Handle various data errors
+    def _handle_data(self):
+        # Replace all infinite values with NAN
+        self.data = self.data.replace([np.inf, -np.inf], np.nan)
+        # Remove the last row of data for each stock
+        self.data = (self.data.groupby(self.group).apply(lambda x: x.iloc[:-1]))
+        self.data.index = self.data.index.droplevel(0)
+        # Remove all duplicate indices
+        self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
+        return self.data
+
+
+    # Execute prepping process
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Creating {self.factor_name}', animation=spinner_animation, post_func=print_data_shape)
     def prep(self):
+        # If no file exists for this factor, prep the factor and export it
         if not self.path.exists() or self.save:
-            self.data = self.get_factor()
-            self.data = self.set_interval()
-            self.data = self.div_price()
+            self.data = self._get_factor()
+            self.data = self._set_interval()
+            self.data = self._div_price()
             self.data = set_timeframe(self.data, self.start, self.end)
-            self.data = self.handle_data()
+            self.data = self._handle_data()
             self.data.to_parquet(self.path, compression='brotli')
             return self.data
         else:
+            # Directly accessed prepped factor file
             self.data = pd.read_parquet(self.path)
             self.data = get_stocks_data(self.data, self.stock)
             self.data = set_timeframe(self.data, self.start, self.end)

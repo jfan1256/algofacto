@@ -30,19 +30,17 @@ class FactorTime(Factor):
         splice_data['is_halloween'] = splice_data.index.get_level_values('date').map(lambda x: 1 if 5 <= x.month <= 10 else 0)
         splice_data['is_january'] = (splice_data.index.get_level_values('date').month == 1).astype(int)
         splice_data['is_friday'] = (splice_data.index.get_level_values('date').dayofweek == 4).astype(int)
-
         splice_data['last_day'] = splice_data.index.get_level_values('date').to_period('M').to_timestamp(how='end')
         splice_data['begin_last_week'] = splice_data['last_day'] - pd.Timedelta(days=5)
         splice_data['in_last_week'] = (splice_data.index.get_level_values('date') >= splice_data['begin_last_week']) & (splice_data.index.get_level_values('date') <= splice_data['last_day'])
         splice_data['is_quarter_end_week'] = (splice_data['in_last_week'] & splice_data.index.get_level_values('date').month.isin([3, 6, 9, 12])).astype(int)
         splice_data['is_year_end_week'] = (splice_data['in_last_week'] & (splice_data.index.get_level_values('date').month == 12)).astype(int)
         splice_data = splice_data.drop(columns=['last_day', 'begin_last_week', 'in_last_week'], axis=1)
-
-        day = splice_data.index.get_level_values('date').day
-        splice_data['is_turn_of_month'] = ((day <= 3) | (day >= 28)).astype(int)
-        last_day_of_month = splice_data.index.get_level_values('date').to_period('M').to_timestamp('M')
-        days_to_month_end = (last_day_of_month - splice_data.index.get_level_values('date')).days
-        splice_data['is_month_end_week'] = (days_to_month_end < 7).astype(int)
-        weekday = splice_data.index.get_level_values('date').weekday
-        splice_data['is_monday'] = (weekday == 0).astype(int)
+        # day = splice_data.index.get_level_values('date').day
+        # splice_data['is_turn_of_month'] = ((day <= 3) | (day >= 28)).astype(int)
+        # last_day_of_month = splice_data.index.get_level_values('date').to_period('M').to_timestamp('M')
+        # days_to_month_end = (last_day_of_month - splice_data.index.get_level_values('date')).days
+        # splice_data['is_month_end_week'] = (days_to_month_end < 7).astype(int)
+        # weekday = splice_data.index.get_level_values('date').weekday
+        # splice_data['is_monday'] = (weekday == 0).astype(int)
         return splice_data

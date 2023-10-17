@@ -214,7 +214,7 @@ start_time = time.time()
 # FactorSize(file_name='factor_size', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorRetSkew(file_name='factor_ret_skew', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorRetMax(file_name='factor_ret_max', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-# FactorAbnormalAccrual(file_name='factor_abnormal_accrual', skip=True, stock=permno, start=start, end=end).create_factor()
+FactorAbnormalAccrual(file_name='factor_abnormal_accrual', skip=True, stock=permno, start=start, end=end).create_factor()
 # FactorMomRev(file_name='factor_mom_rev', skip=True, stock=permno, start=start, end=end).create_factor()
 # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # # ---------------------------------------------------------------------------------BETAS-----------------------------------------------------------------------------------------
