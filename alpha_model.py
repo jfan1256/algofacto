@@ -259,10 +259,6 @@ class AlphaModel:
 
     # Training model with lightgbm
     def lightgbm(self):
-        print('List of categorical inputs:')
-        print(self.categorical)
-        print(f'Length: {len(self.categorical)}')
-
         # Model to train (this function is created so that it can be used for gridsearch, optuna, and default training)
         def model_training(trial):
             # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -682,6 +678,9 @@ class AlphaModel:
 
         # ===============================================================================================================================================================================
         # --------------------------------------------------------------------------MODEL_TRAINING()-------------------------------------------------------------------------------------
+        print('List of categorical inputs:')
+        print(self.categorical)
+        print(f'Length: {len(self.categorical)}')
         if self.tuning[0] == 'optuna':
             # Create new directory/override directory named self.model_name
             shutil.rmtree(get_result() / f'{self.model_name}', ignore_errors=True)
@@ -707,12 +706,6 @@ class AlphaModel:
             model_training(None)
 
     def catboost(self):
-        # Cannot run incremental training with catboost
-        assert not self.incr, 'Cannot run incremental training with catboost'
-        print('List of categorical inputs:')
-        print(self.categorical)
-        print(f'Length: {len(self.categorical)}')
-
         # Model to train (this function is created so that it can be used for gridsearch, optuna, and default training)
         def model_training(trial):
             # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -980,6 +973,11 @@ class AlphaModel:
 
         # ===============================================================================================================================================================================
         # --------------------------------------------------------------------------MODEL_TRAINING()-------------------------------------------------------------------------------------
+        # Cannot run incremental training with catboost
+        assert not self.incr, 'Cannot run incremental training with catboost'
+        print('List of categorical inputs:')
+        print(self.categorical)
+        print(f'Length: {len(self.categorical)}')
         if self.tuning[0] == 'optuna':
             # Create new directory/override directory named self.model_name
             shutil.rmtree(get_result() / f'{self.model_name}', ignore_errors=True)

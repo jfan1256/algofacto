@@ -7,7 +7,7 @@ from functions.utils.func import *
 # -----------------------------------------------------------------------------PARAMS--------------------------------------------------------------------------------------------
 stock = read_stock(get_load_data_large_dir() / 'permno_to_train_fund.csv')
 
-start = '2013-01-01'
+start = '2008-01-01'
 end = '2023-01-01'
 save = False
 lightgbm_params = {
@@ -35,7 +35,7 @@ start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = AlphaModel(model_name='lightgbm_trial_72', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
+alpha = AlphaModel(model_name='lightgbm_trial_72', tuning=['optuna', 30], plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
                    weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=126, test_len=21, **lightgbm_params)
 
 # alpha = AlphaModel(model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=False, opt='ewo',
