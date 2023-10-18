@@ -22,6 +22,7 @@ pandas_datareader
 ipywidgets
 numpy #must be less than 1.25
 ta-lib
+cvxpy
 
 #conda install -c conda-forge quantstats
 #conda install -c conda-forge ta-lib
