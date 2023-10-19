@@ -7,35 +7,35 @@ from functions.utils.func import *
 # -----------------------------------------------------------------------------PARAMS--------------------------------------------------------------------------------------------
 stock = read_stock(get_load_data_large_dir() / 'permno_to_train_fund.csv')
 
-start = '2008-01-01'
+start = '2013-01-01'
 end = '2023-01-01'
 save = False
 lightgbm_params = {
-    'max_depth':         {'optuna': ('suggest_categorical', [6]),               'gridsearch': [4, 6, 8],                     'default': 6},
-    'learning_rate':     {'optuna': ('suggest_float', 0.10, 0.50, False),       'gridsearch': [0.005, 0.01, 0.1, 0.15],      'default': 0.15},
-    'num_leaves':        {'optuna': ('suggest_int', 5, 150),                    'gridsearch': [20, 40, 60],                  'default': 15},
-    'feature_fraction':  {'optuna': ('suggest_categorical',[1.0]),              'gridsearch': [0.7, 0.8, 0.9],               'default': 1.0},
-    'min_gain_to_split': {'optuna': ('suggest_float', 0.02, 0.02, False),       'gridsearch': [0.0001, 0.001, 0.01],         'default': 0.02},
-    'min_data_in_leaf':  {'optuna': ('suggest_int', 50, 200),                    'gridsearch': [40, 60, 80],                  'default': 60},
-    'lambda_l1':         {'optuna': ('suggest_float', 0, 0, False),             'gridsearch': [0.001, 0.01],                 'default': 0},
-    'lambda_l2':         {'optuna': ('suggest_float', 1e-5, 10, True),          'gridsearch': [0.001, 0.01],                 'default': 0.01},
-    'bagging_fraction':  {'optuna': ('suggest_float', 1.0, 1.0, True),          'gridsearch': [0.9, 1],                      'default': 1},
-    'bagging_freq':      {'optuna': ('suggest_int', 0, 0),                      'gridsearch': [0, 20],                       'default': 0},
+    'max_depth':          {'optuna': ('suggest_categorical', [6]),              'gridsearch': [4, 6, 8],                     'default': 6},
+    'learning_rate':      {'optuna': ('suggest_float', 0.10, 0.50, False),      'gridsearch': [0.005, 0.01, 0.1, 0.15],      'default': 0.15},
+    'num_leaves':         {'optuna': ('suggest_int', 5, 150),                   'gridsearch': [20, 40, 60],                  'default': 15},
+    'feature_fraction':   {'optuna': ('suggest_categorical',[1.0]),             'gridsearch': [0.7, 0.8, 0.9],               'default': 1.0},
+    'min_gain_to_split':  {'optuna': ('suggest_float', 0.02, 0.02, False),      'gridsearch': [0.0001, 0.001, 0.01],         'default': 0.02},
+    'min_data_in_leaf':   {'optuna': ('suggest_int', 50, 200),                  'gridsearch': [40, 60, 80],                  'default': 60},
+    'lambda_l1':          {'optuna': ('suggest_float', 0, 0, False),            'gridsearch': [0.001, 0.01],                 'default': 0},
+    'lambda_l2':          {'optuna': ('suggest_float', 1e-5, 10, True),         'gridsearch': [0.001, 0.01],                 'default': 0.01},
+    'bagging_fraction':   {'optuna': ('suggest_float', 1.0, 1.0, True),         'gridsearch': [0.9, 1],                      'default': 1},
+    'bagging_freq':       {'optuna': ('suggest_int', 0, 0),                     'gridsearch': [0, 20],                       'default': 0},
 }
 
 catboost_params = {
-    'max_depth':          {'optuna': ('suggest_categorical', [4, 6, 8]),         'gridsearch': [4, 6, 8],                     'default': 6},
-    'learning_rate':      {'optuna': ('suggest_float', 0.10, 0.50, False),       'gridsearch': [0.005, 0.01, 0.1, 0.15],      'default': 0.03},
-    'num_leaves':         {'optuna': ('suggest_int', 5, 150),                    'gridsearch': [20, 40, 60],                  'default': 31},
-    'min_child_samples':  {'optuna': ('suggest_float', 0.5, 1.0),                'gridsearch': [0.7, 0.8, 0.9],               'default': 1},
-    'l2_leaf_reg':        {'optuna': ('suggest_float', 1e-5, 10, True),          'gridsearch': [0.0001, 0.001, 0.01],         'default': 3.0}
+    'max_depth':          {'optuna': ('suggest_categorical', [4, 6, 8]),        'gridsearch': [4, 6, 8],                     'default': 6},
+    'learning_rate':      {'optuna': ('suggest_float', 0.10, 0.50, False),      'gridsearch': [0.005, 0.01, 0.1, 0.15],      'default': 0.03},
+    'num_leaves':         {'optuna': ('suggest_int', 5, 150),                   'gridsearch': [20, 40, 60],                  'default': 31},
+    'min_child_samples':  {'optuna': ('suggest_float', 0.5, 1.0),               'gridsearch': [0.7, 0.8, 0.9],               'default': 1},
+    'l2_leaf_reg':        {'optuna': ('suggest_float', 1e-5, 10, True),         'gridsearch': [0.0001, 0.001, 0.01],         'default': 3.0}
 }
 
 start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = AlphaModel(model_name='lightgbm_trial_77', tuning=['optuna', 30], plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
+alpha = AlphaModel(model_name='lightgbm_trial_78', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
                    weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=126, test_len=21, **lightgbm_params)
 
 # alpha = AlphaModel(model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=False, opt='ewo',
@@ -52,10 +52,6 @@ ret_comp = PrepFactor(factor_name='factor_ret_comp', group='permno', interval='D
 alpha.add_factor(ret_comp)
 del ret_comp
 
-# vol_comp = PrepFactor(factor_name='factor_vol_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(vol_comp)
-# del vol_comp
-
 cycle = PrepFactor(factor_name='factor_time', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(cycle, categorical=True)
 del cycle
@@ -63,10 +59,6 @@ del cycle
 talib = PrepFactor(factor_name='factor_talib', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(talib)
 del talib
-
-macro = PrepFactor(factor_name='factor_macro', group='permno', interval='D', kind='macro', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(macro)
-del macro
 
 volume = PrepFactor(factor_name='factor_volume', group='permno', interval='D', kind='price', div=False, stock=stock, start=start, end=end, save=save).prep()
 alpha.add_factor(volume)
@@ -79,6 +71,14 @@ del volatility
 sign_ret = PrepFactor(factor_name='factor_sign_ret', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(sign_ret, categorical=True)
 del sign_ret
+
+# macro = PrepFactor(factor_name='factor_macro', group='permno', interval='D', kind='macro', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(macro)
+# del macro
+
+# vol_comp = PrepFactor(factor_name='factor_vol_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(vol_comp)
+# del vol_comp
 
 # sign_volume = PrepFactor(factor_name='factor_sign_volume', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(sign_volume, categorical=True)
@@ -96,7 +96,7 @@ del sign_ret
 # alpha.add_factor(fund_q, categorical=True)
 # del fund_q
 
-# high = PrepFactor(factor_name='factor_high'3, group='permno', interval='D', kind='price', div=False, stock=stock, start=start, end=end, save=save).prep()
+# high = PrepFactor(factor_name='factor_high', group='permno', interval='D', kind='price', div=False, stock=stock, start=start, end=end, save=save).prep()
 # alpha.add_factor(high)
 # del high
 
@@ -510,9 +510,9 @@ clust_load_ret = PrepFactor(factor_name='factor_clust_load_ret', group='permno',
 alpha.add_factor(clust_load_ret, categorical=True)
 del clust_load_ret
 
-clust_fund_raw = PrepFactor(factor_name='factor_clust_fund_raw', group='permno', interval='M', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(clust_fund_raw, categorical=True)
-del clust_fund_raw
+# clust_fund_raw = PrepFactor(factor_name='factor_clust_fund_raw', group='permno', interval='M', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(clust_fund_raw, categorical=True)
+# del clust_fund_raw
 
 clust_ind_mom = PrepFactor(factor_name='factor_clust_ind_mom', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(clust_ind_mom, categorical=True)

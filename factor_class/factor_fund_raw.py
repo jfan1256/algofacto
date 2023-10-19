@@ -26,7 +26,6 @@ class FactorFundRaw(Factor):
         fund_raw['quick_ratio'] = (fund_raw['cheq'] + fund_raw['ivstq']) / fund_raw['lctq']
         fund_raw['cash_ratio'] = fund_raw['cheq'] / fund_raw['lctq']
         fund_raw['debt_equity_ratio'] = fund_raw['ltq'] / fund_raw['ceqq']
-        fund_raw['equity_multiplier'] = fund_raw['atq'] / fund_raw['ceqq']
         fund_raw['return_on_assets'] = fund_raw['niq'] / fund_raw['atq']
         fund_raw['return_on_equity'] = fund_raw['niq'] / fund_raw['ceqq']
         fund_raw['gross_profit_margin'] = (fund_raw['saleq'] - fund_raw['cogsq']) / fund_raw['saleq']
@@ -40,15 +39,10 @@ class FactorFundRaw(Factor):
         fund_raw['debt_ratio'] = fund_raw['ltq'] / fund_raw['atq']
         fund_raw['roic'] = fund_raw['niq'] / (fund_raw['ceqq'] + fund_raw['ltq'])
         fund_raw['financial_leverage'] = fund_raw['atq'] / fund_raw['ceqq']
-        fund_raw['interest_coverage_ratio'] = fund_raw['piq'] / fund_raw['xintq']
-        fund_raw['roe'] = fund_raw['niq'] / fund_raw['ceqq']
-        fund_raw['roa'] = fund_raw['niq'] / fund_raw['atq']
-        fund_raw['gross_margin'] = (fund_raw['saleq'] - fund_raw['cogsq']) / fund_raw['saleq']
         fund_raw['net_margin'] = fund_raw['niq'] / fund_raw['revtq']
-        fund_raw['asset_utilization'] = fund_raw['saleq'] / fund_raw['atq']
+        fund_raw['interest_coverage_ratio'] = fund_raw['piq'] / fund_raw['xintq']
         fund_raw['days_of_inventory_on_hand'] = 365 / fund_raw['inventory_turnover']
-        fund_raw['payables_turnover'] = fund_raw['cogsq'] / fund_raw['apq']
-        fund_raw['days_of_payables_outstanding'] = 365 / fund_raw['payables_turnover']
+        fund_raw['days_of_payables_outstanding'] = 365 / fund_raw['payable_turnover']
 
         # Handling division by zero and replacing inf with NaN
         fund_raw = fund_raw.drop(columns, axis=1)

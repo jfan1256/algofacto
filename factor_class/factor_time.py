@@ -40,7 +40,7 @@ class FactorTime(Factor):
         # splice_data['is_turn_of_month'] = ((day <= 3) | (day >= 28)).astype(int)
         # last_day_of_month = splice_data.index.get_level_values('date').to_period('M').to_timestamp('M')
         # days_to_month_end = (last_day_of_month - splice_data.index.get_level_values('date')).days
-        # splice_data['is_month_end_week'] = (days_to_month_end < 7).astype(int)
+        # splice_data['is_month_end_week'] = (days_to_month_end < 5).astype(int)
         # weekday = splice_data.index.get_level_values('date').weekday
         # splice_data['is_monday'] = (weekday == 0).astype(int)
         return splice_data

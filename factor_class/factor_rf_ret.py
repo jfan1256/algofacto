@@ -30,7 +30,7 @@ class FactorRFRet(Factor):
         ret = ret['RET_01'].unstack(pca_df.index.names[0])
 
         # Execute Rolling PCA
-        window_size = 60
+        window_size = 21
         num_components = 5
         pca_df = rolling_pca(data=ret, window_size=window_size, num_components=num_components, name='Return')
 
@@ -50,7 +50,7 @@ class FactorRFRet(Factor):
         bond_df = bond_df.stack().swaplevel().sort_index()
         bond_df.index.names = ['ticker', 'date']
         bond_df = bond_df.astype(float)
-        T = [1, 21, 126]
+        T = [1]
         bond_df = create_return(bond_df, T)
         bond_df = bond_df.drop(['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
         bond_df = bond_df.unstack('ticker').swaplevel(axis=1)
@@ -81,7 +81,7 @@ class FactorRFRet(Factor):
         for t in T:
             ret = f'RET_{t:02}'
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
-            windows = [21]
+            windows = [126]
             for window in windows:
                 betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.all_rf, factor_col=self.factor_col, window=window, name=f'{t:02}_RF_RET', ret=ret)
                 splice_data = splice_data.join(betas)
