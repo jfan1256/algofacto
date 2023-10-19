@@ -372,8 +372,11 @@ class AlphaModel:
                 # Iterate over wfo periods
                 for i, (train_idx, test_idx) in enumerate(opt):
                     start_train = data_train.index.get_level_values('date')[train_idx[0]].strftime('%Y-%m-%d')
-                    end_train = data_train.index.get_level_values('date')[test_idx[-1]].strftime('%Y-%m-%d')
-                    print(f'Training/Testing from {start_train} to {end_train}:')
+                    end_train = data_train.index.get_level_values('date')[train_idx[-1]].strftime('%Y-%m-%d')
+                    start_test = data_train.index.get_level_values('date')[test_idx[0]].strftime('%Y-%m-%d')
+                    end_test = data_train.index.get_level_values('date')[test_idx[-1]].strftime('%Y-%m-%d')
+                    print(f'Training from {start_train} to {end_train}:')
+                    print(f'Testing from {start_test} to {end_test}:')
                     # If early stopping is set to True
                     if self.early:
                         # Select train subset save last self.valid_len for validation
@@ -759,8 +762,11 @@ class AlphaModel:
                 # Iterate over wfo periods
                 for i, (train_idx, test_idx) in enumerate(opt):
                     start_train = data_train.index.get_level_values('date')[train_idx[0]].strftime('%Y-%m-%d')
-                    end_train = data_train.index.get_level_values('date')[test_idx[-1]].strftime('%Y-%m-%d')
-                    print(f'Training/Testing from {start_train} to {end_train}:')
+                    end_train = data_train.index.get_level_values('date')[train_idx[-1]].strftime('%Y-%m-%d')
+                    start_test = data_train.index.get_level_values('date')[test_idx[0]].strftime('%Y-%m-%d')
+                    end_test = data_train.index.get_level_values('date')[test_idx[-1]].strftime('%Y-%m-%d')
+                    print(f'Training from {start_train} to {end_train}:')
+                    print(f'Testing from {start_test} to {end_test}:')
                     # If early stopping is set to True
                     if self.early:
                         # Select train subset save last self.valid_len for validation

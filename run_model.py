@@ -7,7 +7,7 @@ from functions.utils.func import *
 # -----------------------------------------------------------------------------PARAMS--------------------------------------------------------------------------------------------
 stock = read_stock(get_load_data_large_dir() / 'permno_to_train_fund.csv')
 
-start = '2013-01-01'
+start = '2008-01-01'
 end = '2023-01-01'
 save = False
 lightgbm_params = {
@@ -35,7 +35,7 @@ start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = AlphaModel(model_name='lightgbm_trial_76', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
+alpha = AlphaModel(model_name='lightgbm_trial_77', tuning=['optuna', 30], plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
                    weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=126, test_len=21, **lightgbm_params)
 
 # alpha = AlphaModel(model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=False, opt='ewo',
@@ -308,10 +308,14 @@ div_season = PrepFactor(factor_name='factor_div_season', group='permno', interva
 alpha.add_factor(div_season, categorical=True)
 del div_season
 
+mom_off_season = PrepFactor(factor_name='factor_mom_off_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(mom_off_season)
+del mom_off_season
+
 # grcapx = PrepFactor(factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(grcapx)
 # del grcapx
-#
+
 # gradexp = PrepFactor(factor_name='factor_gradexp', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(gradexp)
 # del gradexp
@@ -331,7 +335,7 @@ del div_season
 # mom_season9 = PrepFactor(factor_name='factor_mom_season9', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(mom_season9)
 # del mom_season9
-
+#
 # mom_season21 = PrepFactor(factor_name='factor_mom_season21', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(mom_season21)
 # del mom_season21
@@ -343,11 +347,7 @@ del div_season
 # earning_disparity = PrepFactor(factor_name='factor_earning_disparity', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(earning_disparity)
 # del earning_disparity
-#
-# mom_off_season = PrepFactor(factor_name='factor_mom_off_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(mom_off_season)
-# del mom_off_season
-#
+
 # mom_off_season6 = PrepFactor(factor_name='factor_mom_off_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(mom_off_season6)
 # del mom_off_season6
