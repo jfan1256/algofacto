@@ -125,7 +125,7 @@ start_time = time.time()
 
 # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # # --------------------------------------------------------------------------------GENERAL----------------------------------------------------------------------------------------
-FactorRet(live=live, file_name='factor_ret', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorRet(live=live, file_name='factor_ret', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorRetComp(live=live, file_name='factor_ret_comp', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorVolComp(live=live, file_name='factor_vol_comp', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorSignRet(live=live, file_name='factor_sign_ret', stock=permno, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()

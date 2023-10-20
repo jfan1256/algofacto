@@ -13,27 +13,27 @@ def get_parquet_dir(live) -> Path:
     if live:
         return get_root_dir() / 'live' / 'parquet'
     else:
-        return get_root_dir() / 'past' / 'parquet'
+        return get_root_dir() / 'historical' / 'parquet'
 
 def get_factor_dir(live) -> Path:
     if live:
         return get_root_dir() / 'live' / 'factor'
     else:
-        return get_root_dir() / 'past' / 'factor'
+        return get_root_dir() / 'historical' / 'factor'
 
 
 def get_prep_dir(live) -> Path:
     if live:
         return get_root_dir() / 'live' / 'prep'
     else:
-        return get_root_dir() / 'past' / 'prep'
+        return get_root_dir() / 'historical' / 'prep'
 
 
 def get_large_dir(live) -> Path:
     if live:
         return get_root_dir() / 'live' / 'large'
     else:
-        return get_root_dir() / 'past' / 'large'
+        return get_root_dir() / 'historical' / 'large'
 
 
 def get_result() -> Path:
