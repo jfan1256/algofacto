@@ -8,7 +8,9 @@ warnings.filterwarnings('ignore')
 
 
 class PrepFactor:
-    def __init__(self, factor_name: str = None,
+    def __init__(self,
+                 live: bool = None,
+                 factor_name: str = None,
                  group: str = None,
                  interval: str = 'D',
                  kind: str = 'price',
@@ -18,6 +20,7 @@ class PrepFactor:
                  end: str = '2022-01-01',
                  save: bool = False):
         self.data = None
+        self.live = live
         self.group = group
         self.interval = interval
         self.kind = kind
@@ -26,13 +29,13 @@ class PrepFactor:
         self.stock = stock
         self.start = start
         self.end = end
-        self.path = Path(get_load_data_prep_dir() / f'prep_{self.factor_name}.parquet.brotli')
+        self.path = Path(get_prep_dir(live) / f'prep_{self.factor_name}.parquet.brotli')
         self.save = save
 
     # Get factor data
     def _get_factor(self):
         # Read in factor data
-        data_all = pd.read_parquet(get_factor_data_dir() / f'{self.factor_name}.parquet.brotli')
+        data_all = pd.read_parquet(get_factor_dir(self.live) / f'{self.factor_name}.parquet.brotli')
         # Remove OHCLV columns in price factors
         if self.kind == 'price':
             data_all = data_all.drop(['Open', 'Close', 'Low', 'High', 'Volume'], axis=1)
@@ -56,7 +59,7 @@ class PrepFactor:
             return self.data
         else:
             # Resample from not daily to daily
-            date_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_date.parquet.brotli')
+            date_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_date.parquet.brotli')
             date_data = set_timeframe(date_data, self.start, self.end)
             self.data = pd.merge(date_data.loc[self.stock], self.data, left_index=True, right_index=True, how='left')
             self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
@@ -71,7 +74,7 @@ class PrepFactor:
     def _div_price(self):
         # Divide factor by closing price
         if self.div:
-            price_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
+            price_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
             self.data = pd.merge(self.data, price_data.Close.loc[self.stock], left_index=True, right_index=True, how='left')
             self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
             self.data.iloc[:, :-1] = self.data.iloc[:, :-1].div(self.data.Close, axis=0)

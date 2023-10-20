@@ -8,6 +8,7 @@ class FactorSBFundRaw(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
+                 live: bool = None,
                  file_name: str = None,
                  skip: bool = None,
                  start: str = None,
@@ -19,11 +20,11 @@ class FactorSBFundRaw(Factor):
                  join: str = None,
                  general: bool = False,
                  window: int = None):
-        super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        self.fund_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli')
+        super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
+        self.fama_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_fama.parquet.brotli')
+        self.fund_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli')
         self.factor_col = self.fund_data.columns[:-1]
-        self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
+        self.factor_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
         self.factor_data = self.factor_data.reindex(self.fund_data.index, method='ffill')
 
     @ray.remote

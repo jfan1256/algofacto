@@ -8,6 +8,7 @@ class FactorRankSBBond(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
+                 live: bool = None,
                  file_name: str = None,
                  skip: bool = None,
                  start: str = None,
@@ -19,8 +20,8 @@ class FactorRankSBBond(Factor):
                  join: str = None,
                  general: bool = False,
                  window: int = None):
-        super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        sb_lag = pd.read_parquet(get_factor_data_dir() / 'factor_sb_bond.parquet.brotli')
+        super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
+        sb_lag = pd.read_parquet(get_factor_dir(self.live) / 'factor_sb_bond.parquet.brotli')
         sb_lag = get_stocks_data(sb_lag, self.stock)
 
         filtered_columns = [col for col in sb_lag.columns if not col.startswith(('ALPHA', 'PRED', 'EPSIL', 'RESID', 'IDIO', 'Open', 'Close', 'High', 'Low', 'Volume'))]

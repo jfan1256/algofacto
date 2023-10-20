@@ -9,17 +9,31 @@ from functools import wraps
 def get_root_dir() -> Path:
     return Path(__file__).resolve().parent.parent.parent
 
-def get_factor_data_dir() -> Path:
-    return get_root_dir() / 'load_data' / 'factor'
+def get_parquet_dir(live) -> Path:
+    if live:
+        return get_root_dir() / 'live' / 'parquet'
+    else:
+        return get_root_dir() / 'past' / 'parquet'
 
-def get_load_data_parquet_dir() -> Path:
-    return get_root_dir() / 'load_data' / 'parquet'
+def get_factor_dir(live) -> Path:
+    if live:
+        return get_root_dir() / 'live' / 'factor'
+    else:
+        return get_root_dir() / 'past' / 'factor'
 
-def get_load_data_prep_dir() -> Path:
-    return get_root_dir() / 'load_data' / 'prep'
 
-def get_load_data_large_dir() -> Path:
-    return get_root_dir() / 'load_data' / 'large'
+def get_prep_dir(live) -> Path:
+    if live:
+        return get_root_dir() / 'live' / 'prep'
+    else:
+        return get_root_dir() / 'past' / 'prep'
+
+
+def get_large_dir(live) -> Path:
+    if live:
+        return get_root_dir() / 'live' / 'large'
+    else:
+        return get_root_dir() / 'past' / 'large'
 
 
 def get_result() -> Path:

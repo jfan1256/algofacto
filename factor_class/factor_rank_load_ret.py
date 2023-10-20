@@ -8,6 +8,7 @@ class FactorRankLoadRet(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
+                 live: bool = None,
                  file_name: str = None,
                  skip: bool = None,
                  start: str = None,
@@ -19,8 +20,8 @@ class FactorRankLoadRet(Factor):
                  join: str = None,
                  general: bool = False,
                  window: int = None):
-        super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        load_data = pd.read_parquet(get_factor_data_dir() / 'factor_load_ret.parquet.brotli')
+        super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
+        load_data = pd.read_parquet(get_factor_dir(self.live) / 'factor_load_ret.parquet.brotli')
         load_data = get_stocks_data(load_data, self.stock)
 
         # Ranking by each column

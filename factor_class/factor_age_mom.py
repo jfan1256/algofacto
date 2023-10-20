@@ -8,6 +8,7 @@ class FactorAgeMom(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
+                 live: bool = None,
                  file_name: str = None,
                  skip: bool = None,
                  start: str = None,
@@ -19,8 +20,8 @@ class FactorAgeMom(Factor):
                  join: str = None,
                  general: bool = False,
                  window: int = None):
-        super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
+        super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
+        self.factor_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
 
     @ray.remote
     def function(self, splice_data):
@@ -38,8 +39,6 @@ class FactorAgeMom(Factor):
 
         splice_data['age_mom'] = splice_data.groupby(self.group).apply(compound_return, day=5*scale_factor).reset_index(level=0, drop=True)
         splice_data.loc[(splice_data['Close'].abs() < 5) | (splice_data['tempage'] < 12*scale_factor), 'age_mom'] = np.nan
-        # splice_data['FirmAgeMom'] = splice_data.groupby(self.group).apply(compound_return, day=5).reset_index(level=0, drop=True)
-        # splice_data.loc[(splice_data['Close'].abs() < 5) | (splice_data['tempage'] < 21), 'FirmAgeMom'] = np.nan
 
         splice_data = splice_data[['age_mom']]
         return splice_data

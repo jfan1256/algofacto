@@ -2,6 +2,7 @@ from functions.utils.system import *
 from sklearn.cluster import KMeans
 from statsmodels.regression.rolling import RollingOLS
 from sklearn.decomposition import PCA
+from datetime import date
 from datetime import datetime, timedelta
 from sklearn.linear_model import Ridge
 from timebudget import timebudget
@@ -129,7 +130,7 @@ def common_stocks(stocks, data):
 
 # Get SP500 candidates and set keys to the given year
 def get_candidate():
-    with open(get_load_data_large_dir() / 'sp500_candidates.pkl', 'rb') as f:
+    with open(get_large_dir(live) / 'sp500_candidates.pkl', 'rb') as f:
         candidates = pickle.load(f)
     beginning_year = [date for date in candidates.keys() if date.month == 1]
     candidates = {date.year: candidates[date] for date in beginning_year if date in candidates}

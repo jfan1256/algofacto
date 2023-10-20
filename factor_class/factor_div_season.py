@@ -11,6 +11,7 @@ class FactorDivSeason(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
+                 live: bool = None,
                  file_name: str = None,
                  skip: bool = None,
                  start: str = None,
@@ -22,9 +23,9 @@ class FactorDivSeason(Factor):
                  join: str = None,
                  general: bool = False,
                  window: int = None):
-        super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        dividend = pd.read_parquet(get_load_data_parquet_dir() / 'data_crsp.parquet.brotli', columns=['distcd', 'divamt'])
-        dividend = get_stocks_data(dividend, stock)
+        super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
+        dividend = pd.read_parquet(get_parquet_dir(self.live) / 'data_misc.parquet.brotli', columns=['distcd', 'divamt'])
+        dividend = get_stocks_data(dividend, self.stock)
         # Convert to string and pad to 4 characters
         dividend['distcd_str'] = dividend['distcd'].astype(str).str.pad(4, fillchar=' ')
 

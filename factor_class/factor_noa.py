@@ -8,6 +8,7 @@ class FactorNOA(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
+                 live: bool = None,
                  file_name: str = None,
                  skip: bool = None,
                  start: str = None,
@@ -19,9 +20,9 @@ class FactorNOA(Factor):
                  join: str = None,
                  general: bool = False,
                  window: int = None):
-        super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
+        super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['atq', 'ceqq', 'cheq', 'dcomq', 'dlttq', 'mibtq']
-        noa = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw.parquet.brotli', columns=columns)
+        noa = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
         noa = get_stocks_data(noa, self.stock)
         noa['OA'] = noa['atq'] - noa['cheq']
         noa['OL'] = noa['atq'] - noa['dlttq'] - noa['mibtq'] - noa['dcomq'] - noa['ceqq']
@@ -29,12 +30,4 @@ class FactorNOA(Factor):
         noa = noa[['noa']]
         self.factor_data = noa
 
-        # columns = ['at', 'ceq', 'che', 'dltt', 'mib', 'dc']
-        # noa = pd.read_parquet(get_load_data_parquet_dir() / 'data_fund_raw_a.parquet.brotli', columns=columns)
-        # noa = get_stocks_data(noa, self.stock)
-        # noa['OA'] = noa['at'] - noa['che']
-        # noa['OL'] = noa['at'] - noa['dltt'] - noa['mib'] - noa['dc'] - noa['ceq']
-        # noa['noa'] = (noa['OA'] - noa['OL']) / noa.groupby('permno')['at'].shift(12)
-        # noa = noa[['noa']]
-        # self.factor_data = noa
 

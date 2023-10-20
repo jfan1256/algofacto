@@ -8,6 +8,7 @@ class FactorSBFama(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
+                 live: bool = None,
                  file_name: str = None,
                  skip: bool = None,
                  start: str = None,
@@ -19,10 +20,9 @@ class FactorSBFama(Factor):
                  join: str = None,
                  general: bool = False,
                  window: int = None):
-        super().__init__(file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.factor_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_price.parquet.brotli')
-        self.fama_data = pd.read_parquet(get_load_data_parquet_dir() / 'data_fama.parquet.brotli')
-        # self.fama_data = self.fama_data[['MARKET', 'SMB', 'HML', 'RF']]
+        super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
+        self.factor_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
+        self.fama_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_fama.parquet.brotli')
         self.fama_data = self.fama_data.loc[self.start:self.end]
         self.fama_data = self.fama_data.fillna(0)
         self.factor_col = self.fama_data.columns[:-1]
