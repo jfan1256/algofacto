@@ -129,7 +129,7 @@ def common_stocks(stocks, data):
 
 
 # Get SP500 candidates and set keys to the given year
-def get_candidate():
+def get_candidate(live):
     with open(get_large_dir(live) / 'sp500_candidates.pkl', 'rb') as f:
         candidates = pickle.load(f)
     beginning_year = [date for date in candidates.keys() if date.month == 1]

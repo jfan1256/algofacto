@@ -49,7 +49,7 @@ class FactorEarningDisparity(Factor):
         ticker = ticker.set_index(['permno', 'date'])
         ticker = ticker[~ticker.index.duplicated(keep='first')]
         ticker = ticker.reset_index()
-        ticker.permno = ticker.permno.astype(int)
+        ticker.stock = ticker.stock.astype(int)
         ibes_permno = pd.merge(ticker, ibes_short, on=['ticker', 'date'], how='right')
         ibes_permno = ibes_permno.dropna(subset='permno').set_index(['permno', 'date'])
         ibes_permno = ibes_permno.sort_index(level=['permno', 'date'])

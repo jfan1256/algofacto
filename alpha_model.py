@@ -908,9 +908,9 @@ class AlphaModel:
             # ----------------------------------------------------------------------TUNING PARAMETERS----------------------------------------------------------------------------------------
             # Base params used for training
             if self.pred == 'price':
-                base_params = dict(task_type='GPU', verbose=150, loss_function='RMSE', grow_policy='Lossguide', devices='0')
+                base_params = dict(task_type='GPU', verbose=0, loss_function='RMSE', grow_policy='Lossguide', devices='0')
             elif self.pred == 'sign':
-                base_params = dict(task_type='GPU', verbose=150, loss_function='Logloss', devices='0')
+                base_params = dict(task_type='GPU', verbose=0, loss_function='Logloss', devices='0')
 
             # Get parameters and set num_iterations used for prediction
             params = self._get_parameters(self)
