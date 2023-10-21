@@ -36,14 +36,20 @@ def get_large_dir(live) -> Path:
         return get_root_dir() / 'historical' / 'large'
 
 
-def get_result() -> Path:
-    return get_root_dir() / 'result'
+def get_result(live) -> Path:
+    if live:
+        return get_root_dir() / 'live' / 'result'
+    else:
+        return get_root_dir() / 'historical' / 'result'
 
-def get_report() -> Path:
-    return get_root_dir() / 'report'
+def get_report(live) -> Path:
+    if live:
+        return get_root_dir() / 'live' / 'report'
+    else:
+        return get_root_dir() / 'historical' / 'report'
 
-def get_result_model(model):
-    return get_result() / f'{model}'
+def get_result_model(live, model):
+    return get_result(live) / f'{model}'
 
 def print_data_shape(self, *args, **kwargs):
     print('Shape: ' + str(self.data.shape))

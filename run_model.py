@@ -12,7 +12,7 @@ if live:
 else:
     stock = read_stock(get_large_dir(live) / 'permno_to_train_fund.csv')
 
-start = '2013-01-01'
+start = '2008-01-01'
 end = '2023-01-01'
 save = False
 lightgbm_params = {
@@ -40,7 +40,7 @@ start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = AlphaModel(model_name='lightgbm_trial_79', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
+alpha = AlphaModel(live=live, model_name='lightgbm_trial_79', tuning=['optuna', 30], plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
                    weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=126, test_len=21, **lightgbm_params)
 
 # alpha = AlphaModel(model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=False, opt='ewo',
@@ -217,14 +217,6 @@ inv_growth = PrepFactor(live=live, factor_name='factor_inv_growth', group='permn
 alpha.add_factor(inv_growth)
 del inv_growth
 
-dividend = PrepFactor(live=live, factor_name='factor_dividend', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(dividend, categorical=True)
-del dividend
-
-earning_streak = PrepFactor(live=live, factor_name='factor_earning_streak', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(earning_streak)
-del earning_streak
-
 trend_factor = PrepFactor(live=live, factor_name='factor_trend_factor', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(trend_factor)
 del trend_factor
@@ -297,13 +289,21 @@ accrual_bm = PrepFactor(live=live, factor_name='factor_accrual_bm', group='permn
 alpha.add_factor(accrual_bm)
 del accrual_bm
 
-div_season = PrepFactor(live=live, factor_name='factor_div_season', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(div_season, categorical=True)
-del div_season
-
 mom_off_season = PrepFactor(live=live, factor_name='factor_mom_off_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(mom_off_season)
 del mom_off_season
+
+earning_streak = PrepFactor(live=live, factor_name='factor_earning_streak', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(earning_streak)
+del earning_streak
+
+# dividend = PrepFactor(live=live, factor_name='factor_dividend', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(dividend, categorical=True)
+# del dividend
+
+# div_season = PrepFactor(live=live, factor_name='factor_div_season', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(div_season, categorical=True)
+# del div_season
 
 # grcapx = PrepFactor(live=live, factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(grcapx)

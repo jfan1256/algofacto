@@ -22,8 +22,8 @@ class FactorEarningStreak(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         # Read in actual summary and summary statistic files from WRDS
-        actual = pd.read_csv(get_large_dir(self.live) / 'summary_actual_ibes.csv')
-        statistic = pd.read_csv(get_large_dir(self.live) / 'summary_statistic_ibes.csv')
+        actual = pd.read_csv(get_large_dir(self.live) / 'summary_actual_adj_ibes.csv')
+        statistic = pd.read_csv(get_large_dir(self.live) / 'summary_statistic_adj_ibes.csv')
         actual.columns = actual.columns.str.lower()
         statistic.columns = statistic.columns.str.lower()
         actual = actual.set_index(['oftic', 'statpers'])
