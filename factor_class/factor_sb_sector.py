@@ -22,14 +22,16 @@ class FactorSBSector(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
-        self.fama_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_fama.parquet.brotli')
+        self.risk_free = pd.read_parquet(get_parquet_dir(self.live) / 'data_rf.parquet.brotli')
         sector_df = yf.download(['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU'], start=self.start, end=self.end)
         sector_df = sector_df.stack().swaplevel().sort_index()
         sector_df.index.names = ['ticker', 'date']
         sector_df = sector_df.astype(float)
         T = [1]
+        sector_df = sector_df.drop('Close', axis=1)
+        sector_df = sector_df.rename(columns={'Adj Close': 'Close'})
         sector_df = create_return(sector_df, T)
-        sector_df = sector_df.drop(['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
+        sector_df = sector_df.drop(['Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
         sector_df = sector_df.unstack('ticker').swaplevel(axis=1)
         sector_df.columns = ['_'.join(col).strip() for col in sector_df.columns.values]
 
@@ -39,7 +41,7 @@ class FactorSBSector(Factor):
         # sector_df = rolling_pca(data=sector_df, window_size=window_size, num_components=num_components, name='sector')
 
         self.sector_data = sector_df
-        self.sector_data = pd.concat([self.sector_data, self.fama_data['RF']], axis=1)
+        self.sector_data = pd.concat([self.sector_data, self.risk_free['RF']], axis=1)
         self.sector_data = self.sector_data.loc[self.start:self.end]
         self.sector_data = self.sector_data.fillna(0)
         self.factor_col = self.sector_data.columns[:-1]

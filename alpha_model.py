@@ -131,24 +131,20 @@ class AlphaModel:
             if self.pred == 'sign':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-                self.data = self.data.dropna(subset=[f'target_{self.lookahead}D'])
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'target_{self.lookahead}D'].apply(lambda x: np.sign(x))
             elif self.pred == 'price':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
                 condition = self.data[f'target_{self.lookahead}D'].abs() > 0.05
                 self.data.loc[condition, f'target_{self.lookahead}D'] = np.nan
-                self.data = self.data.dropna(subset=[f'target_{self.lookahead}D'])
         else:
             if self.pred == 'sign':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-                self.data = self.data.dropna(subset=[f'target_{self.lookahead}D'])
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'target_{self.lookahead}D'].apply(lambda x: np.sign(x))
             elif self.pred == 'price':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-                self.data = self.data.dropna(subset=[f'target_{self.lookahead}D'])
 
     # Creates the indices used for pretraining the model
     @staticmethod
@@ -164,18 +160,30 @@ class AlphaModel:
     # Creates the indices used for set walk forward training
     @staticmethod
     def _wfo(data, n_splits, lookahead, train_period_length, test_period_length):
-        # Extra the unique dates in the dataframe
         unique_dates = data.index.get_level_values('date').unique()
         days = sorted(unique_dates)
         split_idx = []
-        # Creates the indices used to split the data for training and testing
+
+        # Your existing loop to create split indices
         for i in range(n_splits):
             train_start_idx = i * test_period_length
             train_end_idx = train_start_idx + train_period_length - 1
             test_start_idx = train_end_idx + lookahead
             test_end_idx = test_start_idx + test_period_length - 1
             split_idx.append([train_start_idx, train_end_idx, test_start_idx, test_end_idx])
-        # Creates the indices used to retrieve the data for training and testing across all stocks
+
+        # Check if the last test_end date is not the last available date
+        if days[test_end_idx] < days[-1]:
+            # Use the previous test_end as the start of the new training period
+            train_start_idx = test_end_idx + 1 - train_period_length
+            train_end_idx = test_end_idx
+
+            # Set the testing window to start right after the previous one ended
+            test_start_idx = test_end_idx + 1
+            test_end_idx = len(days) - 1  # Last available date
+
+            split_idx.append([train_start_idx, train_end_idx, test_start_idx, test_end_idx])
+
         dates = data.reset_index()[['date']]
         for train_start, train_end, test_start, test_end in split_idx:
             train_idx = dates[(days[train_start] <= dates.date) & (dates.date <= days[train_end])].index
@@ -185,22 +193,33 @@ class AlphaModel:
     # Creates the indices used for expanded walk forward training
     @staticmethod
     def _ewo(data, n_splits, lookahead, train_period_length, test_period_length):
-        # Extra the unique dates in the dataframe
+        # Extract the unique dates in the dataframe
         unique_dates = data.index.get_level_values('date').unique()
         days = sorted(unique_dates)
         split_idx = []
+
         # Start training from the first available data point
         train_start_idx = 0
+
         # Creates the indices used to split the data for training and testing
         for i in range(n_splits):
             train_end_idx = train_start_idx + i * test_period_length + train_period_length - 1
             test_start_idx = train_end_idx + lookahead
             test_end_idx = test_start_idx + test_period_length - 1
+
             # If the last index exceeds the number of days (index out of bounds), break the loop
             if test_end_idx >= len(days):
                 break
+
             split_idx.append([train_start_idx, train_end_idx, test_start_idx, test_end_idx])
-        # Creates the indices used to retrieve the data for training and testing across all stocks
+
+        # Check if the last test_end date is not the last available date
+        if days[test_end_idx] < days[-1]:
+            test_start_idx = test_end_idx + 1
+            test_end_idx = len(days) - 1  # Last available date
+            train_end_idx = test_start_idx - lookahead  # Adjusting the training end index
+            split_idx[-1] = [train_start_idx, train_end_idx, test_start_idx, test_end_idx]
+
         dates = data.reset_index()[['date']]
         for train_start, train_end, test_start, test_end in split_idx:
             train_idx = dates[(days[train_start] <= dates.date) & (dates.date <= days[train_end])].index
@@ -238,6 +257,7 @@ class AlphaModel:
             self.categorical = self.categorical + factor.columns.tolist()
             # Must renumber categories for lightgbm
             if 'lightgbm' in self.model_name:
+                # Make sure self.model_name has 'lightgbm' in it, or else it will not append categorical factors to the dataframe
                 factor = self._renumber_cat(factor, date)
                 condition_add(factor)
             # Must renumber fill NAN values for catboost
@@ -592,11 +612,11 @@ class AlphaModel:
                 pretrain_idx = self._pretrain(data=data_pretrain, pretrain_len=self.pretrain_len)
                 # Print the start date and end date for pretrain period
                 print("-" * 60)
-                print("Pretrain: " + str(data_pretrain.iloc[pretrain_idx].index.get_level_values('date')[0].date()) + " --> " + str(
-                    data_pretrain.iloc[pretrain_idx].index.get_level_values('date')[-1].date()))
+                print("Pretrain: " + str(data_pretrain.iloc[pretrain_idx].index.get_level_values('date').unique()[0].date()) + " --> " + str(
+                    data_pretrain.iloc[pretrain_idx].index.get_level_values('date').unique()[-1].date()))
                 # Get start date and end date for train data from pretrain index (essentially add one to last pretrain index)
-                start_date_train = str(data_pretrain.iloc[pretrain_idx].index.get_level_values('date')[-1].date() + timedelta(days=1))
-                end_date_train = str(data_pretrain.index.get_level_values('date')[-1].date())
+                start_date_train = str(data_pretrain.iloc[pretrain_idx].index.get_level_values('date').unique()[-1].date() + timedelta(days=1))
+                end_date_train = str(data_pretrain.index.get_level_values('date').unique()[-1].date())
                 # Print the start date and end date for train period
                 print("Train: " + str(start_date_train) + " --> " + str(end_date_train))
                 print("-" * 60)
@@ -624,8 +644,8 @@ class AlphaModel:
             else:
                 # Print the start date and end date for train period
                 data_train = self.data.loc[:, factors + ret]
-                start_date_train = str(data_train.index.get_level_values('date')[0].date())
-                end_date_train = str(data_train.index.get_level_values('date')[-1].date())
+                start_date_train = str(data_train.index.get_level_values('date').unique()[0].date())
+                end_date_train = str(data_train.index.get_level_values('date').unique()[-1].date())
                 print("-" * 60)
                 print("Train: " + str(start_date_train) + " --> " + str(end_date_train))
                 print("-" * 60)
@@ -932,8 +952,8 @@ class AlphaModel:
 
             # Get start date and end date for train data
             data_train = self.data.loc[:, factors + ret]
-            start_date_train = str(data_train.index.get_level_values('date')[0].date())
-            end_date_train = str(data_train.index.get_level_values('date')[-1].date())
+            start_date_train = str(data_train.index.get_level_values('date').unique()[0].date())
+            end_date_train = str(data_train.index.get_level_values('date').unique()[-1].date())
             # Print the start date and end date for train period
             print("Train: " + str(start_date_train) + " --> " + str(end_date_train))
             print("-" * 60)

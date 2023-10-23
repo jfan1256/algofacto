@@ -54,18 +54,15 @@ class LiveData:
         print("Drop rows where the 'ticker' column has numbers...")
         link_table = link_table[~link_table['ticker'].str.contains('\d', regex=True)]
 
+        # Convert linkdates to datetime
+        print("Convert linkdates to datetime...")
+        link_table['timeLinkStart_d'] = pd.to_datetime(link_table['timeLinkStart_d']).replace(pd.NaT, self.current_date)
+        link_table['timeLinkEnd_d'] = pd.to_datetime(link_table['timeLinkEnd_d']).replace(pd.NaT, self.current_date)
+
         # Remove any non-alphabetic characters from the 'ticker' column
         print("Remove any non-alphabetic characters from the 'ticker' column...")
         link_table['ticker'] = link_table['ticker'].str.replace('[^A-Za-z]', '', regex=True)
         link_table['permno'] = link_table['permno'].astype(int)
-
-        # Remove duplicate permno
-        print("Remove duplicate permno, gvkey, and ticker and keep the most recent based off timeLinkEnd_d...")
-        link_table['timeLinkEnd_d'] = pd.to_datetime(link_table['timeLinkEnd_d'].replace(pd.NaT, self.current_date))
-        link_table = link_table.sort_values(by=['ticker', 'timeLinkEnd_d'])
-        link_table = link_table.drop_duplicates(subset='ticker', keep='last')
-        link_table = link_table.drop_duplicates(subset='permno', keep='last')
-        link_table = link_table.drop_duplicates(subset='gvkey', keep='last')
 
         # Export link table
         print("Export link table...")
@@ -115,11 +112,11 @@ class LiveData:
         print('Set length to 3 years...')
         crsp = set_length(crsp, 3)
 
-        # Drop permno that do not have over 5B market cap
-        print("Drop permno that do not have over 5B market cap...")
+        # Drop permno that do not have over 3B market cap
+        print("Drop permno that do not have over 3B market cap...")
         crsp['market_cap'] = crsp['Close'] * crsp['outstanding'] * 1000
         avg_cap = crsp.groupby('permno')['market_cap'].mean()
-        above_cap = avg_cap[avg_cap > 5_000_000_000].index
+        above_cap = avg_cap[avg_cap > 3_000_000_000].index
         crsp = crsp[crsp.index.get_level_values('permno').isin(above_cap)]
 
         # Drop permno/date pairs that have multiple tickers
@@ -141,8 +138,8 @@ class LiveData:
         	a.dlcq, a.dlttq, a.dpq, a.drcq, a.drltq, a.dvpsxq, a.dvpq, a.dvy, a.epspiq, a.epspxq, a.fopty,
         	a.gdwlq, a.ibq, a.invtq, a.intanq, a.ivaoq, a.lcoq, a.lctq, a.loq, a.ltq, a.mibq,
         	a.niq, a.oancfy, a.oiadpq, a.oibdpq, a.piq, a.ppentq, a.ppegtq, a.prstkcy, a.prccq,
-        	a.pstkq, a.rdq, a.req, a.rectq, a.revtq, a.saleq, a.seqq, a.sstky, a.txdiq,
-        	a.txditcq, a.txpq, a.txtq, a.xaccq, a.xintq, a.xsgaq, a.xrdq, a.capxy
+        	a.pstkq, a.rdq, a.req, a.rectq, a.revtq, a.saleq, a.seqq, a.sstky, a.txdiq, a.dltisy, a.mibtq,
+        	a.txditcq, a.txpq, a.txtq, a.xaccq, a.xintq, a.xsgaq, a.xrdq, a.capxy, a.dlcchy, a.dltry, a.dcomq
             FROM comp_na_daily_all.fundq as a
         	WHERE a.consol = 'C'
         	AND a.popsrc = 'D'
@@ -167,6 +164,11 @@ class LiveData:
         print("Merge link table and Compustat Quarterly...")
         quarterly = compustat_quarterly.merge(link_table, on='gvkey', how='inner')
 
+        # Apply the linkdate restriction
+        print("Applying linkdate restriction...")
+        quarterly['datadate'] = pd.to_datetime(quarterly['datadate'])
+        quarterly = quarterly[(quarterly['datadate'] >= quarterly['timeLinkStart_d']) & (quarterly['datadate'] <= quarterly['timeLinkEnd_d'])]
+
         # Keep only the most recent data for each fiscal quarter
         print("Keep only the most recent data for each fiscal quarter...")
         quarterly = quarterly.sort_values(by=['gvkey', 'fyearq', 'fqtr', 'datadate'])
@@ -174,12 +176,10 @@ class LiveData:
 
         # Convert to datetime
         print("Convert to datetime...")
-        quarterly['datadate'] = pd.to_datetime(quarterly['datadate'])
         quarterly['rdq'] = pd.to_datetime(quarterly['rdq'])
 
-        # Shift data 3 months forward
-        print("Shift data 3 months forward (Don't need to probably)...")
-        # quarterly['time_avail_m'] = (quarterly['datadate'] + pd.DateOffset(months=3)).dt.to_period('M')
+        # Resample to monthly
+        print("Resample to monthly...")
         quarterly['time_avail_m'] = (quarterly['datadate']).dt.to_period('M')
         quarterly.loc[(~quarterly['rdq'].isnull()) & (quarterly['rdq'].dt.to_period('M') > quarterly['time_avail_m']), 'time_avail_m'] = quarterly['rdq'].dt.to_period('M')
 
@@ -226,15 +226,31 @@ class LiveData:
         print("Read in CRSP stock list...")
         stock = read_stock(get_large_dir(self.live) / 'permno_crsp.csv')
         quarterly = get_stocks_data(quarterly, stock)
-        print("Exporting stock list for live trading...")
+
+        # Remove permnos that share tickers
+        print("Remove permnos that share tickers...")
+        grouped = quarterly.reset_index().groupby('ticker')
+        permnos_to_remove = []
+
+        for ticker, group in grouped:
+            if group['permno'].nunique() > 1:
+                permnos_to_remove.extend(group['permno'].unique())
+
+        print(f"Number of unique permnos to be removed due to shared tickers: {len(set(permnos_to_remove))}...")
+
+        # Drop rows with those permno's from the 'quarterly' dataframe
+        quarterly = quarterly.drop(permnos_to_remove, level='permno')
+
+        # Export stock list
+        print("Export stock list...")
         print(f'Number of stocks: {len(get_stock_idx(quarterly))}')
-        export_stock(quarterly, get_large_dir(self.live) / 'permno_compustat.csv')
+        export_stock(quarterly, get_large_dir(self.live) / 'permno_compustat_quarterly.csv')
 
         # Export ticker list
         print("Export ticker list...")
-        ticker = link_table[link_table['permno'].isin(get_stock_idx(quarterly))]
-        ticker = ticker.set_index('ticker')
-        export_stock(ticker, get_large_dir(self.live) / 'ticker_compustat.csv')
+        ticker = quarterly.reset_index().set_index('ticker')
+        print(f'Number of ticker: {len(ticker.index.unique())}')
+        export_stock(ticker, get_large_dir(self.live) / 'ticker_compustat_quarterly.csv')
 
         # Convert data to numerical format (exclude columns that are not numerical format)
         print("Convert data to numerical format (exclude columns that are not numerical format)...")
@@ -268,7 +284,7 @@ class LiveData:
             a.ppenls, a.ppent, a.prcc_c, a.prcc_f, a.prstkc, a.prstkcc, a.pstk, a.pstkl, a.pstkrv,
             a.re, a.rect, a.recta, a.revt, a.sale, a.scstkc, a.seq, a.spi, a.sstk,
             a.tstkp, a.txdb, a.txdi, a.txditc, a.txfo, a.txfed, a.txp, a.txt,
-            a.wcap, a.wcapch, a.xacc, a.xad, a.xint, a.xrd, a.xpp, a.xsga
+            a.wcap, a.wcapch, a.xacc, a.xad, a.xint, a.xrd, a.xpp, a.xsga, a.cdvc
             FROM comp_na_daily_all.funda as a
             WHERE a.consol = 'C'
             AND a.popsrc = 'D'
@@ -292,6 +308,11 @@ class LiveData:
         # Merge link table and Compustat Annual
         print("Merge link table and Compustat Annual...")
         annual = compustat_annual.merge(link_table, on='gvkey', how='inner')
+
+        # Apply the linkdate restriction
+        print("Applying linkdate restriction...")
+        annual['datadate'] = pd.to_datetime(annual['datadate'])
+        annual = annual[(annual['datadate'] >= annual['timeLinkStart_d']) & (annual['datadate'] <= annual['timeLinkEnd_d'])]
 
         # Drop rows based on condition
         print("Drop rows based on condition...")
@@ -317,10 +338,9 @@ class LiveData:
         for var in vars_list:
             annual[var].fillna(0, inplace=True)
 
-        # Shift data forward by 6 months
-        print("Shift data forward by 6 months (probably don't need to do this)...")
-        # annual['date'] = pd.to_datetime(annual['datadate']).dt.to_period('M') + 6
-        annual['date'] = pd.to_datetime(annual['datadate']).dt.to_period('M')
+        # Resample to monthly
+        print("Resample to monthly...")
+        annual['date'] = annual['datadate'].dt.to_period('M')
 
         # Convert index from annually to monthly
         print("Convert index from annually to monthly...")
@@ -340,19 +360,44 @@ class LiveData:
         annual = annual.sort_index(level=['permno', 'date'])
         annual = annual[~annual.index.duplicated(keep='first')]
 
-        # Retrieve live trade stock list
-        print("Retrieve live trade stock list...")
-        stock = read_stock(get_large_dir(self.live) / 'permno_compustat.csv')
+        # Read in Compustat Quarterly stock list
+        print("Read in Compustat Quarterly stock list...")
+        stock = read_stock(get_large_dir(self.live) / 'permno_compustat_quarterly.csv')
         annual = get_stocks_data(annual, stock)
 
+        # Remove permnos that share tickers
+        print("Remove permnos that share tickers...")
+        grouped = annual.reset_index().groupby('ticker')
+        permnos_to_remove = []
+
+        for ticker, group in grouped:
+            if group['permno'].nunique() > 1:
+                permnos_to_remove.extend(group['permno'].unique())
+
+        print(f"Number of unique permnos to be removed due to shared tickers: {len(set(permnos_to_remove))}...")
+
+        # Drop rows with those permno's from the 'annual' dataframe
+        annual = annual.drop(permnos_to_remove, level='permno')
+
+        # Export stock list
+        print("Export stock list...")
+        print(f'Number of stocks: {len(get_stock_idx(annual))}')
+        export_stock(annual, get_large_dir(self.live) / 'permno_compustat_annual.csv')
+
+        # Export ticker list
+        print("Export ticker list...")
+        ticker = annual.reset_index().set_index('ticker')
+        print(f'Number of ticker: {len(ticker.index.unique())}')
+        export_stock(ticker, get_large_dir(self.live) / 'ticker_compustat_annual.csv')
+
         # Export data
-        print("Export data")
+        print("Export data...")
         annual.to_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', compression='brotli')
 
     # Create Live Price
     def create_live_price(self):
         print("-" * 60)
-        ticker_list = read_stock(get_large_dir(self.live) / 'ticker_compustat.csv')
+        ticker_list = read_stock(get_large_dir(self.live) / 'ticker_compustat_annual.csv')
 
         # Read in live market data
         print("Read in live market data...")
@@ -361,20 +406,72 @@ class LiveData:
         price.index.names = ['ticker', 'date']
         price = price.astype(float)
 
-        # Read in link table
-        print("Read in link table...")
-        link_table = pd.read_parquet(get_parquet_dir(self.live) / 'data_link.parquet.brotli')
+        # Read in Fundamental Annual Table
+        print("Read in Fundamental Annual Table table...")
+        fundamental_annual = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=['ticker'])
+        fundamental_annual = fundamental_annual.reset_index().set_index(['ticker', 'date'])
 
-        # Merge link table and Live Market Price
-        print("Merge link table and Live Market Price...")
-        price = price.reset_index()
-        price = price.merge(link_table, on='ticker', how='inner')
+        # Merge Fundamental and Live Market Price to get permno index
+        print("Merge Fundamental and Live Market Price to get permno index...")
+        price = price.merge(fundamental_annual, left_index=True, right_index=True, how='left')
+        price['permno'] = price.groupby('ticker')['permno'].ffill().bfill().astype(int)
         price = price.reset_index().set_index(['permno', 'date'])
         price = price.sort_index(level=['permno', 'date'])
-
         # Remove duplicate indices (there should be none)
         print("Remove duplicate indices (there should be none)...")
         price = price[~price.index.duplicated(keep='first')]
+
+        # Change adj close to close
+        print("Change adj close to close")
+        price = price.drop('Close', axis=1)
+        price = price.rename(columns={'Adj Close': 'Close'})
+
+        # Set length to 3 years
+        print("Set length to 3 years...")
+        list2 = get_stock_idx(price)
+        price = set_length(price, 3)
+        list1 = get_stock_idx(price)
+        set1 = set(list1)
+        set2 = set(list2)
+        unique_to_list2 = set2 - set1
+        print(f"Removed {len(unique_to_list2)} stocks...")
+
+        # Remove stocks with negative Close price data
+        print("Remove stocks with negative Close price data...")
+        stocks_with_negative_close = price[price['Close'] < 0].reset_index()['permno'].unique()
+        price = price[~price.index.get_level_values('permno').isin(stocks_with_negative_close)]
+
+        # Remove irregular stock (problem with yfinance)
+        print("Remove irregular stock (problem with yfinance)...")
+        def detect_irregularities(df, window_size=60, z_threshold=7):
+            # Calculate rolling mean and standard deviation
+            df['rolling_mean'] = df.groupby(level='permno')['Close'].transform(lambda x: x.rolling(window=window_size).mean())
+            df['rolling_std'] = df.groupby(level='permno')['Close'].transform(lambda x: x.rolling(window=window_size).std())
+
+            # Compute the Z-score for each data point
+            df['z_score'] = (df['Close'] - df['rolling_mean']) / df['rolling_std']
+
+            # Detect irregularities based on Z-score threshold
+            irregularities = df[df['z_score'].abs() > z_threshold]
+
+            return irregularities
+
+        anomalies = detect_irregularities(price)
+        stocks_to_remove = get_stock_idx(anomalies)
+        print(f"Removed {len(stocks_to_remove)} stocks...")
+        price = price[~price.index.get_level_values('permno').isin(stocks_to_remove)]
+
+        # Remove permnos that share tickers
+        print("Remove permnos that have duplicate tickers...")
+        grouped = price.reset_index().groupby('ticker')
+        permnos_to_remove = []
+
+        for ticker, group in grouped:
+            if group['permno'].nunique() > 1:
+                permnos_to_remove.extend(group['permno'].unique())
+
+        # Drop rows with those permno's from the 'annual' dataframe
+        price = price.drop(permnos_to_remove, level='permno')
 
         # Export ohclv
         print('Exporting Price...')
@@ -432,12 +529,6 @@ class LiveData:
         pension = pension.rename(columns={'datadate': 'date', 'tic': 'ticker'})
         pension = pension.set_index('date')
 
-        # Shift everything 1 year forward
-        # print("Shift everything 1 year forward...")
-        # for col in pension.columns:
-        #     if col != 'gvkey' or col != 'indfmt' or col != 'datafmt' or col != 'consol' or col != 'popsrc' or col != 'ticker':
-        #         pension[col] = pension.groupby('gvkey')[col].shift(1)
-
         # Export data
         print("Export data...")
         pension.to_parquet(get_parquet_dir(self.live) / 'data_pension.parquet.brotli', compression='brotli')
@@ -445,6 +536,7 @@ class LiveData:
     # Create Misc
     def create_misc(self):
         print("-" * 60)
+        print("Read in Misc...")
         quarterly = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', columns=['cshoq'])
         quarterly.columns = ['outstanding']
         misc = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
@@ -456,6 +548,9 @@ class LiveData:
         misc['outstanding'] = misc['outstanding'] * 1000
         misc['market_cap'] = misc['Close'] * misc['outstanding']
         misc = misc[['outstanding', 'market_cap']]
+
+        # Export data
+        print("Export data...")
         misc.to_parquet(get_parquet_dir(self.live) / 'data_misc.parquet.brotli', compression='brotli')
 
     # Create Industry
@@ -595,8 +690,8 @@ class LiveData:
 
         # Iterate through each key
         print("Iterate through each key...")
+        print('-' * 30)
         for name, ranges in fama_ind.items():
-            print('-' * 60)
             print(name)
             combined = assign_ind(industry, 'IndustryFama', ranges, name)
 
@@ -628,8 +723,8 @@ class LiveData:
         industry = industry[~industry.index.duplicated(keep='first')]
         industry = industry.replace([np.inf, -np.inf], np.nan)
 
-        # Export industry
-        print("Exporting Industries...")
+        # Export data
+        print("Export data...")
         industry[['Industry']].to_parquet(get_parquet_dir(self.live) / 'data_ind.parquet.brotli', compression='brotli')
         industry[['Subindustry']].to_parquet(get_parquet_dir(self.live) / 'data_ind_sub.parquet.brotli', compression='brotli')
         industry[['IndustryFama']].to_parquet(get_parquet_dir(self.live) / 'data_ind_fama.parquet.brotli', compression='brotli')
@@ -652,21 +747,21 @@ class LiveData:
             WHERE a.oftic IN ({ticker_string});
         """
 
-        # Read in Actual Adj
-        print("Read in Actual Adj...")
+        # Read in IBES Actual Adj
+        print("Read in IBES Actual Adj...")
         db = wrds.Connection(wrds_username='jofan23')
         actual_adj = db.raw_sql(sql_actual_adj)
         db.close()
 
-        # Read in Statistic Adj
-        print("Read in Statistic Adj...")
+        # Read in IBES Statistic Adj
+        print("Read in IBES Statistic Adj...")
         db = wrds.Connection(wrds_username='jofan23')
         statistic_adj = db.raw_sql(sql_statistic_adj)
         db.close()
 
         print("Export Data...")
-        actual_adj.to_csv(get_large_dir(self.live) / 'summary_actual_adj_ibes.csv')
-        statistic_adj.to_csv(get_large_dir(self.live) / 'summary_statistic_adj_ibes.csv')
+        actual_adj.to_csv(get_large_dir(self.live) / 'summary_actual_adj_ibes.csv', index=False)
+        statistic_adj.to_csv(get_large_dir(self.live) / 'summary_statistic_adj_ibes.csv', index=False)
 
     # Create Macro
     def create_macro(self):
@@ -682,4 +777,27 @@ class LiveData:
 
         # Export data
         print("Export data...")
-        medianCPI.to_csv(get_large_dir(True) / 'macro' / 'medianCPI.csv')
+        medianCPI.to_csv(get_large_dir(True) / 'macro' / 'medianCPI.csv', index=False)
+
+    # Create Risk Free Rate
+    def create_risk_rate(self):
+        # de-annualize yearly interest rates
+        def deannualize(annual_rate, periods=365):
+            return (1 + annual_rate) ** (1 / periods) - 1
+
+        def get_risk_free_rate():
+            # download 3-month us treasury bills rates
+            print("Download 3-month us treasury bills rates...")
+            annualized = yf.download("^IRX", start=self.start_date, end=self.current_date)["Adj Close"]
+
+            # de-annualize
+            print("De-annualize...")
+            daily = annualized.apply(deannualize)
+            rf = pd.DataFrame({"RF": daily})
+            rf.index.names = ['date']
+            return rf
+
+        rates = get_risk_free_rate()
+        # Export Data
+        print("Export Data...")
+        rates.to_parquet(get_parquet_dir(self.live) / 'data_rf.parquet.brotli', compression='brotli')

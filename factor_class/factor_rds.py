@@ -36,6 +36,8 @@ class FactorRDS(Factor):
         rds['recta'] = rds['recta'].fillna(0)
         rds = rds.set_index(['permno', 'date'])
         rds = rds.sort_index(level=['permno', 'date'])
+        rds['pcupsu'].fillna(0, inplace=True)
+        rds['paddml'].fillna(0, inplace=True)
 
         def calculate_rds(group):
             group['DS'] = (group['msa'] - group['msa'].shift(1)) + \

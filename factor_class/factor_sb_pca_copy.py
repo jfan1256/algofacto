@@ -4,7 +4,7 @@ from functions.utils.func import *
 from factor_class.factor import Factor
 
 
-class FactorSBBond(Factor):
+class FactorSBPCACopy(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)
     def __init__(self,
@@ -22,29 +22,23 @@ class FactorSBBond(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
-        self.risk_free = pd.read_parquet(get_parquet_dir(self.live) / 'data_rf.parquet.brotli')
-        bond_df = yf.download(['TLT', 'TIP', 'SHY'], start=self.start, end=self.end)
-        bond_df = bond_df.stack().swaplevel().sort_index()
-        bond_df.index.names = ['ticker', 'date']
-        bond_df = bond_df.astype(float)
-        # T = [1, 21, 126]
-        T = [1]
-        bond_df = bond_df.drop('Close', axis=1)
-        bond_df = bond_df.rename(columns={'Adj Close': 'Close'})
-        bond_df = create_return(bond_df, T)
-        bond_df = bond_df.drop(['Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
-        bond_df = bond_df.unstack('ticker').swaplevel(axis=1)
-        bond_df.columns = ['_'.join(col).strip() for col in bond_df.columns.values]
-        self.bond_data = bond_df
-        self.bond_data = pd.concat([self.bond_data, self.risk_free['RF']], axis=1)
-        self.bond_data = self.bond_data.loc[self.start:self.end]
-        self.bond_data = self.bond_data.fillna(0)
-        self.factor_col = self.bond_data.columns[:-1]
+        pca_ret = self.factor_data.copy(deep=True)
+        # Create returns and convert ticker index to columns
+        pca_ret = create_return(pca_ret, windows=[1])
+        ret = pca_ret[['RET_01']]
+        ret = ret['RET_01'].unstack(pca_ret.index.names[0])
+        ret.iloc[0] = ret.iloc[0].fillna(0)
+
+        # Execute Rolling PCA
+        window_size = 21
+        num_components = 5
+        self.pca_data = rolling_pca(data=ret, window_size=window_size, num_components=num_components, name='Return')
+        self.factor_col = self.pca_data.columns
 
     @ray.remote
     def function(self, splice_data):
         T = [1]
-        splice_data = create_return(splice_data, windows=T)
+        splice_data = create_return(splice_data, T)
         splice_data = splice_data.fillna(0)
 
         for t in T:
@@ -52,7 +46,7 @@ class FactorSBBond(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [21, 126]
             for window in windows:
-                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.bond_data, factor_col=self.factor_col, window=window, name=f'bond_{t:02}', ret=ret)
+                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.pca_data, factor_col=self.factor_col, window=window, name=f'ret_pca_{t:02}', ret=ret)
                 splice_data = splice_data.join(betas)
 
         return splice_data

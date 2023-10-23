@@ -40,7 +40,7 @@ start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = AlphaModel(live=live, model_name='lightgbm_trial_79', tuning=['optuna', 30], plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
+alpha = AlphaModel(live=live, model_name='lightgbm_trial_83', tuning=['optuna', 30], plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
                    weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=126, test_len=21, **lightgbm_params)
 
 # alpha = AlphaModel(model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=False, opt='ewo',
@@ -241,10 +241,6 @@ mom_vol = PrepFactor(live=live, factor_name='factor_mom_vol', group='permno', in
 alpha.add_factor(mom_vol, categorical=True)
 del mom_vol
 
-ms = PrepFactor(live=live, factor_name='factor_ms', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(ms, categorical=True)
-del ms
-
 int_mom = PrepFactor(live=live, factor_name='factor_int_mom', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(int_mom)
 del int_mom
@@ -296,6 +292,10 @@ del mom_off_season
 earning_streak = PrepFactor(live=live, factor_name='factor_earning_streak', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(earning_streak)
 del earning_streak
+
+# ms = PrepFactor(live=live, factor_name='factor_ms', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(ms, categorical=True)
+# del ms
 
 # dividend = PrepFactor(live=live, factor_name='factor_dividend', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(dividend, categorical=True)
@@ -359,25 +359,33 @@ del earning_streak
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------BETAS---------------------------------------------------------------------------------------------
-sb_fama = PrepFactor(live=live, factor_name='factor_sb_fama', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(sb_fama)
-del sb_fama
-
-sb_bond = PrepFactor(live=live, factor_name='factor_sb_bond', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(sb_bond)
-del sb_bond
+# sb_fama = PrepFactor(live=live, factor_name='factor_sb_fama', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(sb_fama)
+# del sb_fama
+#
+# sb_bond = PrepFactor(live=live, factor_name='factor_sb_bond', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(sb_bond)
+# del sb_bond
 
 sb_pca = PrepFactor(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(sb_pca)
 del sb_pca
 
+# sb_pca_copy = PrepFactor(live=live, factor_name='factor_sb_pca_copy', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(sb_pca_copy)
+# del sb_pca_copy
+#
+# sb_sector_copy = PrepFactor(live=live, factor_name='factor_sb_sector_copy', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(sb_sector_copy)
+# del sb_sector_copy
+
 sb_sector = PrepFactor(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(sb_sector)
 del sb_sector
 
-sb_inverse = PrepFactor(live=live, factor_name='factor_sb_inverse', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(sb_inverse)
-del sb_inverse
+# sb_inverse = PrepFactor(live=live, factor_name='factor_sb_inverse', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+# alpha.add_factor(sb_inverse)
+# del sb_inverse
 
 # sb_oil = PrepFactor(live=live, factor_name='factor_sb_oil', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(sb_oil)

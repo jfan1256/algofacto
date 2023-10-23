@@ -22,7 +22,7 @@ class FactorSBPCA(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
-        self.fama_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_fama.parquet.brotli')
+        self.risk_free = pd.read_parquet(get_parquet_dir(self.live) / 'data_rf.parquet.brotli')
         pca_ret = self.factor_data.copy(deep=True)
         # Create returns and convert ticker index to columns
         pca_ret = create_return(pca_ret, windows=[1])
@@ -34,7 +34,7 @@ class FactorSBPCA(Factor):
         window_size = 21
         num_components = 5
         self.pca_data = rolling_pca(data=ret, window_size=window_size, num_components=num_components, name='Return')
-        self.pca_data = pd.concat([self.pca_data, self.fama_data['RF']], axis=1)
+        self.pca_data = pd.concat([self.pca_data, self.risk_free['RF']], axis=1)
         self.pca_data = self.pca_data.loc[self.start:self.end]
         self.pca_data = self.pca_data.fillna(0)
         self.factor_col = self.pca_data.columns[:-1]

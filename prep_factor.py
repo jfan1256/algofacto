@@ -61,7 +61,8 @@ class PrepFactor:
             # Resample from not daily to daily
             date_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_date.parquet.brotli')
             date_data = set_timeframe(date_data, self.start, self.end)
-            self.data = pd.merge(date_data.loc[self.stock], self.data, left_index=True, right_index=True, how='left')
+            date_data = get_stocks_data(date_data, self.stock)
+            self.data = pd.merge(date_data, self.data, left_index=True, right_index=True, how='left')
             self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
             # Forward Fill by a maximum of 93 days
             self.data = self.data.groupby('permno').fillna(method='ffill', limit=93)
@@ -90,7 +91,7 @@ class PrepFactor:
         def filter_func(group):
             end_date = pd.Timestamp(self.end)
             # Check if the date of the last row is not equal to self.end
-            if (group.index[-1][1] - end_date).days >= 21:
+            if (group.index[-1][1] - end_date).days >= 5:
                 # Remove the last row
                 return group.iloc[:-1]
             return group

@@ -22,18 +22,20 @@ class FactorSBInverse(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
-        self.fama_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_fama.parquet.brotli')
+        self.risk_free = pd.read_parquet(get_parquet_dir(self.live) / 'data_rf.parquet.brotli')
         overall_df = yf.download(['IWR', 'IVV', 'QQQ', 'SPY', 'VNQ'], start=self.start, end=self.end)
         overall_df = overall_df.stack().swaplevel().sort_index()
         overall_df.index.names = ['ticker', 'date']
         overall_df = overall_df.astype(float)
         T = [1]
+        overall_df = overall_df.drop('Close', axis=1)
+        overall_df = overall_df.rename(columns={'Adj Close': 'Close'})
         overall_df = create_return(overall_df, T)
-        overall_df = overall_df.drop(['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
+        overall_df = overall_df.drop(['Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
         overall_df = overall_df.unstack('ticker').swaplevel(axis=1)
         overall_df.columns = ['_'.join(col).strip() for col in overall_df.columns.values]
         self.overall_data = overall_df
-        self.overall_data = pd.concat([self.overall_data, self.fama_data['RF']], axis=1)
+        self.overall_data = pd.concat([self.overall_data, self.risk_free['RF']], axis=1)
         self.overall_data = self.overall_data.loc[self.start:self.end]
         self.overall_data = self.overall_data.fillna(0)
         self.factor_col = self.overall_data.columns[:-1]

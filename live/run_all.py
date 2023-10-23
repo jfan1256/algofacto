@@ -11,8 +11,6 @@ from factor_class.factor_sign_ret import FactorSignRet
 from factor_class.factor_volatility import FactorVolatility
 from factor_class.factor_volume import FactorVolume
 from factor_class.factor_time import FactorTime
-from factor_class.factor_sb_fama import FactorSBFama
-from factor_class.factor_sb_inverse import FactorSBInverse
 from factor_class.factor_talib import FactorTalib
 from factor_class.factor_load_ret import FactorLoadRet
 from factor_class.factor_clust_ret import FactorClustRet
@@ -21,7 +19,6 @@ from factor_class.factor_clust_ind_mom import FactorClustIndMom
 from factor_class.factor_load_volume import FactorLoadVolume
 from factor_class.factor_sb_sector import FactorSBSector
 from factor_class.factor_cond_ret import FactorCondRet
-from factor_class.factor_sb_bond import FactorSBBond
 from factor_class.factor_sb_pca import FactorSBPCA
 from factor_class.factor_ind_fama import FactorIndFama
 from factor_class.factor_ind_mom_fama import FactorIndMomFama
@@ -42,7 +39,6 @@ from factor_class.factor_ind_mom_sub import FactorIndMomSub
 from factor_class.factor_clust_ind_mom_sub import FactorClustIndMomSub
 from factor_class.factor_comp_debt import FactorCompDebt
 from factor_class.factor_mom_vol import FactorMomVol
-from factor_class.factor_ms import FactorMS
 from factor_class.factor_mom_season6 import FactorMomSeason6
 from factor_class.factor_mom_season11 import FactorMomSeason11
 from factor_class.factor_int_mom import FactorIntMom
@@ -63,11 +59,15 @@ from factor_class.factor_mom_rev import FactorMomRev
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------GET LIVE DATA----------------------------------------------------------------------------------
+print("---------------------------------------------------------------------------GET LIVE DATA----------------------------------------------------------------------------------")
 live = True
 start = '2005-01-01'
-update_stock_list = False
-curr_date = date.today().strftime('%Y-%m-%d')
+update_stock_list = True
+curr_date = date.today()
+curr_date = curr_date + timedelta(days=1)
+curr_date = curr_date.strftime('%Y-%m-%d')
 start_time = time.time()
+total_time = time.time()
 
 live_data = LiveData(live=live, start_date=start, current_date=curr_date)
 
@@ -81,13 +81,16 @@ live_data.create_misc()
 live_data.create_industry()
 live_data.create_ibes()
 live_data.create_macro()
+live_data.create_risk_rate()
 
 elapsed_time = time.time() - start_time
-print(f"Total time to get live data: {round(elapsed_time)} seconds")
+minutes, seconds = divmod(elapsed_time, 60)
+print(f"Total time to get live data: {int(minutes)}:{int(seconds):02}")
 print("-" * 60)
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------CREATE FACTORS---------------------------------------------------------------------------------------
+print("---------------------------------------------------------------------CREATE FACTORS---------------------------------------------------------------------------------------")
 stock = read_stock(get_large_dir(live) / 'permno_live.csv')
 
 ray.init(num_cpus=16, ignore_reinit_error=True)
@@ -138,7 +141,6 @@ FactorFrontier(live=live, file_name='factor_frontier', skip=True, stock=stock, s
 FactorEarningStreak(live=live, file_name='factor_earning_streak', skip=True, stock=stock, start=start, end=curr_date).create_factor()
 FactorAgeMom(live=live, file_name='factor_age_mom', stock=stock, start=start, end=curr_date, batch_size=10, splice_size=20, group='permno').create_factor()
 FactorMomVol(live=live, file_name='factor_mom_vol', skip=True, stock=stock, start=start, end=curr_date).create_factor()
-FactorMS(live=live, file_name='factor_ms', skip=True, stock=stock, start=start, end=curr_date).create_factor()
 FactorMomSeasonShort(live=live, file_name='factor_mom_season_short', stock=stock, start=start, end=curr_date, batch_size=10, splice_size=20, group='permno').create_factor()
 FactorMomSeason(live=live, file_name='factor_mom_season', stock=stock, start=start, end=curr_date, batch_size=10, splice_size=20, group='permno').create_factor()
 FactorMomSeason6(live=live, file_name='factor_mom_season6', stock=stock, start=start, end=curr_date, batch_size=10, splice_size=20, group='permno').create_factor()
@@ -152,10 +154,7 @@ FactorMomRev(live=live, file_name='factor_mom_rev', skip=True, stock=stock, star
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------BETAS-----------------------------------------------------------------------------------------
 FactorSBSector(live=live, file_name='factor_sb_sector', stock=stock, start=start, end=curr_date, batch_size=10, splice_size=20, group='permno').create_factor()
-FactorSBFama(live=live, file_name='factor_sb_fama', stock=stock, start=start, end=curr_date, batch_size=10, splice_size=20, group='permno').create_factor()
 FactorSBPCA(live=live, file_name='factor_sb_pca', stock=stock, start=start, end=curr_date, batch_size=10, splice_size=20, group='permno').create_factor()
-FactorSBBond(live=live, file_name='factor_sb_bond', stock=stock, start=start, end=curr_date, batch_size=10, splice_size=20, group='permno').create_factor()
-FactorSBInverse(live=live, file_name='factor_sb_inverse', stock=stock, start=start, end=curr_date, batch_size=10, splice_size=20, group='permno').create_factor()
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------CLUSTER---------------------------------------------------------------------------------------
 FactorClustRet(live=live, file_name='factor_clust_ret', stock=stock, start=start, end=curr_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
@@ -165,17 +164,18 @@ FactorClustIndMomSub(live=live, file_name='factor_clust_ind_mom_sub', stock=stoc
 FactorClustIndMomFama(live=live, file_name='factor_clust_ind_mom_fama', stock=stock, start=start, end=curr_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
 
 elapsed_time = time.time() - start_time
-print(f"Total time to create all factors: {round(elapsed_time)} seconds")
+minutes, seconds = divmod(elapsed_time, 60)
+print(f"Total time to create all factors: {int(minutes)}:{int(seconds):02}")
 print("-" * 60)
 ray.shutdown()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------PARAMS--------------------------------------------------------------------------------------------
-live = False
+print("---------------------------------------------------------------------TRAIN MODEL------------------------------------------------------------------------------------------")
 stock = read_stock(get_large_dir(live) / 'permno_live.csv')
 
-start = '2008-01-01'
-save = True
+start = '2013-01-01'
+save = False
 start_time = time.time()
 
 lightgbm_params = {
@@ -194,8 +194,8 @@ lightgbm_params = {
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
 format_end = date.today().strftime('%Y%m%d')
-model_name = f'gbm_{format_end}'
-alpha = AlphaModel(live=live, model_name=model_name, tuning=['optuna', 30], plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
+model_name = f'lightgbm_{format_end}'
+alpha = AlphaModel(live=live, model_name=model_name, tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
                    weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=126, test_len=21, **lightgbm_params)
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -309,7 +309,7 @@ inv_growth = PrepFactor(live=live, factor_name='factor_inv_growth', group='permn
 alpha.add_factor(inv_growth)
 del inv_growth
 
-trend_factor = PrepFactor(live=live, factor_name='factor_trend_factor', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=curr_date, save=save).prep()
+trend_factor = PrepFactor(live=live, factor_name='factor_trend_factor', group='permno', interval='D', kind='trend', stock=stock, div=False, start=start, end=curr_date, save=save).prep()
 alpha.add_factor(trend_factor)
 del trend_factor
 
@@ -332,10 +332,6 @@ del comp_debt
 mom_vol = PrepFactor(live=live, factor_name='factor_mom_vol', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=curr_date, save=save).prep()
 alpha.add_factor(mom_vol, categorical=True)
 del mom_vol
-
-ms = PrepFactor(live=live, factor_name='factor_ms', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=curr_date, save=save).prep()
-alpha.add_factor(ms, categorical=True)
-del ms
 
 int_mom = PrepFactor(live=live, factor_name='factor_int_mom', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=curr_date, save=save).prep()
 alpha.add_factor(int_mom)
@@ -391,14 +387,6 @@ del earning_streak
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------BETAS---------------------------------------------------------------------------------------------
-sb_fama = PrepFactor(live=live, factor_name='factor_sb_fama', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=curr_date, save=save).prep()
-alpha.add_factor(sb_fama)
-del sb_fama
-
-sb_bond = PrepFactor(live=live, factor_name='factor_sb_bond', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=curr_date, save=save).prep()
-alpha.add_factor(sb_bond)
-del sb_bond
-
 sb_pca = PrepFactor(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=curr_date, save=save).prep()
 alpha.add_factor(sb_pca)
 del sb_pca
@@ -406,10 +394,6 @@ del sb_pca
 sb_sector = PrepFactor(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=curr_date, save=save).prep()
 alpha.add_factor(sb_sector)
 del sb_sector
-
-sb_inverse = PrepFactor(live=live, factor_name='factor_sb_inverse', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=curr_date, save=save).prep()
-alpha.add_factor(sb_inverse)
-del sb_inverse
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------CLUSTER-------------------------------------------------------------------------------------------
@@ -443,3 +427,8 @@ print("-" * 60)
 print("Run Model")
 
 alpha.lightgbm()
+
+elapsed_time = time.time() - total_time
+minutes, seconds = divmod(elapsed_time, 60)
+print(f"Total time to execute everything: {int(minutes)}:{int(seconds):02}")
+print("-" * 60)
