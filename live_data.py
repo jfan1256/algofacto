@@ -425,10 +425,20 @@ class LiveData:
         combined_price = pd.concat([crsp_price, price_change_price], axis=0)
         combined_price = combined_price.sort_index(level=['permno', 'date'])
 
-        # Identify and drop permnos that have returns greater than 10 (this is due to price descrepancy between CRSP and Yfinance)
-        print("Identify and drop permnos that have returns greater than 10 (this is due to price descrepancy between CRSP and Yfinance)...")
         ret = create_return(combined_price, [1])
+
+        """# Identify and drop permnos that have returns greater than 10 (this is due to price descrepancy between CRSP and Yfinance)
+        print("Identify and drop permnos that have returns greater than 10 (this is due to price descrepancy between CRSP and Yfinance)...")
         permnos_to_remove = ret.loc[ret.RET_01 > 10].index.get_level_values('permno').unique()
+        print(f"Number of stocks to remove: {len(permnos_to_remove)}")
+        combined_price = combined_price.drop(permnos_to_remove, level='permno')
+        combined_price = combined_price.drop('RET_01', axis=1)"""
+
+        # Filter for the period of interest around start_year and then identify permnos with returns greater than 5
+        print("Filter for the period of interest around start_year and then identify permnos with returns greater than 5 (this is due to price discrepancy between CRSP and Yfinance)...")
+        start_year = pd.to_datetime(start_year)
+        subset_ret = ret.loc[(ret.index.get_level_values('date') >= start_year - pd.Timedelta(days=5)) & (ret.index.get_level_values('date') <= start_year + pd.Timedelta(days=5))]
+        permnos_to_remove = subset_ret[subset_ret.RET_01 > 5].index.get_level_values('permno').unique()
         print(f"Number of stocks to remove: {len(permnos_to_remove)}")
         combined_price = combined_price.drop(permnos_to_remove, level='permno')
         combined_price = combined_price.drop('RET_01', axis=1)

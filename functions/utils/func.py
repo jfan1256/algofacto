@@ -229,7 +229,10 @@ def rolling_ols_beta_res_syn(price, factor_data, factor_col, window, name, ret):
     # Iterate through each stock
     for stock, df in price.groupby(price.index.names[0], group_keys=False):
         model_data = df[[ret]].merge(factor_data, on='date').dropna()
-        model_data[ret] -= model_data.RF
+
+        # Subtract returns by risk free weight to get risk premium
+        # model_data[ret] -= model_data.RF
+
         rolling_ols = RollingOLS(endog=model_data[ret],
                                  exog=sm.add_constant(model_data[factor_col]), window=window)
         factor_model = rolling_ols.fit(params_only=True).params.rename(columns={'const': 'ALPHA'})

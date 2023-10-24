@@ -20,9 +20,6 @@ from factor_class.factor_load_volume import FactorLoadVolume
 from factor_class.factor_sb_sector import FactorSBSector
 from factor_class.factor_cond_ret import FactorCondRet
 from factor_class.factor_sb_pca import FactorSBPCA
-from factor_class.factor_ind_fama import FactorIndFama
-from factor_class.factor_ind_mom_fama import FactorIndMomFama
-from factor_class.factor_clust_ind_mom_fama import FactorClustIndMomFama
 from factor_class.factor_age_mom import FactorAgeMom
 from factor_class.factor_net_debt_finance import FactorNetDebtFinance
 from factor_class.factor_chtax import FactorCHTax
@@ -114,10 +111,8 @@ FactorCondRet(live=live, file_name='factor_cond_ret', stock=stock, start=start, 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------INDUSTRY--------------------------------------------------------------------------------------
 FactorInd(live=live, file_name='factor_ind', skip=True, stock=stock, start=start, end=current_date).create_factor()
-FactorIndFama(live=live, file_name='factor_ind_fama', skip=True, stock=stock, start=start, end=current_date).create_factor()
 FactorIndSub(live=live, file_name='factor_ind_sub', skip=True, stock=stock, start=start, end=current_date).create_factor()
 FactorIndMom(live=live, file_name='factor_ind_mom', skip=True, stock=stock, start=start, end=current_date).create_factor()
-FactorIndMomFama(live=live, file_name='factor_ind_mom_fama', skip=True, stock=stock, start=start, end=current_date).create_factor()
 FactorIndMomSub(live=live, file_name='factor_ind_mom_sub', skip=True, stock=stock, start=start, end=current_date).create_factor()
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------OPEN ASSET------------------------------------------------------------------------------------
@@ -160,7 +155,6 @@ FactorClustRet(live=live, file_name='factor_clust_ret', stock=stock, start=start
 FactorClustLoadRet(live=live, file_name='factor_clust_load_ret', stock='all', start=start, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
 FactorClustIndMom(live=live, file_name='factor_clust_ind_mom', stock=stock, start=start, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
 FactorClustIndMomSub(live=live, file_name='factor_clust_ind_mom_sub', stock=stock, start=start, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
-FactorClustIndMomFama(live=live, file_name='factor_clust_ind_mom_fama', stock=stock, start=start, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
 
 elapsed_time = time.time() - start_time
 minutes, seconds = divmod(elapsed_time, 60)
@@ -249,10 +243,6 @@ ind = PrepFactor(live=live, factor_name='factor_ind', group='permno', interval='
 alpha.add_factor(ind, categorical=True)
 del ind
 
-# ind_fama = PrepFactor(live=live, factor_name='factor_ind_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=current_date, save=save).prep()
-# alpha.add_factor(ind_fama, categorical=True)
-# del ind_fama
-
 ind_sub = PrepFactor(live=live, factor_name='factor_ind_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=current_date, save=save).prep()
 alpha.add_factor(ind_sub, categorical=True)
 del ind_sub
@@ -260,10 +250,6 @@ del ind_sub
 ind_mom = PrepFactor(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=current_date, save=save).prep()
 alpha.add_factor(ind_mom)
 del ind_mom
-
-# ind_mom_fama = PrepFactor(live=live, factor_name='factor_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=current_date, save=save).prep()
-# alpha.add_factor(ind_mom_fama)
-# del ind_mom_fama
 
 ind_mom_sub = PrepFactor(live=live, factor_name='factor_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=current_date, save=save).prep()
 alpha.add_factor(ind_mom_sub)
@@ -406,10 +392,6 @@ del clust_load_ret
 clust_ind_mom = PrepFactor(live=live, factor_name='factor_clust_ind_mom', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=start, end=current_date, save=save).prep()
 alpha.add_factor(clust_ind_mom, categorical=True)
 del clust_ind_mom
-
-clust_ind_mom_fama = PrepFactor(live=live, factor_name='factor_clust_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=current_date, save=save).prep()
-alpha.add_factor(clust_ind_mom_fama, categorical=True)
-del clust_ind_mom_fama
 
 clust_ind_mom_sub = PrepFactor(live=live, factor_name='factor_clust_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=current_date, save=save).prep()
 alpha.add_factor(clust_ind_mom_sub, categorical=True)
