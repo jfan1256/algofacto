@@ -29,6 +29,7 @@ class AlphaModel:
     def __init__(self,
                  live: bool = None,
                  model_name: str = None,
+                 end: str = None,
                  tuning: [str, int] = None,
                  plot_loss: bool = False,
                  plot_hist: bool = False,
@@ -49,6 +50,7 @@ class AlphaModel:
         self.data = None
         self.live = live
         self.model_name = model_name
+        self.end = end
         self.categorical = []
         self.tuning = tuning
         self.plot_loss = plot_loss
@@ -132,9 +134,11 @@ class AlphaModel:
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'target_{self.lookahead}D'].apply(lambda x: np.sign(x))
+                self.data = remove_row_before_end(self.data, self.stock, self.end)
             elif self.pred == 'price':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
+                self.data = remove_row_before_end(self.data, self.stock, self.end)
                 condition = self.data[f'target_{self.lookahead}D'].abs() > 0.05
                 self.data.loc[condition, f'target_{self.lookahead}D'] = np.nan
         else:
@@ -142,9 +146,11 @@ class AlphaModel:
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'target_{self.lookahead}D'].apply(lambda x: np.sign(x))
+                self.data = remove_row_before_end(self.data, self.stock, self.end)
             elif self.pred == 'price':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
+                self.data = remove_row_before_end(self.data, self.stock, self.end)
 
     # Creates the indices used for pretraining the model
     @staticmethod

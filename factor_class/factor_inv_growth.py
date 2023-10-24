@@ -29,6 +29,7 @@ class FactorInvGrowth(Factor):
         medianCPI = pd.read_csv(get_large_dir(self.live) / 'macro' / 'medianCPI.csv')
         medianCPI.columns = ['date', 'medCPI']
         medianCPI['date'] = pd.to_datetime(medianCPI['date']).dt.to_period('M').dt.to_timestamp('M')
+        medianCPI['date'] = medianCPI['date'] + pd.DateOffset(months=1)
 
         # Shift date 1 month forward for backtest
         if self.live == False:

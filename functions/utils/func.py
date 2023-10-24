@@ -375,3 +375,19 @@ def get_spy(start_date, end_date):
     benchmark.index = benchmark.index.tz_localize(None)
     return benchmark
 
+# Remove the last date of NAN in permno groups that are delisted prior to end date
+def remove_row_before_end(data, grouper, end):
+    # Convert end_date to Timestamp
+    end_date = pd.Timestamp(end)
+    # Define the filter function
+    def filter_last_row(group):
+        if abs(end_date - group.index[-1][1]).days >= 21:
+            return group.iloc[:-1]
+        return group
+
+    # Group by 'permno' and apply the filter function
+    filtered_df = data.groupby(grouper).apply(filter_last_row)
+    # Drop the added 'permno' index
+    filtered_df.index = filtered_df.index.droplevel(0)
+    return filtered_df
+

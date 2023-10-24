@@ -88,15 +88,7 @@ class PrepFactor:
         # Replace all infinite values with NAN
         self.data = self.data.replace([np.inf, -np.inf], np.nan)
         # Remove the last row of data for each stock that is delisted (the last data point of delisted stocks are NAN)
-        def filter_func(group):
-            end_date = pd.Timestamp(self.end)
-            # Check if the date of the last row is not equal to self.end
-            if (group.index[-1][1] - end_date).days >= 5:
-                # Remove the last row
-                return group.iloc[:-1]
-            return group
-        self.data = self.data.groupby(self.group).apply(filter_func)
-        self.data.index = self.data.index.droplevel(0)
+        self.data = remove_row_before_end(self.data, self.group, self.end)
         # Remove all duplicate indices
         self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
         return self.data
