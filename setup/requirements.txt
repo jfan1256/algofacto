@@ -23,6 +23,7 @@ ipywidgets
 numpy #must be less than 1.25
 ta-lib
 cvxpy
+schedule
 ib_insync
 
 #conda install -c conda-forge quantstats
