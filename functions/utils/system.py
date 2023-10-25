@@ -51,8 +51,12 @@ def get_report(live) -> Path:
 def get_result_model(live, model):
     return get_result(live) / f'{model}'
 
+def get_strategy_ml():
+    return get_root_dir() / 'live' / 'strategy_ml'
+
 def print_data_shape(self, *args, **kwargs):
     print('Shape: ' + str(self.data.shape))
+
 
 def show_processing_animation(animation: any, message_func=None, post_func=None):
     def decorator(func):

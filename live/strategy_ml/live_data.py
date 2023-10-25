@@ -128,6 +128,37 @@ class LiveData:
         ohclv = ohclv.astype(float)
         ohclv.to_parquet(get_parquet_dir(self.live) / 'data_crsp_price.parquet.brotli', compression='brotli')
 
+        # Set up Exchange Mapping
+        print("Set up Exchange Mapping...")
+        exchange_mapping = {
+            -2: "Halted NYSE/AMEX",
+            -1: "Suspended NYSE/AMEX/NASDAQ",
+            0: "Not Trading NYSE/AMEX/NASDAQ",
+            1: "NYSE",
+            2: "AMEX",
+            3: "NASDAQ",
+            4: "Arca",
+            5: "Mutual Funds NASDAQ",
+            10: "Boston Stock Exchange",
+            13: "Chicago Stock Exchange",
+            16: "Pacific Stock Exchange",
+            17: "Philadelphia Stock Exchange",
+            19: "Toronto Stock Exchange",
+            20: "OTC Non-NASDAQ",
+            31: "When-issued NYSE",
+            32: "When-issued AMEX",
+            33: "When-issued NASDAQ"
+        }
+        crsp['exchcd'] = crsp['exchcd'].map(exchange_mapping)
+        exchange_copy = crsp.copy(deep=True)
+        exchange_copy = exchange_copy.sort_values(by=['permno', 'date', 'ticker'])
+
+        # Convert to permno/ticker multindex and export data
+        print("Convert to permno/ticker multindex and export data...")
+        exchange = exchange_copy.groupby(['permno', 'ticker'])['exchcd'].last()
+        exchange = exchange.reset_index().rename(columns={'exchcd': 'exchange'}).set_index(['permno', 'ticker'])
+        exchange.to_parquet(get_parquet_dir(self.live) / 'data_exchange.parquet.brotli', compression='brotli')
+
     def create_compustat_quarterly(self):
         print("-" * 60)
         sql_compustat_quarterly = f"""
@@ -427,15 +458,15 @@ class LiveData:
 
         ret = create_return(combined_price, [1])
 
-        """# Identify and drop permnos that have returns greater than 10 (this is due to price descrepancy between CRSP and Yfinance)
-        print("Identify and drop permnos that have returns greater than 10 (this is due to price descrepancy between CRSP and Yfinance)...")
+        # Identify and drop permnos that have returns greater than 10 (this is due to price descrepancy between CRSP and Yfinance)
+        print("Identify and drop permnos that have returns greater than 10 (this removes extremely volatile stocks (i.e., TPST on October 10, 2023))...")
         permnos_to_remove = ret.loc[ret.RET_01 > 10].index.get_level_values('permno').unique()
         print(f"Number of stocks to remove: {len(permnos_to_remove)}")
         combined_price = combined_price.drop(permnos_to_remove, level='permno')
-        combined_price = combined_price.drop('RET_01', axis=1)"""
 
         # Filter for the period of interest around start_year and then identify permnos with returns greater than 5
         print("Filter for the period of interest around start_year and then identify permnos with returns greater than 5 (this is due to price discrepancy between CRSP and Yfinance)...")
+        print("Note: some stocks may have already been removed by the >10 condition (there may be some overlaps)")
         start_year = pd.to_datetime(start_year)
         subset_ret = ret.loc[(ret.index.get_level_values('date') >= start_year - pd.Timedelta(days=5)) & (ret.index.get_level_values('date') <= start_year + pd.Timedelta(days=5))]
         permnos_to_remove = subset_ret[subset_ret.RET_01 > 5].index.get_level_values('permno').unique()
@@ -528,29 +559,14 @@ class LiveData:
     def create_industry(self):
         print("-" * 60)
         sql_compustat_industry = f"""
-            SELECT a.gvkey, a.gind, a.gsubind, a.sic
+            SELECT a.gvkey, a.gind, a.gsubind
             FROM comp_na_daily_all.namesq as a
-        """
-
-        sql_crsp_industry = f"""
-            SELECT a.permno, a.siccd
-            FROM crsp_a_stock.dsenames as a
         """
 
         # Read in Compustat Industry
         print("Read in Compustat Industry...")
         db = wrds.Connection(wrds_username='jofan23')
         industry_compustat = db.raw_sql(sql_compustat_industry)
-        industry_compustat = industry_compustat.rename(columns={'sic': 'sic_comp'})
-        industry_compustat['sic_comp'] = industry_compustat['sic_comp'].astype(int)
-        db.close()
-
-        # Read in CRSP Industry
-        print("Read in CRSP Industry...")
-        db = wrds.Connection(wrds_username='jofan23')
-        industry_crsp = db.raw_sql(sql_crsp_industry)
-        industry_crsp = industry_crsp.rename(columns={'siccd': 'sic_crsp'})
-        industry_crsp['sic_crsp'] = industry_crsp['sic_crsp'].astype(int)
         db.close()
 
         # Read in link table
@@ -561,7 +577,6 @@ class LiveData:
         # Merge link table and Compustat Annual
         print("Merge link table and Compustat Annual...")
         industry = pd.merge(industry_compustat, link_table, on='gvkey', how='left')
-        industry = industry.merge(industry_crsp, on='permno', how='left')
 
         # Rename Columns
         print('Rename columns...')
@@ -571,26 +586,30 @@ class LiveData:
         # Remove duplicate permno
         print('Remove duplicate permno...')
         industry = industry.drop_duplicates(subset='permno')
-        industry = industry[['permno', 'Industry', 'Subindustry', 'sic_crsp', 'sic_comp']]
+        industry = industry[['permno', 'Industry', 'Subindustry']]
+
+        # Read in Compustat Annual
+        print("Read in Compustat Annual")
+        annual = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=['sich'])
+        stock = read_stock(get_large_dir(self.live) / 'permno_live.csv')
+        annual = get_stocks_data(annual, stock)
+        annual.columns = ['sic_comp']
 
         # Assign Fama industries based off given ranges
         print("Assign Fama industries based off given ranges...")
 
         def assign_ind(df, column_name, sic_ranges, label):
             # Sic from CRSP and Compustat
-            df['sic_temp_crsp'] = df['sic_crsp']
             df['sic_temp_comp'] = df['sic_comp']
 
             # Iterate through each range and assign industry
             for r in sic_ranges:
                 if isinstance(r, tuple):
-                    df.loc[(df['sic_temp_crsp'] >= r[0]) & (df['sic_temp_crsp'] <= r[1]), f'{column_name}_crsp'] = label
                     df.loc[(df['sic_temp_comp'] >= r[0]) & (df['sic_temp_comp'] <= r[1]), f'{column_name}_comp'] = label
                 else:
-                    df.loc[df['sic_temp_crsp'] == r, f'{column_name}_crsp'] = label
                     df.loc[df['sic_temp_comp'] == r, f'{column_name}_comp'] = label
 
-            df = df.drop(columns=['sic_temp_crsp', 'sic_temp_comp'])
+            df = df.drop(columns=['sic_temp_comp'], axis=1)
             return df
 
         # FF49 Industry ranges
@@ -664,18 +683,20 @@ class LiveData:
         print('-' * 30)
         for name, ranges in fama_ind.items():
             print(name)
-            combined = assign_ind(industry, 'IndustryFama', ranges, name)
+            combined = assign_ind(annual, 'IndustryFama', ranges, name)
 
         # Assign industry based off Compustat. If Compustat is NAN, then use CRSP
-        print("Assign industry based off Compustat. If Compustat is NAN, then use CRSP...")
-        industry['IndustryFama'] = industry['IndustryFama_comp'].combine_first(industry['IndustryFama_crsp'])
-        industry['IndustryFama'], category_mapping = industry['IndustryFama'].factorize()
+        print("Assign industry based off Compustat...")
+        annual['IndustryFama'] = annual['IndustryFama_comp']
+        annual['IndustryFama'], category_mapping = annual['IndustryFama'].factorize()
 
         # Fill NAN values for industries with -1
         print("Fill industries with -1...")
-        cols_to_fill = ['Industry', 'Subindustry', 'IndustryFama']
+        cols_to_fill = ['Industry', 'Subindustry']
         industry[cols_to_fill] = industry[cols_to_fill].fillna(-1)
         industry[cols_to_fill] = industry[cols_to_fill].astype(int)
+        annual = annual[['IndustryFama']]
+        annual = annual.fillna(-1).astype(int)
 
         # Retrieve live trade stock list
         print("Retrieve live trade stock list...")
@@ -687,6 +708,9 @@ class LiveData:
         date = pd.read_parquet(get_parquet_dir(self.live) / 'data_date.parquet.brotli')
         date = date.reset_index()
         industry = pd.merge(date, industry, on=['permno'], how='left')
+        annual = annual.reset_index()
+        industry = pd.merge(industry, annual, on=['permno', 'date'], how='left')
+        industry['IndustryFama'] = industry.groupby('permno')['IndustryFama'].ffill().bfill().astype(int)
 
         # Sort index
         print("Sort index...")
