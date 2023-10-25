@@ -39,9 +39,9 @@ def get_contract(symbol):
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------
-target_date = datetime.today().strftime('%Y-%m-%d')
+current_date = datetime.today().strftime('%Y-%m-%d')
 num_stocks = 50
-long, short = strat_ml_stocks(target_date, num_stocks)
+long, short = strat_ml_stocks(current_date, num_stocks)
 num_share = 1
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -51,6 +51,7 @@ print("-------------------------------------------------------------------------
 ib = IB()
 ib.connect(host='127.0.0.1', port=7497, clientId=123)
 
+order_num = 1
 # Execute MOO and MOC orders for long positions
 for stock_symbol in long:
     print("-" * 60)
@@ -68,6 +69,8 @@ for stock_symbol in long:
     print(f"Placing MOC order to BUY: {num_share} of {stock_symbol}")
     trade_moc = ib.placeOrder(stock, moc_order)
     trade_moc.fillEvent += order_filled
+    print(f"Order Number: {order_num}")
+    order_num += 1
 
 # Execute MOO and MOC orders for short positions
 for stock_symbol in short:
@@ -86,7 +89,8 @@ for stock_symbol in short:
     print(f"Placing MOC order to SELL: {num_share} of {stock_symbol}")
     trade_moc = ib.placeOrder(stock, moc_order)
     trade_moc.fillEvent += order_filled
-
+    print(f"Order Number: {order_num}")
+    order_num += 1
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------ALL ORDERS HAVE BEEN EXECUTED----------------------------------------------------------------------

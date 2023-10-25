@@ -14,9 +14,8 @@ live = True
 num_stocks = 50
 leverage = 0.5
 port_opt = 'equal_weight'
-prior_date = (date.today() - pd.DateOffset(1)).strftime('%Y%m%d')
 current_date = date.today().strftime('%Y-%m-%d')
-model_name = f"lightgbm_{prior_date}"
+model_name = f"lightgbm_{date.today().strftime('%Y%m%d')}"
 dir_path = Path(get_report(live) / model_name)
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
