@@ -1,10 +1,11 @@
-from functions.utils.func import *
+import asyncio
 from ib_insync import *
+from functions.utils.func import *
+import math
 
-def exec_trade():
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # ------------------------------------------------------------------------------MARKET ORDER FUNCTIONS---------------------------------------------------------------------------
-    # Create Market On Close Order
+# Execute trades
+async def exec_trade(num_stocks):
+    # Execute trades
     def create_moc_order(action, quantity):
         order = Order()
         order.action = action
@@ -13,96 +14,127 @@ def exec_trade():
         order.transmit = True
         return order
 
-    # Create Market On Open Order
-    def create_moo_order(action, quantity):
-        order = Order()
-        order.action = action
-        order.orderType = "MKT"
-        order.totalQuantity = quantity
-        order.tif = "OPG"
-        order.transmit = True
-        return order
-
-    # Order Fill Callback
+    # Callback to see if order has been filled
     def order_filled(trade, fill):
         print(f"Order has been filled for {trade.contract.symbol}")
         print(trade.order)
         print(fill)
 
-    # Function to get a specific contract
-    def get_contract(symbol):
-        contracts = ib.qualifyContracts(Stock(symbol, 'SMART', 'USD'))
+    # Get first valid contract
+    async def get_contract(symbol):
+        contract = Stock(symbol, 'SMART', 'USD')
+        contracts = await ib.reqContractDetailsAsync(contract)
         if contracts:
-            return contracts[0]
+            qualified_contract = contracts[0].contract
+            print(f"Obtained qualified contract for {symbol}: {qualified_contract}")
+            return qualified_contract
         else:
-            print(f"Could not find a unique contract for {symbol}")
+            print(f"No qualified contract found for {symbol}")
             return None
 
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # -------------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------
-    current_date = datetime.today().strftime('%Y-%m-%d')
-    num_stocks = 50
-    long, short = strat_ml_stocks(current_date, num_stocks)
-    num_share = 1
+    # Get the last closing price of a stock
+    async def get_market_data(stock):
+        print("-" * 60)
+        MAX_RETRIES = 10
+        SLEEP_DURATION = 1
+
+        for _ in range(MAX_RETRIES):
+            market_data = ib.reqMktData(stock, '', False, False)
+            await asyncio.sleep(SLEEP_DURATION)
+            if market_data.last:
+                print(f"Obtained {stock.symbol} last price")
+                print("-" * 60)
+                return market_data
+
+        print(f"Failed to get market data for {stock.symbol} after {MAX_RETRIES} consecutive calls.")
+        print("-" * 60)
+        return None
+
+    # Execute trade order
+    async def execute_order(symbol, action, capital_per_stock, order_num):
+        MAX_RETRIES = 20
+        WAIT_TIME = 1 # Time in seconds
+
+        print("-" * 60)
+        print(f"Placing orders for {action} position on: {symbol}")
+        stock = await get_contract(symbol)
+        print(f"Requesting market data for {symbol}...")
+        ib.reqMarketDataType(3)
+
+        retries = 0
+        stock_price = None
+        while retries < MAX_RETRIES:
+            market_data = await get_market_data(stock)
+
+            if not market_data or not market_data.last or math.isnan(market_data.last):
+                retries += 1
+
+                print(f"Attempt {retries} failed to fetch valid price for {symbol}. Retrying...")
+                print("-" * 60)
+                await asyncio.sleep(WAIT_TIME)
+            else:
+                stock_price = market_data.last
+                break
+
+        if stock_price is None:
+            print(f"Failed to get valid price for {symbol} after {MAX_RETRIES} attempts. Skipping order.")
+            print("-" * 60)
+            return
+
+        num_share = int(capital_per_stock / stock_price)  # This will provide the number of whole shares
+
+        # Placing MOC order
+        moc_order = create_moc_order(action, num_share)
+        print(f"Placing MOC order to {action}: {num_share} of {symbol}")
+        trade_moc = ib.placeOrder(stock, moc_order)
+        trade_moc.fillEvent += order_filled
+        print(f"Order Number: {order_num}")
+        print("-" * 60)
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # -----------------------------------------------------------------------------------EXECUTE ORDERS------------------------------------------------------------------------------
-    print("------------------------------------------------------------------------------EXECUTE ORDERS------------------------------------------------------------------------------")
-    # Establish connection with IBKR TWS Workstation (7497 is for TWS)
+    # ------------------------------------------------------------------------------EXECUTE TRADE ORDERS-----------------------------------------------------------------------------
+    print("-------------------------------------------------------------------------EXECUTE TRADE ORDERS------------------------------------------------------------------------------")
+    # Connect to IB
+    print("Attempting to connect to IBKR TWS Workstation...")
     ib = IB()
-    ib.connect(host='127.0.0.1', port=7497, clientId=123)
+    current_date = datetime.today().strftime('%Y-%m-%d')
+    long, short = strat_ml_stocks(current_date, num_stocks)
+    await ib.connectAsync(host='127.0.0.1', port=7497, clientId=1512)
+    print("Connected to IBKR TWS Workstation.")
+    print("-" * 60)
 
+    # Fetch available capital
+    print("Fetching available capital...")
+    account_info = ib.accountValues()
+    for item in account_info:
+        if item.tag == 'NetLiquidation':
+            available_capital = float(item.value)
+            print(f"Available capital: ${available_capital}")
+            break
+    else:
+        print("Could not fetch available capital. Exiting.")
+        ib.disconnect()
+        exit()
+
+    # Calculations for EWP
+    capital_per_stock = (available_capital / 2) / num_stocks
     order_num = 1
-    # Execute MOO and MOC orders for long positions
-    for stock_symbol in long:
-        print("-" * 60)
-        stock = get_contract(stock_symbol[0])
-        print(f"Placing orders for LONG position on: {stock_symbol}")
+    all_stocks = long + short
 
-        # Placing MOO order
-        moo_order = create_moo_order('BUY', num_share)
-        print(f"Placing MOO order to BUY: {num_share} of {stock_symbol}")
-        trade_moo = ib.placeOrder(stock, moo_order)
-        trade_moo.fillEvent += order_filled
+    # List to store all the tasks
+    tasks = []
 
-        # Placing MOC order
-        moc_order = create_moc_order('BUY', num_share)
-        print(f"Placing MOC order to BUY: {num_share} of {stock_symbol}")
-        trade_moc = ib.placeOrder(stock, moc_order)
-        trade_moc.fillEvent += order_filled
-        print(f"Order Number: {order_num}")
-        order_num += 1
+    for i, stock_symbol in enumerate(all_stocks, start=order_num):
+        if stock_symbol in long:
+            task = execute_order(stock_symbol[0], 'BUY', capital_per_stock, i)
+            tasks.append(task)
+        elif stock_symbol in short:  # Changed to elif to avoid possible duplication
+            task = execute_order(stock_symbol[0], 'SELL', capital_per_stock, i)
+            tasks.append(task)
 
-    # Execute MOO and MOC orders for short positions
-    for stock_symbol in short:
-        print("-" * 60)
-        stock = get_contract(stock_symbol[0])
-        print(f"Placing orders for SHORT position on: {stock_symbol}")
-
-        # Placing MOO order
-        moo_order = create_moo_order('SELL', num_share)
-        print(f"Placing MOO order to SELL: {num_share} of {stock_symbol}")
-        trade_moo = ib.placeOrder(stock, moo_order)
-        trade_moo.fillEvent += order_filled
-
-        # Placing MOC order
-        moc_order = create_moc_order('SELL', num_share)
-        print(f"Placing MOC order to SELL: {num_share} of {stock_symbol}")
-        trade_moc = ib.placeOrder(stock, moc_order)
-        trade_moc.fillEvent += order_filled
-        print(f"Order Number: {order_num}")
-        order_num += 1
-
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # ----------------------------------------------------------------------------ALL ORDERS HAVE BEEN EXECUTED----------------------------------------------------------------------
-    print("-----------------------------------------------------------------------ALL ORDERS HAVE BEEN EXECUTED----------------------------------------------------------------------")
-    # Let IB run as it fills orders
-    ib.run()
-
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # -----------------------------------------------------------------------------ALL ORDERS HAVE BEEN FILLED-----------------------------------------------------------------------
-    print("------------------------------------------------------------------------ALL ORDERS HAVE BEEN FILLED-----------------------------------------------------------------------")
-    # Disconnect when done
+    # Wait for all tasks to complete
+    await asyncio.gather(*tasks)
     ib.disconnect()
 
-exec_trade()
+# Run asynchronous program
+asyncio.run(exec_trade(num_stocks=50))

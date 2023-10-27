@@ -8,13 +8,10 @@ from scipy.stats import spearmanr
 from live.strategy_ml.live_test import LiveTest
 from functions.utils.func import *
 
-def exec_pred():
+def exec_pred(num_stocks, leverage, port_opt):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------------
     live = True
-    num_stocks = 50
-    leverage = 0.5
-    port_opt = 'equal_weight'
     current_date = date.today().strftime('%Y-%m-%d')
     model_name = f"lightgbm_{date.today().strftime('%Y%m%d')}"
     dir_path = Path(get_report(live) / model_name)
@@ -142,4 +139,5 @@ def exec_pred():
     else:
         df_combined.to_csv(filename, index=False)
 
-exec_pred()
+
+exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight')

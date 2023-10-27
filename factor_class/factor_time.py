@@ -37,6 +37,7 @@ class FactorTime(Factor):
         splice_data['is_quarter_end_week'] = (splice_data['in_last_week'] & splice_data.index.get_level_values('date').month.isin([3, 6, 9, 12])).astype(int)
         splice_data['is_year_end_week'] = (splice_data['in_last_week'] & (splice_data.index.get_level_values('date').month == 12)).astype(int)
         splice_data = splice_data.drop(columns=['last_day', 'begin_last_week', 'in_last_week'], axis=1)
+
         # day = splice_data.index.get_level_values('date').day
         # splice_data['is_turn_of_month'] = ((day <= 3) | (day >= 28)).astype(int)
         # last_day_of_month = splice_data.index.get_level_values('date').to_period('M').to_timestamp('M')

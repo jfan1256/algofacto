@@ -124,7 +124,7 @@ class LiveTest:
         accuracies = []  # To store accuracies for each ticker
 
         # Iterate through each ticker and calculate accuracy
-        for ticker in predictions.index.levels[0]:
+        for ticker in predictions.index.get_level_values(0).unique():
             ticker_group = predictions.loc[ticker]
             actual_group = actual.loc[ticker]
 

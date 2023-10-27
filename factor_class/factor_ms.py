@@ -21,8 +21,10 @@ class FactorMS(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        columns = ['atq', 'xrdq', 'xsgaq', 'fqtr', 'niq', 'capxy', 'oancfy', 'sic', 'saleq']
+        columns = ['atq', 'xrdq', 'xsgaq', 'fqtr', 'niq', 'capxy', 'oancfy', 'saleq']
         ms = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
+        fund_a = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=['sich'])
+        ms = ms.merge(fund_a, left_index=True, right_index=True, how='left')
         ms = get_stocks_data(ms, self.stock)
 
         # Handle missing values
@@ -50,7 +52,7 @@ class FactorMS(Factor):
 
         # Compute medians by group
         for var in ['roa', 'cfroa']:
-            ms[f'md_{var}'] = ms.groupby(['sic', 'date'])[var].transform('median')
+            ms[f'md_{var}'] = ms.groupby(['sich', 'date'])[var].transform('median')
 
         ms['m1'] = (ms['roa'] > ms['md_roa']).astype(int)
         ms['m2'] = (ms['cfroa'] > ms['md_cfroa']).astype(int)
@@ -69,7 +71,7 @@ class FactorMS(Factor):
 
         # Compute medians by group
         for var in ['niVol', 'revVol']:
-            ms[f'md_{var}'] = ms.groupby(['sic', 'date'])[var].transform('median')
+            ms[f'md_{var}'] = ms.groupby(['sich', 'date'])[var].transform('median')
 
         ms['m4'] = (ms['niVol'] < ms['md_niVol']).astype(int)
         ms['m5'] = (ms['revVol'] < ms['md_revVol']).astype(int)
@@ -82,7 +84,7 @@ class FactorMS(Factor):
 
         # Compute medians by group
         for var in ['xrdint', 'capxint', 'xrdqint']:
-            ms[f'md_{var}'] = ms.groupby(['sic', 'date'])[var].transform('median')
+            ms[f'md_{var}'] = ms.groupby(['sich', 'date'])[var].transform('median')
 
         ms['m6'] = (ms['xrdint'] > ms['md_xrdint']).astype(int)
         ms['m7'] = (ms['capxint'] > ms['md_capxint']).astype(int)

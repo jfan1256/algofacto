@@ -1,3 +1,5 @@
+import pandas as pd
+
 from functions.utils.func import *
 from functions.utils.system import *
 
@@ -106,11 +108,23 @@ class LiveData:
         crsp = set_length(crsp, 3)
 
         # Drop permno that do not have over 6B market cap
-        print("Drop permno that do not have over 6B market cap...")
+        threshold = 5_000_000_000
+        print("Drop permnos that do not have over 5B market cap...")
         crsp['market_cap'] = crsp['Close'] * crsp['outstanding'] * 1000
         avg_cap = crsp.groupby('permno')['market_cap'].mean()
-        above_cap = avg_cap[avg_cap > 6_000_000_000].index
+        above_cap = avg_cap[avg_cap > threshold].index
         crsp = crsp[crsp.index.get_level_values('permno').isin(above_cap)]
+
+        # Calculate the start and end date for the previous year from self.current_date
+        # Extract the year from the current date and convert it to an integer
+        current_year = int(self.current_date.split('-')[0])
+        end_date = f"{current_year - 1}-12-31"
+        print(f"Drop permnos that do not have over 2B market cap as of {end_date}...")
+        last_date = crsp.index.get_level_values('date').max()
+        last_date_data = crsp[crsp.index.get_level_values('date') == last_date]
+        threshold = 2_000_000_000
+        below_threshold_permnos = last_date_data[last_date_data['market_cap'] < threshold].index.get_level_values('permno').unique()
+        crsp = crsp[~crsp.index.get_level_values('permno').isin(below_threshold_permnos)]
 
         # Drop permnos that have the same ticker on the last date of the dataframe
         print('Export ticker and filter out any permnos that share tickers on the last date...')
@@ -546,7 +560,7 @@ class LiveData:
         # Add outstanding and market cap
         print("Add outstanding and market cap")
         misc['outstanding'] = misc.groupby('permno')['outstanding'].ffill()
-        misc['outstanding'] = misc['outstanding'] * 1000
+        misc['outstanding'] = misc['outstanding'] * 1_000_000
         misc['market_cap'] = misc['Close'] * misc['outstanding']
         misc = misc[['outstanding', 'market_cap']]
         misc = misc[~misc.index.duplicated(keep='first')]
@@ -726,7 +740,8 @@ class LiveData:
 
     def create_ibes(self):
         print("-" * 60)
-        tickers = read_stock(get_large_dir(self.live) / 'ticker_live.csv')
+        tickers = pd.read_parquet(get_parquet_dir(self.live) / 'data_ticker.parquet.brotli')
+        tickers = tickers.ticker.unique().tolist()
         ticker_string = ', '.join(f"'{ticker}'" for ticker in tickers)
 
         sql_actual_adj = f"""

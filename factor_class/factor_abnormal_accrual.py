@@ -23,7 +23,7 @@ class FactorAbnormalAccrual(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        columns = ['fopt', 'oancf', 'act', 'che', 'dlc', 'lct', 'ib', 'sale', 'at', 'ppegt', 'sic', 'fyear', 'ni']
+        columns = ['fopt', 'oancf', 'act', 'che', 'dlc', 'lct', 'ib', 'sale', 'at', 'ppegt', 'sich', 'fyear', 'ni']
         accrual = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns)
         accrual = get_stocks_data(accrual, stock)
 
@@ -49,7 +49,7 @@ class FactorAbnormalAccrual(Factor):
             if column.startswith('temp'):
                 merged_data[column] = winsorize(merged_data[column], limits=[0.001, 0.001])
 
-        merged_data['sic2'] = merged_data['sic'] // 100
+        merged_data['sic2'] = merged_data['sich'] // 100
 
         def run_regression(group):
             # Check if the group size is too small or if there are missing values
