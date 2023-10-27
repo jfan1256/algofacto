@@ -57,6 +57,7 @@ from factor_class.factor_grcapx import FactorGrcapx
 from factor_class.factor_earning_streak import FactorEarningStreak
 from factor_class.factor_sign_ret import FactorSignRet
 from factor_class.factor_cond_ret import FactorCondRet
+from factor_class.factor_macro import FactorMacro
 
 def exec_model(update_price, start_data, start_factor, start_model):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -103,6 +104,7 @@ def exec_model(update_price, start_data, start_factor, start_model):
     FactorTime(live=live, file_name='factor_time', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
     FactorTalib(live=live, file_name='factor_talib', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
     FactorSignRet(live=live, file_name='factor_sign_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    FactorMacro(live=live, file_name='factor_macro', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno', general=True).create_factor()
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -----------------------------------------------------------------------------------PCA-----------------------------------------------------------------------------------------
     FactorLoadRet(live=live, file_name='factor_load_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, component=5).create_factor()
@@ -193,7 +195,7 @@ def exec_model(update_price, start_data, start_factor, start_model):
     # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
     format_end = date.today().strftime('%Y%m%d')
     model_name = f'lightgbm_{format_end}'
-    alpha = AlphaModel(live=live, model_name=model_name, end=current_date, tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
+    alpha = AlphaModel(live=live, model_name=model_name, end=current_date, tuning=['optuna', 20], plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
                        weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=126, test_len=21, **lightgbm_params)
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -225,6 +227,10 @@ def exec_model(update_price, start_data, start_factor, start_model):
     sign_ret = PrepFactor(live=live, factor_name='factor_sign_ret', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
     alpha.add_factor(sign_ret, categorical=True)
     del sign_ret
+
+    # macro = PrepFactor(live=live, factor_name='factor_macro', group='permno', interval='M', kind='macro', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+    # alpha.add_factor(macro)
+    # del macro
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -----------------------------------------------------------------------------PCA-----------------------------------------------------------------------------------------------

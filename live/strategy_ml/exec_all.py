@@ -28,8 +28,8 @@ schedule.every().day.at("15:40").do(daily_trade)
 while True:
     # Get the current time
     current_time = datetime.datetime.now().time()
-    # Check if the current time is between 12:01 AM and 2:00 AM or between 3:40 PM and 5:00 PM
-    if (datetime.time(hour=0, minute=1) <= current_time <= datetime.time(hour=2, minute=0)) or \
+    # Check if the current time is between 12:01 AM and 3:00 AM or between 3:40 PM and 5:00 PM
+    if (datetime.time(hour=0, minute=1) <= current_time <= datetime.time(hour=3, minute=0)) or \
        (datetime.time(hour=15, minute=40) <= current_time <= datetime.time(hour=15, minute=45)):
         schedule.run_pending()
     time.sleep(60)

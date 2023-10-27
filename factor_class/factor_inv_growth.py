@@ -28,14 +28,16 @@ class FactorInvGrowth(Factor):
         # Convert CPI to multiindex
         medianCPI = pd.read_csv(get_large_dir(self.live) / 'macro' / 'medianCPI.csv')
         medianCPI.columns = ['date', 'medCPI']
-        medianCPI['date'] = pd.to_datetime(medianCPI['date']).dt.to_period('M').dt.to_timestamp('M')
-        medianCPI['date'] = medianCPI['date'] + pd.DateOffset(months=1)
+        medianCPI['date'] = pd.to_datetime(medianCPI['date'])
+        medianCPI = medianCPI.set_index('date')
+        medianCPI = medianCPI.resample('BMS').first()
+        # medianCPI['date'] = pd.to_datetime(medianCPI['date']).dt.to_period('M').dt.to_timestamp('M')
+        # medianCPI = medianCPI.set_index('date')
 
         # Shift date 1 month forward for backtest
         if self.live == False:
             medianCPI['date'] = (medianCPI['date'] + pd.DateOffset(months=1))
 
-        medianCPI = medianCPI.set_index('date')
         medianCPI = medianCPI[~medianCPI.index.duplicated(keep='first')]
         factor_values = pd.concat([medianCPI] * len(self.stock), ignore_index=True).values
         multi_index = pd.MultiIndex.from_product([self.stock, medianCPI.index])

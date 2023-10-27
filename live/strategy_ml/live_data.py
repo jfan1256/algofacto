@@ -780,14 +780,49 @@ class LiveData:
         fred = Fred(api_key='00e07a5c98e913ea393c3b1f089e21d1')
 
         # Read in Median CPI
-        print("Read in Median CPI...")
-        medianCPI = fred.get_series("MEDCPIM158SFRBCLE").to_frame()
-        medianCPI = medianCPI.reset_index()
-        medianCPI.columns = ['date', 'medCPI']
+        print("Read in Median CPI Index...")
+        median_cpi = fred.get_series("MEDCPIM158SFRBCLE").to_frame()
+        median_cpi = median_cpi.reset_index()
+        median_cpi.columns = ['date', 'medCPI']
+
+        # Read in Producer Production Index
+        print("Read in Producer Production Index...")
+        ppi = fred.get_series("PPIACO").to_frame()
+        ppi = ppi.reset_index()
+        ppi.columns = ['date', 'PPI']
+
+        # Read in Industry Production
+        print("Read in Industry Production Index...")
+        ind_prod = fred.get_series("INDPRO").to_frame()
+        ind_prod = ind_prod.reset_index()
+        ind_prod.columns = ['date', 'indProdIndex']
+
+        # Read in Median CPI
+        print("Read in 10 Year Real Interest Rate...")
+        ir_rate = fred.get_series("REAINTRATREARAT10Y").to_frame()
+        ir_rate = ir_rate.reset_index()
+        ir_rate.columns = ['date', 'rIR']
+
+        # Read in Inflation Rate
+        print("Read in Inflation Rate...")
+        if_rate = fred.get_series("T7YIEM").to_frame()
+        if_rate = if_rate.reset_index()
+        if_rate.columns = ['date', '5YIF']
+
+        # Read in Unemployment Rate
+        print("Read in Unemployment Rate...")
+        u_rate = fred.get_series("UNRATE").to_frame()
+        u_rate = u_rate.reset_index()
+        u_rate.columns = ['date', 'UR']
 
         # Export data
         print("Export data...")
-        medianCPI.to_csv(get_large_dir(True) / 'macro' / 'medianCPI.csv', index=False)
+        median_cpi.to_csv(get_large_dir(self.live) / 'macro' / 'medianCPI.csv', index=False)
+        ppi.to_csv(get_large_dir(self.live) / 'macro' / 'PPI.csv', index=False)
+        ind_prod.to_csv(get_large_dir(self.live) / 'macro' / 'indProdIndex.csv', index=False)
+        ir_rate.to_csv(get_large_dir(self.live) / 'macro' / 'realInterestRate.csv', index=False)
+        if_rate.to_csv(get_large_dir(self.live) / 'macro' / 'fiveYearIR.csv', index=False)
+        u_rate.to_csv(get_large_dir(self.live) / 'macro' / 'unemploymentRate.csv', index=False)
 
     # Create Risk Free Rate
     def create_risk_rate(self):
