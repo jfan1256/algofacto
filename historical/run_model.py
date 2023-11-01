@@ -48,7 +48,6 @@ alpha = AlphaModel(live=live, model_name='lightgbm_trial_83', tuning=['optuna', 
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------GENERAL-------------------------------------------------------------------------------------------
-
 ret = PrepFactor(live=live, factor_name='factor_ret', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(ret)
 del ret

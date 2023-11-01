@@ -110,4 +110,3 @@ def exec_close(num_stocks):
     # Disconnect when done
     ib.disconnect()
 
-exec_close(num_stocks=50)

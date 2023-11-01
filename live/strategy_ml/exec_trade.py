@@ -136,5 +136,3 @@ async def exec_trade(num_stocks):
     await asyncio.gather(*tasks)
     ib.disconnect()
 
-# Run asynchronous program
-asyncio.run(exec_trade(num_stocks=50))

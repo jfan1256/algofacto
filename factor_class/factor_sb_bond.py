@@ -23,18 +23,15 @@ class FactorSBBond(Factor):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
         self.risk_free = pd.read_parquet(get_parquet_dir(self.live) / 'data_rf.parquet.brotli')
-        bond_df = yf.download(['TLT', 'TIP', 'SHY'], start=self.start, end=self.end)
-        bond_df = bond_df.stack().swaplevel().sort_index()
-        bond_df.index.names = ['ticker', 'date']
-        bond_df = bond_df.astype(float)
-        # T = [1, 21, 126]
-        T = [1]
-        bond_df = bond_df.drop('Close', axis=1)
+        bond_df = get_data_fmp(ticker_list=['TLT', 'TIP', 'SHY'], start=self.start, current_date=self.end)
+        T = [1, 21, 126]
+        bond_df = bond_df[['Open', 'High', 'Low', 'Volume', 'Adj Close']]
         bond_df = bond_df.rename(columns={'Adj Close': 'Close'})
         bond_df = create_return(bond_df, T)
         bond_df = bond_df.drop(['Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
         bond_df = bond_df.unstack('ticker').swaplevel(axis=1)
         bond_df.columns = ['_'.join(col).strip() for col in bond_df.columns.values]
+
         self.bond_data = bond_df
         self.bond_data = pd.concat([self.bond_data, self.risk_free['RF']], axis=1)
         self.bond_data = self.bond_data.loc[self.start:self.end]
@@ -52,7 +49,7 @@ class FactorSBBond(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [21, 126]
             for window in windows:
-                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.bond_data, factor_col=self.factor_col, window=window, name=f'bond_{t:02}', ret=ret)
+                betas = rolling_ols_parallel(data=splice_data, ret=ret, factor_data=self.bond_data, factor_cols=self.factor_col.tolist(), window=window, name=f'bond_{t:02}')
                 splice_data = splice_data.join(betas)
 
         return splice_data

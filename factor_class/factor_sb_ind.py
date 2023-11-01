@@ -57,7 +57,8 @@ class FactorSBInd(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [30, 60]
             for window in windows:
-                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.sector_data, factor_col=self.factor_col, window=window, name=f'{t:02}_IND', ret=ret)
+                # betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.sector_data, factor_col=self.factor_col, window=window, name=f'{t:02}_IND', ret=ret)
+                betas = rolling_ols_parallel(data=splice_data, ret=ret, factor_data=self.sector_data, factor_cols=self.factor_col.tolist(), window=window, name=f'ind_{t:02}')
                 splice_data = splice_data.join(betas)
 
         return splice_data

@@ -6,10 +6,12 @@ from datetime import date
 from datetime import datetime, timedelta
 from sklearn.linear_model import Ridge
 from timebudget import timebudget
+from joblib import Parallel, delayed
 from statsmodels.regression.linear_model import OLS
-
+from tqdm import tqdm
 
 import pandas as pd
+import requests
 import matplotlib.pyplot as plt
 import re
 import csv
@@ -265,6 +267,42 @@ def rolling_ols_beta_res_syn(price, factor_data, factor_col, window, name, ret):
 
     return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
 
+
+# Rolling Linear Regression (Parallelized)
+def rolling_ols_parallel(data, ret, factor_data, factor_cols, window, name):
+    def process_stock(stock_data, ret, factor_data, factor_cols, window, stock_name, index_name):
+        model_data = stock_data[[ret]].merge(factor_data, on='date').dropna()
+        model_data = model_data[[ret] + factor_cols]
+
+        exog = sm.add_constant(model_data[factor_cols])
+
+        rolling_ols = RollingOLS(endog=model_data[ret], exog=exog, window=window)
+        factor_model_params = rolling_ols.fit(params_only=True).params.rename(columns={'const': 'ALPHA'})
+
+        # Calculate predicted values
+        predicted = (exog * factor_model_params).sum(axis=1)
+        predicted = predicted.rename('pred')
+
+        # Compute residuals (epsilon)
+        epsilon = model_data[ret] - predicted
+        epsilon = epsilon.rename('epsil')
+
+        result = factor_model_params.assign(epsil=epsilon, pred=predicted)
+        result = result.assign(**{index_name: stock_name}).set_index(index_name, append=True).swaplevel()
+
+        # Additional calculations
+        result['resid_mom_21'] = result['epsil'].rolling(window=21).sum() / result['epsil'].rolling(window=21).std()
+        result['resid_mom_126'] = result['epsil'].rolling(window=126).sum() / result['epsil'].rolling(window=126).std()
+        result['idio_vol_21'] = result['epsil'].rolling(window=21).std()
+        result['idio_vol_126'] = result['epsil'].rolling(window=126).std()
+
+        return result
+
+    tasks = [(group, ret, factor_data, factor_cols, window, stock, data.index.names[0]) for stock, group in data.groupby(data.index.names[0])]
+    results = Parallel(n_jobs=-1)(delayed(process_stock)(*task) for task in tasks)
+
+    return pd.concat(results).rename(columns=lambda x: f'{x}_{name}_{window:02}')
+
 # Rolling PCA
 def rolling_pca(data, window_size, num_components, name):
     principal_components = []
@@ -385,7 +423,7 @@ def remove_row_before_end(data, grouper, end):
     end_date = pd.Timestamp(end)
     # Define the filter function
     def filter_last_row(group):
-        if abs(end_date - group.index[-1][1]).days >= 21:
+        if abs(end_date - group.index[-1][1]).days >= 5:
             return group.iloc[:-1]
         return group
 
@@ -418,4 +456,69 @@ def strat_ml_stocks(target_date, num_stocks):
     long_tuples = [ast.literal_eval(item) for item in long_stocks]
     short_tuples = [ast.literal_eval(item) for item in short_stocks]
     return long_tuples, short_tuples
+
+
+def get_data_fmp(ticker_list, start, current_date):
+    api_key = "f913bbd3dad0c411c864c0d960a711e7"
+    frames = []
+
+    for ticker in tqdm(ticker_list, desc="Fetching data", unit="ticker"):
+        url = f"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?from={start}&to={current_date}&apikey={api_key}"
+        response = requests.get(url)
+        data = response.json()
+
+        # Check if there's historical data in the response
+        if 'historical' in data:
+            df = pd.DataFrame(data['historical'])
+            df['ticker'] = ticker
+            frames.append(df)
+        else:
+            print(f"Skipped {ticker} - No data available")
+
+    if frames:  # Only proceed if there are frames to concatenate
+        price = pd.concat(frames)
+        price['date'] = pd.to_datetime(price['date'], errors='coerce')
+        price = price.set_index(['ticker', 'date'])
+        cols_to_convert = ['open', 'high', 'low', 'close', 'adjClose', 'volume']
+        price[cols_to_convert] = price[cols_to_convert].astype(float)
+        price = price.rename(columns={
+            'open': 'Open',
+            'high': 'High',
+            'low': 'Low',
+            'adjClose': 'Adj Close',
+            'close': 'Close',
+            'volume': 'Volume'
+        })
+        return price.sort_index(level=['ticker', 'date'])
+    else:
+        print("No data available for any ticker.")
+        return None
+
+def get_dividend_fmp(ticker_list, start, current_date):
+    api_key = "f913bbd3dad0c411c864c0d960a711e7"
+    frames = []
+
+    for ticker in tqdm(ticker_list, desc="Fetching data", unit="ticker"):
+        url = f"https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/{ticker}?from={start}&to={current_date}&apikey={api_key}"
+        response = requests.get(url)
+        data = response.json()
+
+        # Check if there's dividend data in the response
+        if 'historical' in data:
+            df = pd.DataFrame(data['historical'])
+            df['ticker'] = ticker
+            frames.append(df)
+        else:
+            print(f"Skipped {ticker} - No data available")
+
+    if frames:  # Only proceed if there are frames to concatenate
+        dividend = pd.concat(frames)
+        dividend['date'] = pd.to_datetime(dividend['date'], errors='coerce')
+        dividend = dividend.set_index(['ticker', 'date'])
+        cols_to_convert = ['dividend']
+        dividend[cols_to_convert] = dividend[cols_to_convert].astype(float)
+        return dividend.sort_index(level=['ticker', 'date'])
+    else:
+        print("No dividend data available for any ticker.")
+        return None
 

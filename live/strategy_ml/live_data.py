@@ -6,8 +6,10 @@ from functions.utils.system import *
 import pandas_datareader.data as web
 import polars as pl
 import wrds
+
 from fredapi import Fred
 from datetime import date
+
 
 import warnings
 
@@ -22,6 +24,7 @@ class LiveData:
         self.live = live
         self.start_date = start_date
         self.current_date = current_date
+
 
     # Create Link Table
     def create_link_table(self):
@@ -432,12 +435,8 @@ class LiveData:
         print("Read in live market data...")
         start_year = datetime.strptime(self.current_date, "%Y-%m-%d")
         start_year = start_year.replace(month=1, day=1)
-        start_year = start_year.strftime ("%Y-%m-%d")
-        price = yf.download(ticker_list, start=start_year, end=self.current_date)
-
-        price = price.stack().swaplevel().sort_index()
-        price.index.names = ['ticker', 'date']
-        price = price.astype(float)
+        start_year = start_year.strftime("%Y-%m-%d")
+        price = get_data_fmp(ticker_list=ticker_list, start=start_year, current_date=self.current_date)
 
         # Extract permno ticker pair used for mapping
         print("Extract permno ticker pair used for mapping...")
@@ -479,7 +478,7 @@ class LiveData:
         combined_price = combined_price.drop(permnos_to_remove, level='permno')
 
         # Filter for the period of interest around start_year and then identify permnos with returns greater than 5
-        print("Filter for the period of interest around start_year and then identify permnos with returns greater than 5 (this is due to price discrepancy between CRSP and Yfinance)...")
+        print("Filter for the period of interest around start_year and then identify permnos with returns greater than 5 (this is due to price discrepancy between CRSP and FMP)...")
         print("Note: some stocks may have already been removed by the >10 condition (there may be some overlaps)")
         start_year = pd.to_datetime(start_year)
         subset_ret = ret.loc[(ret.index.get_level_values('date') >= start_year - pd.Timedelta(days=5)) & (ret.index.get_level_values('date') <= start_year + pd.Timedelta(days=5))]
@@ -558,11 +557,27 @@ class LiveData:
         misc = misc.merge(quarterly, left_index=True, right_index=True, how='left')
 
         # Add outstanding and market cap
-        print("Add outstanding and market cap")
+        print("Add outstanding and market cap...")
         misc['outstanding'] = misc.groupby('permno')['outstanding'].ffill()
         misc['outstanding'] = misc['outstanding'] * 1_000_000
         misc['market_cap'] = misc['Close'] * misc['outstanding']
         misc = misc[['outstanding', 'market_cap']]
+        misc = misc[~misc.index.duplicated(keep='first')]
+
+        # Get Dividend Data from FMP
+        print("Get dividend data from FMP...")
+        ticker = pd.read_parquet(get_parquet_dir(self.live) / 'data_ticker.parquet.brotli')
+        tickers = ticker.ticker.unique().tolist()
+        dividends = get_dividend_fmp(tickers, self.start_date, self.current_date)
+        tic_reset = ticker.reset_index()
+        div_reset = dividends.reset_index()
+        combined = pd.merge(tic_reset, div_reset, on=['ticker', 'date'], how='left')
+        combined = combined.set_index(['permno', 'date']).sort_index(level=['permno', 'date'])
+        combined = combined.rename(columns={'paymentDate': 'paydt'})
+        combined = combined.drop('ticker', axis=1)
+        combined = combined[~combined.index.duplicated(keep='first')]
+
+        misc = misc.merge(combined, left_index=True, right_index=True, how='left')
         misc = misc[~misc.index.duplicated(keep='first')]
 
         # Export data

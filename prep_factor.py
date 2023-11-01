@@ -87,8 +87,10 @@ class PrepFactor:
     def _handle_data(self):
         # Replace all infinite values with NAN
         self.data = self.data.replace([np.inf, -np.inf], np.nan)
+
         # Remove the last row of data for each stock that is delisted (the last data point of delisted stocks are NAN)
         self.data = remove_row_before_end(self.data, self.group, self.end)
+
         # Remove all duplicate indices
         self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
         return self.data

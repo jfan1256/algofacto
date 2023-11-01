@@ -8,7 +8,7 @@ from scipy.stats import spearmanr
 from live.strategy_ml.live_test import LiveTest
 from functions.utils.func import *
 
-def exec_pred(num_stocks, leverage, port_opt):
+def exec_pred(num_stocks, leverage, port_opt, use_model):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------------
     live = True
@@ -68,7 +68,7 @@ def exec_pred(num_stocks, leverage, port_opt):
     # ------------------------------------------------------------------PERFORM ENSEMBLE PREDICTION AND SAVE METRIC/IC---------------------------------------------------------------
     print("-------------------------------------------------------------PERFORM ENSEMBLE PREDICTION AND SAVE METRIC/IC---------------------------------------------------------------")
     # Retrieves the indices from the top 5 best performing SHARPE
-    max_sharpe_idxs = sorted(keep, key=keep.get, reverse=True)[:5]
+    max_sharpe_idxs = sorted(keep, key=keep.get, reverse=True)[:use_model]
     collect = []
     # Append the individual trial predictions to a dataframe
     for idx in max_sharpe_idxs:
@@ -139,5 +139,4 @@ def exec_pred(num_stocks, leverage, port_opt):
     else:
         df_combined.to_csv(filename, index=False)
 
-
-exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight')
+# exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=5)

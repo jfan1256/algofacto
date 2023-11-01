@@ -8,31 +8,35 @@ from live.strategy_ml.exec_pred import exec_pred
 from live.strategy_ml.exec_trade import exec_trade
 from live.strategy_ml.exec_close import exec_close
 
-# Job to execute everything
-def daily_train():
-    print("Running daily training at: ", datetime.datetime.now())
-    exec_model(update_price=True, start_data='2004-01-01', start_factor='2004-01-01', start_model='2008-01-01')
-    exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight')
-    # exec_trade(num_stocks=50)
+# Check if current time is within the provided range
+def within_time_range(start, end):
+    current_time = datetime.datetime.now().time()
+    return start <= current_time <= end
 
+# Job to execute train
+def daily_train():
+    if within_time_range(datetime.time(0, 1), datetime.time(14, 30)):
+        print("---------------------------------------------------------------------------RUN----------------------------------------------------------------------------------")
+        print("Running daily training at: ", datetime.datetime.now())
+        exec_model(update_price=False, start_data='2004-01-01', start_factor='2004-01-01', start_model='2008-01-01', tune=['optuna', 20], save_prep=True)
+        exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=6)
+        time.sleep(30)
+
+# Job to execute trade
 def daily_trade():
-    print("Running daily trade at: ", datetime.datetime.now())
-    asyncio.run(exec_trade(num_stocks=50))
-    exec_close(num_stocks=50)
+    if within_time_range(datetime.time(15, 40), datetime.time(15, 45)):
+        print("---------------------------------------------------------------------------RUN----------------------------------------------------------------------------------")
+        print("Running daily trade at: ", datetime.datetime.now())
+        asyncio.run(exec_trade(num_stocks=50))
+        exec_close(num_stocks=50)
+        time.sleep(30)
 
 # Schedule daily train to run every day at 12:01 AM
-schedule.every().day.at("00:01").do(daily_train)
 # Schedule daily trade to run every day at 3:40 PM
-schedule.every().day.at("15:40").do(daily_trade)
-
 while True:
-    # Get the current time
-    current_time = datetime.datetime.now().time()
-    # Check if the current time is between 12:01 AM and 3:00 AM or between 3:40 PM and 5:00 PM
-    if (datetime.time(hour=0, minute=1) <= current_time <= datetime.time(hour=3, minute=0)) or \
-       (datetime.time(hour=15, minute=40) <= current_time <= datetime.time(hour=15, minute=45)):
-        schedule.run_pending()
-    time.sleep(60)
+    daily_train()
+    daily_trade()
+    time.sleep(15)
 
 
 

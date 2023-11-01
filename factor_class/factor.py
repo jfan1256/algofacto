@@ -45,6 +45,7 @@ class Factor:
 
     # Get rolling window groups
     def _rolling_window(self):
+        print("Getting rolling windows...")
         dates = self.factor_data.index
         cols = self.factor_data.columns
         np_data = self.factor_data.to_numpy()
@@ -57,6 +58,7 @@ class Factor:
 
     # Convert general factor to multiindex stock/date pair
     def _create_multi_index(self, stock):
+        print("Creating multi-index...")
         factor_values = pd.concat([self.factor_data] * len(stock), ignore_index=True).values
         multi_index = pd.MultiIndex.from_product([stock, self.factor_data.index])
         multi_index_factor = pd.DataFrame(factor_values, columns=self.factor_data.columns, index=multi_index)
@@ -65,6 +67,7 @@ class Factor:
 
     # Splice data into dataframes with splice_size number of stocks or dates
     def _splice_data(self):
+        print("Splicing data...")
         data_spliced = {}
         splice = 1
 
@@ -111,6 +114,7 @@ class Factor:
 
     # Create batches of spliced data with size batch_size
     def _batch_data(self, splice_data):
+        print("Creating batches...")
         batch = []
         factor_batch = {}
         batch_num = 1

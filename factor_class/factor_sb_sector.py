@@ -23,22 +23,17 @@ class FactorSBSector(Factor):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
         self.risk_free = pd.read_parquet(get_parquet_dir(self.live) / 'data_rf.parquet.brotli')
-        sector_df = yf.download(['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU'], start=self.start, end=self.end)
-        sector_df = sector_df.stack().swaplevel().sort_index()
-        sector_df.index.names = ['ticker', 'date']
-        sector_df = sector_df.astype(float)
+
+        # Read in live market data
+        sector_df = get_data_fmp(ticker_list=['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU'], start=self.start, current_date=self.end)
         T = [1]
-        sector_df = sector_df.drop('Close', axis=1)
+        sector_df = sector_df[['Open', 'High', 'Low', 'Volume', 'Adj Close']]
         sector_df = sector_df.rename(columns={'Adj Close': 'Close'})
+
         sector_df = create_return(sector_df, T)
         sector_df = sector_df.drop(['Close', 'High', 'Low', 'Open', 'Volume'], axis=1)
         sector_df = sector_df.unstack('ticker').swaplevel(axis=1)
         sector_df.columns = ['_'.join(col).strip() for col in sector_df.columns.values]
-
-        # # Execute Rolling PCA
-        # window_size = 60
-        # num_components = 5
-        # sector_df = rolling_pca(data=sector_df, window_size=window_size, num_components=num_components, name='sector')
 
         self.sector_data = sector_df
         self.sector_data = pd.concat([self.sector_data, self.risk_free['RF']], axis=1)
@@ -57,7 +52,8 @@ class FactorSBSector(Factor):
             # if window size is too big it can create an index out of bound error (took me 3 hours to debug this error!!!)
             windows = [21, 126]
             for window in windows:
-                betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.sector_data, factor_col=self.factor_col, window=window, name=f'sector_{t:02}', ret=ret)
+                # betas = rolling_ols_beta_res_syn(price=splice_data, factor_data=self.sector_data, factor_col=self.factor_col, window=window, name=f'sector_{t:02}', ret=ret)
+                betas = rolling_ols_parallel(data=splice_data, ret=ret, factor_data=self.sector_data, factor_cols=self.factor_col.tolist(), window=window, name=f'sector_{t:02}')
                 splice_data = splice_data.join(betas)
 
         return splice_data
