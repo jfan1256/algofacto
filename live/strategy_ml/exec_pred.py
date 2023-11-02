@@ -139,4 +139,4 @@ def exec_pred(num_stocks, leverage, port_opt, use_model):
     else:
         df_combined.to_csv(filename, index=False)
 
-# exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=5)
+# exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=6)

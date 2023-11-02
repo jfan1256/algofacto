@@ -50,6 +50,6 @@ class FactorLoadRet(Factor):
         # Create a dataframe that matches loadings to stock
         cols = splice_data.columns
         date = splice_data.index[0]
-        splice_data = pd.DataFrame(loading, columns=[f'load_ret_{i + 1}' for i in range(5)], index=[[date] * len(cols), cols])
+        splice_data = pd.DataFrame(loading, columns=[f'load_ret_{i + 1}' for i in range(self.component)], index=[[date] * len(cols), cols])
         splice_data.index.names = ['date', self.join]
         return splice_data

@@ -65,10 +65,12 @@ class PrepFactor:
             self.data = pd.merge(date_data, self.data, left_index=True, right_index=True, how='left')
             self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
             # Forward Fill by a maximum of 93 days
-            self.data = self.data.groupby('permno').fillna(method='ffill', limit=93)
-            # If self.kind is set to 'fundamenta', then calculate moving average
+            # self.data = self.data.groupby(self.group).fillna(method='ffill', limit=93)
+            # Forward Fill
+            self.data = self.data.groupby(self.group).ffill()
+            # If self.kind is set to 'fundamental', then calculate moving average
             if self.kind == 'fundamental':
-                self.data = self.data.groupby('permno').rolling(window=21).mean().reset_index(level=0, drop=True)
+                self.data = self.data.groupby(self.group).rolling(window=21).mean().reset_index(level=0, drop=True)
             return self.data
 
     # Divided by price
