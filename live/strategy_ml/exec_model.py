@@ -61,7 +61,7 @@ from factor_class.factor_ret_skew import FactorRetSkew
 from factor_class.factor_dividend import FactorDividend
 from factor_class.factor_vol_comp import FactorVolComp
 
-def exec_model(update_price, start_data, start_factor, start_model, tune, save_prep):
+def exec_model(threshold, update_price, start_data, start_factor, start_model, tune, save_prep):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------GET LIVE DATA----------------------------------------------------------------------------------
     print("---------------------------------------------------------------------------GET LIVE DATA----------------------------------------------------------------------------------")
@@ -73,13 +73,13 @@ def exec_model(update_price, start_data, start_factor, start_model, tune, save_p
     live_data = LiveData(live=live, start_date=start_data, current_date=current_date)
 
     if update_price:
-        live_data.create_crsp_price()
+        live_data.create_crsp_price(threshold)
     live_data.create_compustat_quarterly()
     live_data.create_compustat_annual()
     live_data.create_stock_list()
     live_data.create_live_price()
-    live_data.create_compustat_pension()
     live_data.create_misc()
+    live_data.create_compustat_pension()
     live_data.create_industry()
     live_data.create_macro()
     live_data.create_risk_rate()
@@ -452,4 +452,4 @@ def exec_model(update_price, start_data, start_factor, start_model, tune, save_p
     print("-" * 60)
 
 
-# exec_model(update_price=False, start_data='2004-01-01', start_factor='2004-01-01', start_model='2013-01-01', tune='default', save_prep=True)
+# exec_model(threshold=6_000_000_000, update_price=True, start_data='2004-01-01', start_factor='2004-01-01', start_model='2013-01-01', tune='default', save_prep=True)

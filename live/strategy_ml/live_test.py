@@ -151,16 +151,19 @@ class LiveTest:
         return mean_accuracy
 
     # Performs ranking across stocks on a daily basis
-    def process_period(self, period, period_returns, candidates):
+    def process_period(self, period, period_returns, candidates, threshold):
         # Find sp500 candidates for the given year and assign it to data
         period_year = period.index.get_level_values('date')[0].year
         sp500 = candidates[period_year]
         tickers = common_stocks(sp500, period)
         sp500_period = get_stocks_data(period, tickers)
-        print(f'{period_year} --> Num of tickers: ' + str(len(tickers)))
+
+        # Filter the DataFrame to only include rows with market cap over the threshold
+        filtered_period = period[period['market_cap'] > threshold]
+        print(f'{period_year} --> Num of stocks to select from: ' + str(len(get_stock_idx(filtered_period))))
 
         # Group by date and compute long and short stocks and their returns
-        for date, stocks in period.groupby('date'):
+        for date, stocks in filtered_period.groupby('date'):
             sorted_stocks = stocks.sort_values(by='predictions')
             long_stocks = sorted_stocks.index.get_level_values('ticker')[-self.num_stocks:]
             short_stocks = sorted_stocks.index.get_level_values('ticker')[:self.num_stocks]
@@ -178,7 +181,7 @@ class LiveTest:
                                         short_stocks_tuples, sorted_stocks.iloc[:self.num_stocks].returns.values]
 
     # Creates periods (determined from window period in the multindex) and construct final dataframe
-    def backtest(self, data):
+    def backtest(self, data, threshold):
         # Set portfolio weights and other tracking variables
         period_returns = pd.DataFrame(columns=['longStocks', 'longRet', 'shortStocks', 'shortRet'])
 
@@ -188,7 +191,7 @@ class LiveTest:
         # Loop over each group in tic.groupby('window')
         for _, df in data.groupby('window'):
             df = df.reset_index().set_index(['ticker', 'date']).drop('window', axis=1)
-            self.process_period(df, period_returns, candidates)
+            self.process_period(df, period_returns, candidates, threshold)
 
         return period_returns
 
@@ -417,14 +420,18 @@ class LiveTest:
         return merged
 
     # Calculates SHARPE for each period
-    def sharpe_process_period(self, period, period_returns, candidates):
+    def sharpe_process_period(self, period, period_returns, candidates, threshold):
         # Find sp500 candidates for the given year and assign it to data
         period_year = period.index.get_level_values('date')[0].year
         sp500 = candidates[period_year]
         tickers = common_stocks(sp500, period)
         sp500_period = get_stocks_data(period, tickers)
+
+        # Filter the DataFrame to only include rows with market cap over the threshold
+        filtered_period = period[period['market_cap'] > threshold]
+
         # Group by date and compute long and short stocks and their returns
-        for date, stocks in period.groupby('date'):
+        for date, stocks in filtered_period.groupby('date'):
             sorted_stocks = stocks.sort_values(by='predictions')
             long_stocks = sorted_stocks.index.get_level_values('ticker')[-self.num_stocks:]
             short_stocks = sorted_stocks.index.get_level_values('ticker')[:self.num_stocks]
@@ -434,7 +441,7 @@ class LiveTest:
                                         short_stocks.tolist(), sorted_stocks.iloc[:self.num_stocks].returns.values]
 
     # Calculates SHARPE for each file
-    def sharpe_backtest(self, data):
+    def sharpe_backtest(self, data, threshold):
         # Set portfolio weights and other tracking variables
         period_returns = pd.DataFrame(columns=['longStocks', 'longRet', 'shortStocks', 'shortRet'])
 
@@ -444,6 +451,6 @@ class LiveTest:
         # Loop over each group in tic.groupby('window')
         for _, df in data.groupby('window'):
             df = df.reset_index().set_index(['ticker', 'date']).drop('window', axis=1)
-            self.sharpe_process_period(df, period_returns, candidates)
+            self.sharpe_process_period(df, period_returns, candidates, threshold)
 
         return period_returns

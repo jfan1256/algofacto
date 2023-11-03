@@ -8,7 +8,7 @@ from scipy.stats import spearmanr
 from live.strategy_ml.live_test import LiveTest
 from functions.utils.func import *
 
-def exec_pred(num_stocks, leverage, port_opt, use_model):
+def exec_pred(threshold, num_stocks, leverage, port_opt, use_model):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------------
     live = True
@@ -33,6 +33,7 @@ def exec_pred(num_stocks, leverage, port_opt, use_model):
     # Dictionary to keep track of SHARPE
     keep = {}
     ticker = pd.read_parquet(get_parquet_dir(live) / 'data_ticker.parquet.brotli')
+    misc = pd.read_parquet(get_parquet_dir(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
 
     # Iterate through each trial
     for i, row in files.iterrows():
@@ -42,10 +43,11 @@ def exec_pred(num_stocks, leverage, port_opt, use_model):
         returns = live_test.sharpe_ret(read_file, iteration=False)
         # Convert Permno to Ticker
         tic = returns.merge(ticker, left_index=True, right_index=True, how='left')
+        tic = tic.merge(misc, left_index=True, right_index=True, how='left')
         tic = tic.reset_index().set_index(['window', 'ticker', 'date'])
         tic = tic.drop('permno', axis=1)
         # Calculate SHARPE with EWP
-        pred = live_test.sharpe_backtest(tic)
+        pred = live_test.sharpe_backtest(tic, threshold)
         equal_weight = live_test.exec_port_opt(data=pred, option='both')
         stock = equal_weight['totalRet']
         sharpe = qs.stats.sharpe(stock)
@@ -90,8 +92,8 @@ def exec_pred(num_stocks, leverage, port_opt, use_model):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------CONVERT FROM PERMNO TO TICKER/EXCHANGE-------------------------------------------------------------------
     print("-----------------------------------------------------------------CONVERT FROM PERMNO TO TICKER/EXCHANGE-------------------------------------------------------------------")
-    ticker = pd.read_parquet(get_parquet_dir(live) / 'data_ticker.parquet.brotli')
     tic = merged.merge(ticker, left_index=True, right_index=True, how='left')
+    tic = tic.merge(misc, left_index=True, right_index=True, how='left')
     tic = tic.reset_index().set_index(['window', 'ticker', 'date'])
     exchange = pd.read_parquet(get_parquet_dir(live) / 'data_exchange.parquet.brotli')
     tic_reset = tic.reset_index()
@@ -103,7 +105,7 @@ def exec_pred(num_stocks, leverage, port_opt, use_model):
     # ---------------------------------------------------------------------------------EXECUTE LIVETEST------------------------------------------------------------------------------
     print("----------------------------------------------------------------------------EXECUTE LIVETEST------------------------------------------------------------------------------")
     # Create the desired dataframe with structure longRet, longStocks, shortRet, shortStocks
-    pred_return = live_test.backtest(combined)
+    pred_return = live_test.backtest(combined, threshold)
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------RETRIEVE LONG/SHORT----------------------------------------------------------------------------
@@ -139,4 +141,4 @@ def exec_pred(num_stocks, leverage, port_opt, use_model):
     else:
         df_combined.to_csv(filename, index=False)
 
-# exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=6)
+# exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=6, threshold=2_000_000_000)

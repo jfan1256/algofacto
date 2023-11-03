@@ -67,7 +67,7 @@ class LiveData:
 
 
     # Create CRSP Price
-    def create_crsp_price(self):
+    def create_crsp_price(self, threshold):
         print("-" * 60)
         # Read in CRSP dataset
         print('Read in CRSP dataset')
@@ -110,24 +110,12 @@ class LiveData:
         print('Set length to 3 years...')
         crsp = set_length(crsp, 3)
 
-        # Drop permno that do not have over 6B market cap
-        threshold = 5_000_000_000
-        print("Drop permnos that do not have over 5B market cap...")
+        # Drop permno that do not have over _B market cap
+        print(f"Drop permnos that do not have over {threshold}B market cap...")
         crsp['market_cap'] = crsp['Close'] * crsp['outstanding'] * 1000
         avg_cap = crsp.groupby('permno')['market_cap'].mean()
         above_cap = avg_cap[avg_cap > threshold].index
         crsp = crsp[crsp.index.get_level_values('permno').isin(above_cap)]
-
-        # Calculate the start and end date for the previous year from self.current_date
-        # Extract the year from the current date and convert it to an integer
-        current_year = int(self.current_date.split('-')[0])
-        end_date = f"{current_year - 1}-12-31"
-        print(f"Drop permnos that do not have over 2B market cap as of {end_date}...")
-        last_date = crsp.index.get_level_values('date').max()
-        last_date_data = crsp[crsp.index.get_level_values('date') == last_date]
-        threshold = 2_000_000_000
-        below_threshold_permnos = last_date_data[last_date_data['market_cap'] < threshold].index.get_level_values('permno').unique()
-        crsp = crsp[~crsp.index.get_level_values('permno').isin(below_threshold_permnos)]
 
         # Drop permnos that have the same ticker on the last date of the dataframe
         print('Export ticker and filter out any permnos that share tickers on the last date...')
@@ -270,7 +258,6 @@ class LiveData:
         quarterly = quarterly.set_index(['permno', 'date'])
         quarterly = quarterly.sort_index(level=['permno', 'date'])
         quarterly = quarterly[~quarterly.index.duplicated(keep='last')]
-
 
         # Convert data to numerical format (exclude columns that are not numerical format)
         print("Convert data to numerical format (exclude columns that are not numerical format)...")
@@ -508,44 +495,10 @@ class LiveData:
         print('Export Tickers...')
         combined_ticker.to_parquet(get_parquet_dir(self.live) / 'data_ticker.parquet.brotli', compression='brotli')
 
+        # Export permno list for live trading
         print("Export permno list for live trading...")
         print(f'Number of stocks: {len(get_stock_idx(combined_price))}')
         export_stock(combined_price, get_large_dir(self.live) / 'permno_live.csv')
-
-    # Create Compustat Pension
-    def create_compustat_pension(self):
-        print("-" * 60)
-        sql_compustat_pension = f"""
-            SELECT a.gvkey, a.datadate, a.paddml, a.pbnaa, a.pbnvv, a.pbpro, 
-        	       a.pbpru, a.pcupsu, a.pplao, a.pplau
-            FROM comp_na_daily_all.aco_pnfnda as a
-        	WHERE a.consol = 'C'
-        	AND a.popsrc = 'D'
-        	AND a.datafmt = 'STD'
-        	AND a.indfmt = 'INDL'
-            AND a.datadate BETWEEN '{self.start_date}' AND '{self.current_date}'
-        """
-
-        # Read in Pension Annual
-        print("Read in Pension Annual...")
-        db = wrds.Connection(wrds_username='jofan23')
-        pension = db.raw_sql(sql_compustat_pension)
-        db.close()
-
-        # Drop duplicate indices
-        print("Drop duplicate indices...")
-        pension = pension.sort_values(by=['gvkey', 'datadate'])
-        pension = pension.groupby(['gvkey', 'datadate']).last().reset_index()
-
-        # Convert to datetime and set index
-        print("Convert to datetime and set index...")
-        pension['datadate'] = pd.to_datetime(pension['datadate'])
-        pension = pension.rename(columns={'datadate': 'date', 'tic': 'ticker'})
-        pension = pension.set_index('date')
-
-        # Export data
-        print("Export data...")
-        pension.to_parquet(get_parquet_dir(self.live) / 'data_pension.parquet.brotli', compression='brotli')
 
     # Create Misc
     def create_misc(self):
@@ -583,6 +536,41 @@ class LiveData:
         # Export data
         print("Export data...")
         misc.to_parquet(get_parquet_dir(self.live) / 'data_misc.parquet.brotli', compression='brotli')
+
+    # Create Compustat Pension
+    def create_compustat_pension(self):
+        print("-" * 60)
+        sql_compustat_pension = f"""
+            SELECT a.gvkey, a.datadate, a.paddml, a.pbnaa, a.pbnvv, a.pbpro, 
+                   a.pbpru, a.pcupsu, a.pplao, a.pplau
+            FROM comp_na_daily_all.aco_pnfnda as a
+            WHERE a.consol = 'C'
+            AND a.popsrc = 'D'
+            AND a.datafmt = 'STD'
+            AND a.indfmt = 'INDL'
+            AND a.datadate BETWEEN '{self.start_date}' AND '{self.current_date}'
+        """
+
+        # Read in Pension Annual
+        print("Read in Pension Annual...")
+        db = wrds.Connection(wrds_username='jofan23')
+        pension = db.raw_sql(sql_compustat_pension)
+        db.close()
+
+        # Drop duplicate indices
+        print("Drop duplicate indices...")
+        pension = pension.sort_values(by=['gvkey', 'datadate'])
+        pension = pension.groupby(['gvkey', 'datadate']).last().reset_index()
+
+        # Convert to datetime and set index
+        print("Convert to datetime and set index...")
+        pension['datadate'] = pd.to_datetime(pension['datadate'])
+        pension = pension.rename(columns={'datadate': 'date', 'tic': 'ticker'})
+        pension = pension.set_index('date')
+
+        # Export data
+        print("Export data...")
+        pension.to_parquet(get_parquet_dir(self.live) / 'data_pension.parquet.brotli', compression='brotli')
 
     # Create Industry
     def create_industry(self):

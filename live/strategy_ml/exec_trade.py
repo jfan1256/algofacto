@@ -59,7 +59,7 @@ async def exec_trade(num_stocks):
         print(f"Placing orders for {action} position on: {symbol}")
         stock = await get_contract(symbol)
         print(f"Requesting market data for {symbol}...")
-        ib.reqMarketDataType(3)
+        # ib.reqMarketDataType(3)
 
         retries = 0
         stock_price = None
@@ -135,4 +135,7 @@ async def exec_trade(num_stocks):
     # Wait for all tasks to complete
     await asyncio.gather(*tasks)
     ib.disconnect()
+
+
+# asyncio.run(exec_trade(num_stocks=50))
 

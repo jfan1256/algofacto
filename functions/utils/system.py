@@ -54,6 +54,13 @@ def get_result_model(live, model):
 def get_strategy_ml():
     return get_root_dir() / 'live' / 'strategy_ml'
 
+def get_strategy_mrev():
+    return get_root_dir() / 'live' / 'strategy_mrev'
+
+def get_strategy_mrev_data():
+    return get_root_dir() / 'live' / 'strategy_mrev' / 'data'
+
+
 def print_data_shape(self, *args, **kwargs):
     print('Shape: ' + str(self.data.shape))
 
