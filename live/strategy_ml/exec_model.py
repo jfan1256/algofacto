@@ -181,17 +181,43 @@ def exec_model(threshold, update_price, start_data, start_factor, start_model, t
 
     start_time = time.time()
 
+    best_params = {
+        'max_depth': [6, 6, 6],
+        'learning_rate': [0.13979732829061503, 0.10555427975550981, 0.10142072607825621],
+        'num_leaves': [68, 49, 132],
+        'feature_fraction': [1, 1, 1],
+        'min_gain_to_split': [0.02, 0.02, 0.02],
+        'min_data_in_leaf': [180, 116, 134],
+        'lambda_l1': [0, 0, 0],
+        'lambda_l2': [0.16791726968101575, 0.7838642063280304, 2.872067927298658],
+        'bagging_fraction': [1, 1, 1],
+        'bagging_freq': [0, 0, 0]
+    }
+
+    best_params = {
+        'max_depth': [6],
+        'learning_rate': [0.10182814664179678],
+        'num_leaves': [82],
+        'feature_fraction': [1],
+        'min_gain_to_split': [0.02],
+        'min_data_in_leaf': [161],
+        'lambda_l1': [0],
+        'lambda_l2': [0.000338697590322718],
+        'bagging_fraction': [1],
+        'bagging_freq': [0]
+    }
+
     lightgbm_params = {
-        'max_depth':          {'optuna': ('suggest_categorical', [6]),            'gridsearch': [4, 6, 8],                     'default': 6},
-        'learning_rate':      {'optuna': ('suggest_float', 0.10, 0.50, False),     'gridsearch': [0.005, 0.01, 0.1, 0.15],     'default': 0.15},
-        'num_leaves':         {'optuna': ('suggest_int', 5, 150),                 'gridsearch': [20, 40, 60],                  'default': 15},
-        'feature_fraction':   {'optuna': ('suggest_categorical', [1.0]),          'gridsearch': [0.7, 0.8, 0.9],               'default': 1.0},
-        'min_gain_to_split':  {'optuna': ('suggest_float', 0.02, 0.02, False),    'gridsearch': [0.0001, 0.001, 0.01],         'default': 0.02},
-        'min_data_in_leaf':   {'optuna': ('suggest_int', 50, 200),                'gridsearch': [40, 60, 80],                  'default': 60},
-        'lambda_l1':          {'optuna': ('suggest_float', 0, 0, False),          'gridsearch': [0.001, 0.01],                 'default': 0},
-        'lambda_l2':          {'optuna': ('suggest_float', 1e-5, 10, True),       'gridsearch': [0.001, 0.01],                 'default': 0.01},
-        'bagging_fraction':   {'optuna': ('suggest_float', 1.0, 1.0, True),       'gridsearch': [0.9, 1],                      'default': 1},
-        'bagging_freq':       {'optuna': ('suggest_int', 0, 0),                   'gridsearch': [0, 20],                       'default': 0},
+        'max_depth':          {'optuna': ('suggest_categorical', [6]),            'gridsearch': [4, 6, 8],                     'default': 6,       'best': best_params['max_depth']},
+        'learning_rate':      {'optuna': ('suggest_float', 0.10, 0.50, False),    'gridsearch': [0.005, 0.01, 0.1, 0.15],      'default': 0.15,    'best': best_params['learning_rate']},
+        'num_leaves':         {'optuna': ('suggest_int', 5, 150),                 'gridsearch': [20, 40, 60],                  'default': 15,      'best': best_params['num_leaves']},
+        'feature_fraction':   {'optuna': ('suggest_categorical', [1.0]),          'gridsearch': [0.7, 0.8, 0.9],               'default': 1.0,     'best': best_params['feature_fraction']},
+        'min_gain_to_split':  {'optuna': ('suggest_float', 0.02, 0.02, False),    'gridsearch': [0.0001, 0.001, 0.01],         'default': 0.02,    'best': best_params['min_gain_to_split']},
+        'min_data_in_leaf':   {'optuna': ('suggest_int', 50, 200),                'gridsearch': [40, 60, 80],                  'default': 60,      'best': best_params['min_data_in_leaf']},
+        'lambda_l1':          {'optuna': ('suggest_float', 0, 0, False),          'gridsearch': [0.001, 0.01],                 'default': 0,       'best': best_params['lambda_l1']},
+        'lambda_l2':          {'optuna': ('suggest_float', 1e-5, 10, True),       'gridsearch': [0.001, 0.01],                 'default': 0.01,    'best': best_params['lambda_l2']},
+        'bagging_fraction':   {'optuna': ('suggest_float', 1.0, 1.0, True),       'gridsearch': [0.9, 1],                      'default': 1,       'best': best_params['bagging_fraction']},
+        'bagging_freq':       {'optuna': ('suggest_int', 0, 0),                   'gridsearch': [0, 20],                       'default': 0,       'best': best_params['bagging_freq']},
     }
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -452,4 +478,4 @@ def exec_model(threshold, update_price, start_data, start_factor, start_model, t
     print("-" * 60)
 
 
-# exec_model(threshold=6_000_000_000, update_price=True, start_data='2004-01-01', start_factor='2004-01-01', start_model='2013-01-01', tune='default', save_prep=True)
+# exec_model(threshold=6_000_000_000, update_price=False, start_data='2004-01-01', start_factor='2004-01-01', start_model='2008-01-01', tune='best', save_prep=False)

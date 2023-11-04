@@ -76,7 +76,7 @@ class AlphaModel:
         assert self.pred == 'price' or self.pred == 'sign', ValueError('must use either "price" or "sign" for pred parameter')
         if self.incr == False:
             assert self.pretrain_len == 0, ValueError("pretrain_len must be 0 if incremental training is false")
-        assert self.tuning[0] == 'optuna' or self.tuning[0] == 'gridsearch' or self.tuning == 'default', \
+        assert self.tuning[0] == 'optuna' or self.tuning[0] == 'gridsearch' or self.tuning == 'default' or self.tuning=='best', \
             ValueError("must use either ['optuna', num_trials=int], ['gridsearch', num_search=int], or 'default' for tuning parameter")
         assert self.lookahead>=1, ValueError('lookahead must be greater than 0')
         if self.early == False:
@@ -103,6 +103,13 @@ class AlphaModel:
             return {key: spec['gridsearch'] for key, spec in self.parameter_specs.items()}
         elif self.tuning == 'default':
             return {key: spec['default'] for key, spec in self.parameter_specs.items()}
+        elif self.tuning == 'best':
+            num_sets = len(self.parameter_specs['max_depth']['best'])
+            best_param_sets = []
+            for i in range(num_sets):
+                param_set = {key: params['best'][i] for key, params in self.parameter_specs.items()}
+                best_param_sets.append(param_set)
+            return best_param_sets
 
     # Renumber categorical data to consecutive numbers (Lightgbm requires this)
     @staticmethod
@@ -596,7 +603,12 @@ class AlphaModel:
 
             # Get parameters and set num_iterations used for prediction
             params = self._get_parameters(trial)
-            param_names = list(params.keys())
+
+            # self.tuning is a list so must handle this case
+            if self.tuning == 'best':
+                param_names = list(params[0].keys())
+            else:
+                param_names = list(params.keys())
             num_iterations = [150, 200, 300, 400, 500, 750, 1000]
             # This will be used for the metric dataset during training
             metric_cols = (param_names + ['time'] + ["dIC_mean_" + str(n) for n in num_iterations])
@@ -707,6 +719,17 @@ class AlphaModel:
                 os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
                 # Train model
                 train_model(key, param_names, param_vals)
+            elif self.tuning == 'best':
+                # Get list of best params
+                for param_set in params:
+                    # Get param values and print the key (formatted params)
+                    param_vals = list(param_set.values())
+                    key = '_'.join([str(float(p)) for p in param_vals])
+                    print(f'Key: {key}')
+                    # Create the directory
+                    os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                    # Train model
+                    train_model(key, param_names, param_vals)
 
         # ===============================================================================================================================================================================
         # --------------------------------------------------------------------------MODEL_TRAINING()-------------------------------------------------------------------------------------
@@ -1004,6 +1027,17 @@ class AlphaModel:
                 os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
                 # Train model
                 train_model(key, param_names, param_vals)
+            elif self.tuning == 'best':
+                # Get list of best params
+                for param_set in params:
+                    # Get param values and print the key (formatted params)
+                    param_vals = list(param_set.values())
+                    key = '_'.join([str(float(p)) for p in param_vals])
+                    print(f'Key: {key}')
+                    # Create the directory
+                    os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                    # Train model
+                    train_model(key, param_names, param_vals)
 
         # ===============================================================================================================================================================================
         # --------------------------------------------------------------------------MODEL_TRAINING()-------------------------------------------------------------------------------------
