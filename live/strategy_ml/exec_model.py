@@ -72,107 +72,107 @@ def exec_model(threshold, update_price, start_data, start_factor, start_model, t
     start_time = time.time()
     live_data = LiveData(live=live, start_date=start_data, current_date=current_date)
 
-    if update_price:
-        live_data.create_crsp_price(threshold)
-    live_data.create_compustat_quarterly()
-    live_data.create_compustat_annual()
-    live_data.create_stock_list()
-    live_data.create_live_price()
-    live_data.create_misc()
-    live_data.create_compustat_pension()
-    live_data.create_industry()
-    live_data.create_macro()
-    live_data.create_risk_rate()
-
-    elapsed_time = time.time() - start_time
-    minutes, seconds = divmod(elapsed_time, 60)
-    print(f"Total time to get live data: {int(minutes)}:{int(seconds):02}")
-    print("-" * 60)
-
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # --------------------------------------------------------------------------CREATE FACTORS---------------------------------------------------------------------------------------
-    print("---------------------------------------------------------------------CREATE FACTORS---------------------------------------------------------------------------------------")
-    stock = read_stock(get_large_dir(live) / 'permno_live.csv')
-
-    ray.init(num_cpus=16, ignore_reinit_error=True)
-    start_time = time.time()
-
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # --------------------------------------------------------------------------------GENERAL----------------------------------------------------------------------------------------
-    FactorRet(live=live, file_name='factor_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorRetComp(live=live, file_name='factor_ret_comp', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorVolatility(live=live, file_name='factor_volatility', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorVolume(live=live, file_name='factor_volume', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorTime(live=live, file_name='factor_time', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorTalib(live=live, file_name='factor_talib', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorSignRet(live=live, file_name='factor_sign_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorVolComp(live=live, file_name='factor_vol_comp', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # -----------------------------------------------------------------------------------PCA-----------------------------------------------------------------------------------------
-    FactorLoadRet(live=live, file_name='factor_load_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, component=5).create_factor()
-    FactorLoadVolume(live=live, file_name='factor_load_volume', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, component=5).create_factor()
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # ---------------------------------------------------------------------------------CONDITION-------------------------------------------------------------------------------------
-    FactorCondRet(live=live, file_name='factor_cond_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # ---------------------------------------------------------------------------------INDUSTRY--------------------------------------------------------------------------------------
-    FactorInd(live=live, file_name='factor_ind', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorIndFama(live=live, file_name='factor_ind_fama', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorIndSub(live=live, file_name='factor_ind_sub', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorIndMom(live=live, file_name='factor_ind_mom', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorIndMomFama(live=live, file_name='factor_ind_mom_fama', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorIndMomSub(live=live, file_name='factor_ind_mom_sub', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # ---------------------------------------------------------------------------------OPEN ASSET------------------------------------------------------------------------------------
-    FactorAccrual(live=live, file_name='factor_accrual', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorNetDebtFinance(live=live, file_name='factor_net_debt_finance', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorCHTax(live=live, file_name='factor_chtax', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorHire(live=live, file_name='factor_hire', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorAssetGrowth(live=live, file_name='factor_asset_growth', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorNOA(live=live, file_name='factor_noa', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorInvestPPEInv(live=live, file_name='factor_invest_ppe_inv', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorInvGrowth(live=live, file_name='factor_inv_growth', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorCompDebt(live=live, file_name='factor_comp_debt', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorChEQ(live=live, file_name='factor_cheq', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorXFIN(live=live, file_name='factor_xfin', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorEmmult(live=live, file_name='factor_emmult', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorAccrualBM(live=live, file_name='factor_accrual_bm', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorPctTotAcc(live=live, file_name='factor_pcttotacc', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorRDS(live=live, file_name='factor_rds', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorFrontier(live=live, file_name='factor_frontier', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorAgeMom(live=live, file_name='factor_age_mom', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorMomVol(live=live, file_name='factor_mom_vol', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorMomSeasonShort(live=live, file_name='factor_mom_season_short', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorMomSeason(live=live, file_name='factor_mom_season', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorMomSeason6(live=live, file_name='factor_mom_season6', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorMomSeason9(live=live, file_name='factor_mom_season9', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorMomSeason11(live=live, file_name='factor_mom_season11', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorMomSeason16(live=live, file_name='factor_mom_season16', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorIntMom(live=live, file_name='factor_int_mom', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorTrendFactor(live=live, file_name='factor_trend_factor', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorMomOffSeason(live=live, file_name='factor_mom_off_season', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorMomRev(live=live, file_name='factor_mom_rev', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorGrcapx(live=live, file_name='factor_grcapx', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorEarningStreak(live=live, file_name='factor_earning_streak', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
-    FactorRetSkew(live=live, file_name='factor_ret_skew', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorDividend(live=live, file_name='factor_dividend', skip=False, stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # ---------------------------------------------------------------------------------BETAS-----------------------------------------------------------------------------------------
-    FactorSBSector(live=live, file_name='factor_sb_sector', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    FactorSBPCA(live=live, file_name='factor_sb_pca', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # ---------------------------------------------------------------------------------CLUSTER---------------------------------------------------------------------------------------
-    FactorClustRet(live=live, file_name='factor_clust_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
-    FactorClustLoadRet(live=live, file_name='factor_clust_load_ret', stock='all', start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
-    FactorClustIndMom(live=live, file_name='factor_clust_ind_mom', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
-    FactorClustIndMomSub(live=live, file_name='factor_clust_ind_mom_sub', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
-    FactorClustIndMomFama(live=live, file_name='factor_clust_ind_mom_fama', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
-
-    elapsed_time = time.time() - start_time
-    minutes, seconds = divmod(elapsed_time, 60)
-    print(f"Total time to create all factors: {int(minutes)}:{int(seconds):02}")
-    print("-" * 60)
-    ray.shutdown()
+    # if update_price:
+    #     live_data.create_crsp_price(threshold)
+    # live_data.create_compustat_quarterly()
+    # live_data.create_compustat_annual()
+    # live_data.create_stock_list()
+    # live_data.create_live_price()
+    # live_data.create_misc()
+    # live_data.create_compustat_pension()
+    # live_data.create_industry()
+    # live_data.create_macro()
+    # live_data.create_risk_rate()
+    #
+    # elapsed_time = time.time() - start_time
+    # minutes, seconds = divmod(elapsed_time, 60)
+    # print(f"Total time to get live data: {int(minutes)}:{int(seconds):02}")
+    # print("-" * 60)
+    #
+    # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # # --------------------------------------------------------------------------CREATE FACTORS---------------------------------------------------------------------------------------
+    # print("---------------------------------------------------------------------CREATE FACTORS---------------------------------------------------------------------------------------")
+    # stock = read_stock(get_large_dir(live) / 'permno_live.csv')
+    #
+    # ray.init(num_cpus=16, ignore_reinit_error=True)
+    # start_time = time.time()
+    #
+    # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # # --------------------------------------------------------------------------------GENERAL----------------------------------------------------------------------------------------
+    # FactorRet(live=live, file_name='factor_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorRetComp(live=live, file_name='factor_ret_comp', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorVolatility(live=live, file_name='factor_volatility', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorVolume(live=live, file_name='factor_volume', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorTime(live=live, file_name='factor_time', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorTalib(live=live, file_name='factor_talib', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorSignRet(live=live, file_name='factor_sign_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorVolComp(live=live, file_name='factor_vol_comp', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # # -----------------------------------------------------------------------------------PCA-----------------------------------------------------------------------------------------
+    # FactorLoadRet(live=live, file_name='factor_load_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, component=5).create_factor()
+    # FactorLoadVolume(live=live, file_name='factor_load_volume', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, component=5).create_factor()
+    # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # # ---------------------------------------------------------------------------------CONDITION-------------------------------------------------------------------------------------
+    # FactorCondRet(live=live, file_name='factor_cond_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # # ---------------------------------------------------------------------------------INDUSTRY--------------------------------------------------------------------------------------
+    # FactorInd(live=live, file_name='factor_ind', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorIndFama(live=live, file_name='factor_ind_fama', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorIndSub(live=live, file_name='factor_ind_sub', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorIndMom(live=live, file_name='factor_ind_mom', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorIndMomFama(live=live, file_name='factor_ind_mom_fama', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorIndMomSub(live=live, file_name='factor_ind_mom_sub', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # # ---------------------------------------------------------------------------------OPEN ASSET------------------------------------------------------------------------------------
+    # FactorAccrual(live=live, file_name='factor_accrual', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorNetDebtFinance(live=live, file_name='factor_net_debt_finance', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorCHTax(live=live, file_name='factor_chtax', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorHire(live=live, file_name='factor_hire', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorAssetGrowth(live=live, file_name='factor_asset_growth', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorNOA(live=live, file_name='factor_noa', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorInvestPPEInv(live=live, file_name='factor_invest_ppe_inv', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorInvGrowth(live=live, file_name='factor_inv_growth', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorCompDebt(live=live, file_name='factor_comp_debt', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorChEQ(live=live, file_name='factor_cheq', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorXFIN(live=live, file_name='factor_xfin', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorEmmult(live=live, file_name='factor_emmult', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorAccrualBM(live=live, file_name='factor_accrual_bm', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorPctTotAcc(live=live, file_name='factor_pcttotacc', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorRDS(live=live, file_name='factor_rds', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorFrontier(live=live, file_name='factor_frontier', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorAgeMom(live=live, file_name='factor_age_mom', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorMomVol(live=live, file_name='factor_mom_vol', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorMomSeasonShort(live=live, file_name='factor_mom_season_short', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorMomSeason(live=live, file_name='factor_mom_season', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorMomSeason6(live=live, file_name='factor_mom_season6', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorMomSeason9(live=live, file_name='factor_mom_season9', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorMomSeason11(live=live, file_name='factor_mom_season11', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorMomSeason16(live=live, file_name='factor_mom_season16', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorIntMom(live=live, file_name='factor_int_mom', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorTrendFactor(live=live, file_name='factor_trend_factor', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorMomOffSeason(live=live, file_name='factor_mom_off_season', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorMomRev(live=live, file_name='factor_mom_rev', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorGrcapx(live=live, file_name='factor_grcapx', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorEarningStreak(live=live, file_name='factor_earning_streak', skip=True, stock=stock, start=start_factor, end=current_date).create_factor()
+    # FactorRetSkew(live=live, file_name='factor_ret_skew', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorDividend(live=live, file_name='factor_dividend', skip=False, stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # # ---------------------------------------------------------------------------------BETAS-----------------------------------------------------------------------------------------
+    # FactorSBSector(live=live, file_name='factor_sb_sector', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # FactorSBPCA(live=live, file_name='factor_sb_pca', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
+    # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # # ---------------------------------------------------------------------------------CLUSTER---------------------------------------------------------------------------------------
+    # FactorClustRet(live=live, file_name='factor_clust_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
+    # FactorClustLoadRet(live=live, file_name='factor_clust_load_ret', stock='all', start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
+    # FactorClustIndMom(live=live, file_name='factor_clust_ind_mom', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
+    # FactorClustIndMomSub(live=live, file_name='factor_clust_ind_mom_sub', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
+    # FactorClustIndMomFama(live=live, file_name='factor_clust_ind_mom_fama', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
+    #
+    # elapsed_time = time.time() - start_time
+    # minutes, seconds = divmod(elapsed_time, 60)
+    # print(f"Total time to create all factors: {int(minutes)}:{int(seconds):02}")
+    # print("-" * 60)
+    # ray.shutdown()
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -----------------------------------------------------------------------------PARAMS--------------------------------------------------------------------------------------------
@@ -182,27 +182,27 @@ def exec_model(threshold, update_price, start_data, start_factor, start_model, t
     start_time = time.time()
 
     best_params = {
-        'max_depth': [6, 6, 6],
-        'learning_rate': [0.13979732829061503, 0.10555427975550981, 0.10142072607825621],
-        'num_leaves': [68, 49, 132],
-        'feature_fraction': [1, 1, 1],
-        'min_gain_to_split': [0.02, 0.02, 0.02],
-        'min_data_in_leaf': [180, 116, 134],
-        'lambda_l1': [0, 0, 0],
-        'lambda_l2': [0.16791726968101575, 0.7838642063280304, 2.872067927298658],
-        'bagging_fraction': [1, 1, 1],
-        'bagging_freq': [0, 0, 0]
+        'max_depth': [6, 6, 6, 6, 6, 6],
+        'learning_rate': [0.13979732829061503, 0.10555427975550981, 0.10142072607825621, 0.142266193883121, 0.11195138620411563],
+        'num_leaves': [68, 49, 132, 93, 92],
+        'feature_fraction': [1, 1, 1, 1, 1, 1],
+        'min_gain_to_split': [0.02, 0.02, 0.02, 0.02, 0.02, 0.02],
+        'min_data_in_leaf': [180, 116, 134, 53, 76],
+        'lambda_l1': [0, 0, 0, 0, 0, 0],
+        'lambda_l2': [0.16791726968101575, 0.7838642063280304, 2.872067927298658, 0.007779838065159318, 0.00020166943423794383],
+        'bagging_fraction': [1, 1, 1, 1, 1, 1],
+        'bagging_freq': [0, 0, 0, 0, 0, 0]
     }
 
     best_params = {
         'max_depth': [6],
-        'learning_rate': [0.10182814664179678],
-        'num_leaves': [82],
+        'learning_rate': [0.10013526965238723],
+        'num_leaves': [46],
         'feature_fraction': [1],
         'min_gain_to_split': [0.02],
-        'min_data_in_leaf': [161],
+        'min_data_in_leaf': [148],
         'lambda_l1': [0],
-        'lambda_l2': [0.000338697590322718],
+        'lambda_l2': [0.028543012957977447],
         'bagging_fraction': [1],
         'bagging_freq': [0]
     }
@@ -478,4 +478,4 @@ def exec_model(threshold, update_price, start_data, start_factor, start_model, t
     print("-" * 60)
 
 
-# exec_model(threshold=6_000_000_000, update_price=False, start_data='2004-01-01', start_factor='2004-01-01', start_model='2008-01-01', tune='best', save_prep=False)
+exec_model(threshold=6_000_000_000, update_price=False, start_data='2004-01-01', start_factor='2004-01-01', start_model='2008-01-01', tune='best', save_prep=False)

@@ -114,7 +114,8 @@ def exec_pred(threshold, num_stocks, leverage, port_opt, use_model):
     pred_return_opt = live_test.exec_port_opt(data=data, option='both')
     stock = pred_return_opt['totalRet']
     # Save plot to "report" directory
-    qs.reports.html(stock, 'SPY', output=dir_path / 'report.html')
+    spy = get_spy(start_date='2005-01-01', end_date=current_date)
+    qs.reports.html(stock, spy, output=dir_path / 'report.html')
 
     # Retrieve stocks to long/short tomorrow
     long = pred_return.iloc[-1]['longStocks']
@@ -141,4 +142,4 @@ def exec_pred(threshold, num_stocks, leverage, port_opt, use_model):
     else:
         df_combined.to_csv(filename, index=False)
 
-# exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=6, threshold=2_000_000_000)
+exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=5, threshold=2_000_000_000)

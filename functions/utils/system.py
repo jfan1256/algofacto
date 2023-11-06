@@ -38,13 +38,13 @@ def get_large_dir(live) -> Path:
 
 def get_result(live) -> Path:
     if live:
-        return get_root_dir() / 'live' / 'result'
+        return get_root_dir() / 'live' / 'strategy_ml' / 'result'
     else:
         return get_root_dir() / 'historical' / 'result'
 
 def get_report(live) -> Path:
     if live:
-        return get_root_dir() / 'live' / 'report'
+        return get_root_dir() / 'live' / 'strategy_ml' / 'report'
     else:
         return get_root_dir() / 'historical' / 'report'
 

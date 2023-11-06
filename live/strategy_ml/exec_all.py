@@ -15,7 +15,7 @@ def within_time_range(start, end):
 
 # Job to execute train
 def daily_train():
-    if within_time_range(datetime.time(0, 1), datetime.time(20, 0)):
+    if within_time_range(datetime.time(0, 1), datetime.time(13, 0)):
         print("---------------------------------------------------------------------------RUN----------------------------------------------------------------------------------")
         print("Running daily training at: ", datetime.datetime.now())
         exec_model(threshold=6_000_000_000, update_price=False, start_data='2004-01-01', start_factor='2004-01-01', start_model='2008-01-01', tune=['optuna', 20], save_prep=True)
