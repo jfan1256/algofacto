@@ -28,7 +28,7 @@ def daily_trade():
         print("---------------------------------------------------------------------------------RUN---------------------------------------------------------------------------------------")
         print("Running daily trade at: ", datetime.datetime.now())
         asyncio.run(exec_trade(num_stocks=50))
-        exec_close(num_stocks=50)
+        # exec_close(num_stocks=50)
         time.sleep(30)
 
 # Schedule daily train to run every day at 12:01 AM
