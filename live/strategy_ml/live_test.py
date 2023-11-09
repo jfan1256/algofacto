@@ -209,7 +209,7 @@ class LiveTest:
         merged.window = merged.window.astype(int)
         # Shift actual returns 1 day back
         merged['returns'] = merged.groupby('permno')['returns'].shift(-1)
-        merged = remove_row_before_end(merged, 'permno', self.current_date)
+        merged = remove_nan_before_end(merged, 'returns')
 
         if plot == False:
             return merged
@@ -416,7 +416,7 @@ class LiveTest:
         merged.window = merged.window.astype(int)
         # Shift actual returns 1 day back
         merged['returns'] = merged.groupby('permno')['returns'].shift(-1)
-        merged = remove_row_before_end(merged, 'permno', self.current_date)
+        merged = remove_nan_before_end(merged, 'returns')
         return merged
 
     # Calculates SHARPE for each period

@@ -410,13 +410,14 @@ class LiveData:
     # Create Live Price
     def create_live_price(self):
         print("-" * 60)
-        # Get ticker list from fund_raw_a
+        # Get ticker list from crsp_ticker
         print("Get common ticker list...")
-        fund_raw_a = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli')
+        crsp_ticker = pd.read_parquet(get_parquet_dir(self.live) / 'data_crsp_ticker.parquet.brotli')
         common_stock_list = read_stock(get_large_dir(self.live) / 'permno_common.csv')
-        fund_raw_a = get_stocks_data(fund_raw_a, common_stock_list)
-        last_date = fund_raw_a.index.get_level_values('date').max()
-        ticker_list = fund_raw_a.loc[fund_raw_a.index.get_level_values('date') == last_date, 'ticker'].tolist()
+        crsp_ticker = get_stocks_data(crsp_ticker, common_stock_list)
+        # This date should be the end of the annual CRSP dataset (i.e., 2022-12-31)
+        last_date = crsp_ticker.index.get_level_values('date').max()
+        ticker_list = crsp_ticker.loc[crsp_ticker.index.get_level_values('date') == last_date, 'ticker'].tolist()
 
         # Read in live market data
         print("Read in live market data...")
@@ -427,9 +428,7 @@ class LiveData:
 
         # Extract permno ticker pair used for mapping
         print("Extract permno ticker pair used for mapping...")
-        crsp_ticker = pd.read_parquet(get_parquet_dir(self.live) / 'data_crsp_ticker.parquet.brotli')
-        last_date_df = crsp_ticker.index.get_level_values('date').max()
-        permno_ticker_map = crsp_ticker.loc[crsp_ticker.index.get_level_values('date') == last_date_df][['ticker']]
+        permno_ticker_map = crsp_ticker.loc[crsp_ticker.index.get_level_values('date') == last_date][['ticker']]
 
         # Map permno ticker pair to live market data
         print("Map permno ticker pair to live market data...")
@@ -458,7 +457,7 @@ class LiveData:
 
         ret = create_return(combined_price, [1])
 
-        # Identify and drop permnos that have returns greater than 10 (this is due to price descrepancy between CRSP and Yfinance)
+        # Identify and drop permnos that have returns greater than 10 (this is due to price descrepancy between CRSP and FMP)
         print("Identify and drop permnos that have returns greater than 10 (this removes extremely volatile stocks (i.e., TPST on October 10, 2023))...")
         permnos_to_remove = ret.loc[ret.RET_01 > 10].index.get_level_values('permno').unique()
         print(f"Number of stocks to remove: {len(permnos_to_remove)}")
@@ -846,3 +845,16 @@ class LiveData:
         # Export Data
         print("Export Data...")
         rates.to_parquet(get_parquet_dir(self.live) / 'data_rf.parquet.brotli', compression='brotli')
+
+    # Get ETF Data for Mean Reversion Strategy
+    def create_etf(self):
+        print("-" * 60)
+        # Get data from FMP
+        print("Get data from FMP...")
+        etf_data = get_data_fmp(ticker_list=['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU'], start=self.start_date, current_date=self.current_date)
+        etf_data = etf_data[['Open', 'High', 'Low', 'Volume', 'Adj Close']]
+        etf_data = etf_data.rename(columns={'Adj Close': 'Close'})
+
+        # Export Data
+        print("Export Data...")
+        etf_data.to_parquet(get_parquet_dir(self.live) / 'data_etf.parquet.brotli', compression='brotli')

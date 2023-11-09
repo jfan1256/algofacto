@@ -15,16 +15,6 @@ def exec_close(num_stocks):
         order.transmit = True
         return order
 
-    # Create Market On Open Order
-    def create_moo_order(action, quantity):
-        order = Order()
-        order.action = action
-        order.orderType = "MKT"
-        order.totalQuantity = quantity
-        order.tif = "OPG"
-        order.transmit = True
-        return order
-
     # Order Fill Callback
     def order_filled(trade, fill):
         print(f"Order has been filled for {trade.contract.symbol}")

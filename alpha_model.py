@@ -31,6 +31,7 @@ class AlphaModel:
                  model_name: str = None,
                  end: str = None,
                  tuning: [str, int] = None,
+                 shap: bool = False,
                  plot_loss: bool = False,
                  plot_hist: bool = False,
                  pred: str = 'price',
@@ -53,6 +54,7 @@ class AlphaModel:
         self.end = end
         self.categorical = []
         self.tuning = tuning
+        self.shap = shap
         self.plot_loss = plot_loss
         self.plot_hist = plot_hist
         self.pred = pred
@@ -141,11 +143,11 @@ class AlphaModel:
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'target_{self.lookahead}D'].apply(lambda x: np.sign(x))
-                self.data = remove_row_before_end(self.data, self.stock, self.end)
+                self.data = remove_nan_before_end(self.data, f'target_{self.lookahead}D')
             elif self.pred == 'price':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-                self.data = remove_row_before_end(self.data, self.stock, self.end)
+                self.data = remove_nan_before_end(self.data, f'target_{self.lookahead}D')
                 condition = self.data[f'target_{self.lookahead}D'].abs() > 0.05
                 self.data.loc[condition, f'target_{self.lookahead}D'] = np.nan
         else:
@@ -153,11 +155,11 @@ class AlphaModel:
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'target_{self.lookahead}D'].apply(lambda x: np.sign(x))
-                self.data = remove_row_before_end(self.data, self.stock, self.end)
+                self.data = remove_nan_before_end(self.data, f'target_{self.lookahead}D')
             elif self.pred == 'price':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
                 self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-                self.data = remove_row_before_end(self.data, self.stock, self.end)
+                self.data = remove_nan_before_end(self.data, f'target_{self.lookahead}D')
 
     # Creates the indices used for pretraining the model
     @staticmethod
@@ -387,8 +389,8 @@ class AlphaModel:
                     print("-" * 60)
                     print("Pretrain model......")
                     print("-" * 60)
-                    start_train = data_pretrain.index.get_level_values('date')[pretrain_idx[0]].strftime('%Y-%m-%d')
-                    end_train = data_pretrain.index.get_level_values('date')[pretrain_idx[-1]].strftime('%Y-%m-%d')
+                    start_train = data_pretrain.index.get_level_values('date')[pretrain_idx].min().strftime('%Y-%m-%d')
+                    end_train = data_pretrain.index.get_level_values('date')[pretrain_idx].max().strftime('%Y-%m-%d')
                     print(f'Pretraining from {start_train} --> {end_train}:')
                     lgb_pretrain = lgb_data_pretrain.subset(used_indices=pretrain_idx.tolist()).construct()
                     prev_model = lgb.train(params=params, train_set=lgb_pretrain, num_boost_round=1000)
@@ -407,10 +409,10 @@ class AlphaModel:
                 print("-" * 60)
                 # Iterate over wfo periods
                 for i, (train_idx, test_idx) in enumerate(opt):
-                    start_train = data_train.index.get_level_values('date')[train_idx[0]].strftime('%Y-%m-%d')
-                    end_train = data_train.index.get_level_values('date')[train_idx[-1]].strftime('%Y-%m-%d')
-                    start_test = data_train.index.get_level_values('date')[test_idx[0]].strftime('%Y-%m-%d')
-                    end_test = data_train.index.get_level_values('date')[test_idx[-1]].strftime('%Y-%m-%d')
+                    start_train = data_train.index.get_level_values('date')[train_idx].min().strftime('%Y-%m-%d')
+                    end_train = data_train.index.get_level_values('date')[train_idx].max().strftime('%Y-%m-%d')
+                    start_test = data_train.index.get_level_values('date')[test_idx].min().strftime('%Y-%m-%d')
+                    end_test = data_train.index.get_level_values('date')[test_idx].max().strftime('%Y-%m-%d')
                     print(f'Training from {start_train} --> {end_train} || Testing from {start_test} --> {end_test}:')
                     # If early stopping is set to True
                     if self.early:
@@ -493,9 +495,9 @@ class AlphaModel:
                             plt.show()
 
                     # Capture predictions
-                    test_set = data_train.iloc[test_idx, :]
-                    test_factors = test_set.loc[:, model.feature_name()]
-                    test_ret = test_set.loc[:, ret]
+                    test_set = data_train.iloc[test_idx]
+                    test_factors = test_set[model.feature_name()]
+                    test_ret = test_set[ret]
                     # Predict for price or sign
                     if self.pred == 'price':
                         print('Predicting......')
@@ -515,14 +517,15 @@ class AlphaModel:
                     if self.plot_hist:
                         self._plot_histo(test_ret.assign(**test_pred_ret).assign(i=i), self.actual_return, data_train.iloc[train_idx].index.get_level_values('date')[-1] + timedelta(days=5))
 
-                    # Save the SHAP plots for training period at start, middle, and end
-                    if i == 0 or i == n_splits // 2 or i == n_splits - 1:
-                        print('Exporting beeswarm and waterfall SHAP plot......')
-                        explainer = shap.TreeExplainer(model)
-                        sv = explainer(test_factors)
-                        plot_beeswarm_gbm(sv, explainer, test_factors, export_key, i)
-                        if self.pred == 'price':
-                            plot_waterfall_gbm(sv, export_key, i)
+                    if self.shap:
+                        # Save the SHAP plots for training period at start, middle, and end
+                        if i == 0 or i == n_splits // 2 or i == n_splits - 1:
+                            print('Exporting beeswarm and waterfall SHAP plot......')
+                            explainer = shap.TreeExplainer(model)
+                            sv = explainer(test_factors)
+                            plot_beeswarm_gbm(sv, explainer, test_factors, export_key, i)
+                            if self.pred == 'price':
+                                plot_waterfall_gbm(sv, export_key, i)
 
                     # Save feature gain and split
                     if i == 0:
@@ -597,9 +600,9 @@ class AlphaModel:
             # ----------------------------------------------------------------------TUNING PARAMETERS----------------------------------------------------------------------------------------
             # Base params used for training
             if self.pred == 'price':
-                base_params = dict(boosting='gbdt', device_type='gpu', gpu_platform_id=1, gpu_device_id=0, verbose=-1, gpu_use_dp=True, objective='regression', metric='mse')
+                base_params = dict(boosting='gbdt', device_type='gpu', gpu_platform_id=1, gpu_device_id=0, verbose=-1, gpu_use_dp=True, objective='regression', metric='mse', seed=42)
             elif self.pred == 'sign':
-                base_params = dict(boosting='gbdt', device_type='gpu', gpu_platform_id=1, gpu_device_id=0, verbose=-1, gpu_use_dp=True, objective='binary', metric='binary_logloss')
+                base_params = dict(boosting='gbdt', device_type='gpu', gpu_platform_id=1, gpu_device_id=0, verbose=-1, gpu_use_dp=True, objective='binary', metric='binary_logloss', seed=42)
 
             # Get parameters and set num_iterations used for prediction
             params = self._get_parameters(trial)
@@ -688,6 +691,9 @@ class AlphaModel:
             if self.tuning[0] == 'optuna':
                 # Get param values and print the key (formatted params)
                 param_vals = list(params.values())
+                # Round param vals (this is to maintain consistency)
+                param_vals = [round(p, 7) if isinstance(p, float) else p for p in param_vals]
+
                 key = '_'.join([str(float(p)) for p in param_vals])
                 print(f'Key: {key}')
                 # Create the directory
@@ -812,10 +818,10 @@ class AlphaModel:
                 print("-" * 60)
                 # Iterate over wfo periods
                 for i, (train_idx, test_idx) in enumerate(opt):
-                    start_train = data_train.index.get_level_values('date')[train_idx[0]].strftime('%Y-%m-%d')
-                    end_train = data_train.index.get_level_values('date')[train_idx[-1]].strftime('%Y-%m-%d')
-                    start_test = data_train.index.get_level_values('date')[test_idx[0]].strftime('%Y-%m-%d')
-                    end_test = data_train.index.get_level_values('date')[test_idx[-1]].strftime('%Y-%m-%d')
+                    start_train = data_train.index.get_level_values('date')[train_idx].min().strftime('%Y-%m-%d')
+                    end_train = data_train.index.get_level_values('date')[train_idx].max().strftime('%Y-%m-%d')
+                    start_test = data_train.index.get_level_values('date')[test_idx].min().strftime('%Y-%m-%d')
+                    end_test = data_train.index.get_level_values('date')[test_idx].max().strftime('%Y-%m-%d')
                     print(f'Training from {start_train} to {end_train} || Testing from {start_test} to {end_test}:')
                     # If early stopping is set to True
                     if self.early:

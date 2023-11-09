@@ -112,7 +112,7 @@ async def exec_trade(num_stocks):
             print(f"Available capital: ${available_capital}")
             break
     else:
-        print("Could not fetch available capital. Exiting.")
+        print("Could not fetch available capital. Exiting...")
         ib.disconnect()
         exit()
 

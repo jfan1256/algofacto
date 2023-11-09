@@ -15,17 +15,17 @@ def within_time_range(start, end):
 
 # Job to execute train
 def daily_train():
-    if within_time_range(datetime.time(0, 1), datetime.time(13, 0)):
-        print("---------------------------------------------------------------------------RUN----------------------------------------------------------------------------------")
+    if within_time_range(datetime.time(0, 1), datetime.time(2, 0)):
+        print("---------------------------------------------------------------------------------RUN---------------------------------------------------------------------------------------")
         print("Running daily training at: ", datetime.datetime.now())
-        exec_model(threshold=6_000_000_000, update_price=False, start_data='2004-01-01', start_factor='2004-01-01', start_model='2008-01-01', tune=['optuna', 20], save_prep=True)
+        exec_model(threshold=6_000_000_000, update_price=False, start_data='2004-01-01', start_factor='2004-01-01', start_model='2008-01-01', tune=['optuna', 30], save_prep=True)
         exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=6, threshold=2_000_000_000)
         time.sleep(30)
 
 # Job to execute trade
 def daily_trade():
     if within_time_range(datetime.time(15, 40), datetime.time(15, 45)):
-        print("---------------------------------------------------------------------------RUN----------------------------------------------------------------------------------")
+        print("---------------------------------------------------------------------------------RUN---------------------------------------------------------------------------------------")
         print("Running daily trade at: ", datetime.datetime.now())
         asyncio.run(exec_trade(num_stocks=50))
         exec_close(num_stocks=50)
