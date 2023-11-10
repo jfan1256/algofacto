@@ -2,6 +2,7 @@ import pandas as pd
 
 from functions.utils.func import *
 from ib_insync import *
+from live.callback import OrderCounter
 
 def exec_close(num_stocks):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -41,6 +42,10 @@ def exec_close(num_stocks):
     # Establish connection with IBKR TWS Workstation (7497 is for TWS)
     ib = IB()
     ib.connect(host='127.0.0.1', port=7497, clientId=123)
+
+    # Subscribe the class method to the newOrderEvent
+    order_counter = OrderCounter()
+    ib.newOrderEvent += order_counter.new_order_event_handler
 
     order_num = 1
     # Close long positions
@@ -94,9 +99,7 @@ def exec_close(num_stocks):
         print(f"Order Number: {order_num}")
         order_num += 1
 
-    # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # ----------------------------------------------------------------------------ALL ORDERS HAVE BEEN EXECUTED----------------------------------------------------------------------
-    print("-----------------------------------------------------------------------ALL ORDERS HAVE BEEN EXECUTED----------------------------------------------------------------------")
+    print(f"----------------------------------------------------Total number of new orders placed: {order_counter.new_order_count}---------------------------------------------------")
     # Disconnect when done
     ib.disconnect()
 

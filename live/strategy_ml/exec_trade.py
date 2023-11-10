@@ -1,10 +1,12 @@
-import asyncio
 from ib_insync import *
 from functions.utils.func import *
+from live.callback import OrderCounter
 import math
+import asyncio
+
 
 # Execute trades
-async def exec_trade(num_stocks):
+async def exec_trade(num_stocks, settlement):
     # Execute trades
     def create_moc_order(action, quantity):
         order = Order()
@@ -36,7 +38,7 @@ async def exec_trade(num_stocks):
     async def get_market_data(stock):
         print("-" * 60)
         MAX_RETRIES = 10
-        SLEEP_DURATION = 1
+        SLEEP_DURATION = 3.0
 
         for _ in range(MAX_RETRIES):
             market_data = ib.reqMktData(stock, '', False, False)
@@ -53,7 +55,7 @@ async def exec_trade(num_stocks):
     # Execute trade order
     async def execute_order(symbol, action, capital_per_stock, order_num):
         MAX_RETRIES = 20
-        WAIT_TIME = 1 # Time in seconds
+        WAIT_TIME = 3.0 # Time in seconds
 
         print("-" * 60)
         print(f"Placing orders for {action} position on: {symbol}")
@@ -117,12 +119,15 @@ async def exec_trade(num_stocks):
         exit()
 
     # Calculations for EWP
-    capital_per_stock = (available_capital / 2) / num_stocks
+    capital_per_stock = (available_capital / settlement) / num_stocks
     order_num = 1
     all_stocks = long + short
 
     # List to store all the tasks
     tasks = []
+    # Subscribe the class method to the newOrderEvent
+    order_counter = OrderCounter()
+    ib.newOrderEvent += order_counter.new_order_event_handler
 
     for i, stock_symbol in enumerate(all_stocks, start=order_num):
         if stock_symbol in long:
@@ -134,8 +139,9 @@ async def exec_trade(num_stocks):
 
     # Wait for all tasks to complete
     await asyncio.gather(*tasks)
+    print(f"----------------------------------------------------Total number of new orders placed: {order_counter.new_order_count}---------------------------------------------------")
     ib.disconnect()
 
 
-# asyncio.run(exec_trade(num_stocks=50))
+asyncio.run(exec_trade(num_stocks=50, settlement=3))
 

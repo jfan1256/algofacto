@@ -496,7 +496,6 @@ def strat_ml_stocks(target_date, num_stocks):
 
     # Read the file
     df = pd.read_csv(filename)
-
     # Filter based on date
     date_data = df[df['date'] == target_date].squeeze()
 
