@@ -143,5 +143,5 @@ async def exec_trade(num_stocks, settlement):
     ib.disconnect()
 
 
-asyncio.run(exec_trade(num_stocks=50, settlement=3))
+# asyncio.run(exec_trade(num_stocks=50, settlement=3))
 

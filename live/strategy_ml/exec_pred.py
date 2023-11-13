@@ -147,4 +147,4 @@ def exec_pred(threshold, num_stocks, leverage, port_opt, use_model):
     strat_ret_df = strat_ret.to_frame()
     rolling_alpha(strat_ret=strat_ret_df, windows=[60, 252], live=live, path=dir_path)
 
-exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=6, threshold=2_000_000_000)
+# exec_pred(num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=6, threshold=2_000_000_000)
