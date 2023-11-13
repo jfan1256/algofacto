@@ -577,3 +577,17 @@ def get_dividend_fmp(ticker_list, start, current_date):
         print("No dividend data available for any ticker.")
         return None
 
+# Get sp500 constituents
+def get_sp500():
+    api_key = "f913bbd3dad0c411c864c0d960a711e7"
+    url = f"https://financialmodelingprep.com/api/v3/historical/sp500_constituent?apikey={api_key}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        sp500_constituents = response.json()
+        # Get sp500 list
+        sp500_ticker = [item['symbol'] for item in sp500_constituents]
+        return sp500_constituents, sp500_ticker
+    else:
+        print("Failed to retrieve data:", response.status_code, response.text)
+        return None
+
