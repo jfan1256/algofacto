@@ -456,6 +456,10 @@ def exec_invport_data(window, scale, start_date):
                        re_ticker=re_ticker, mat_ticker=mat_ticker, fin_ticker=fin_ticker, cd_ticker=cd_ticker,
                        ind_ticker=ind_ticker, util_ticker=util_ticker, cp_ticker=cp_ticker, com_ticker=com_ticker, bond_ticker=bond_ticker)
 
+    filename = Path(get_strategy_port_data() / f'trade_stock.csv')
+    port.columns.to_frame().T.to_csv(filename, index=False)
+
+
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------EXECUTE TRADE WEIGHTS----------------------------------------------------------------------------
 def exec_invport_present(window, scale, current_date, present_price):
