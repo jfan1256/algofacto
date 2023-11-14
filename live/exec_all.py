@@ -8,6 +8,7 @@ from live.strategy_ml.exec_ml_pred import exec_ml_pred
 from live.strategy_ml.exec_ml_trade import exec_ml_trade
 from live.strategy_ml.exec_ml_close import exec_ml_close
 from live.strategy_port.exec_invport import exec_invport_data, exec_invport_trade
+from live.strategy_port.exec_invport_close import exec_invport_close
 
 # Check if current time is within the provided range
 def within_time_range(start, end):
@@ -33,6 +34,7 @@ def daily_trade():
     exec_ml_close(num_stocks=50)
     asyncio.run(exec_ml_trade(num_stocks=50, settlement=3, capital=0.25))
     # Execute trades for Invport Strategy
+    exec_invport_close()
     exec_invport_trade(window=3, scale=10, settlement=3, capital=0.75)
 
 # Schedule daily train to run every day at 12:01 AM

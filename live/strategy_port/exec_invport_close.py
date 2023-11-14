@@ -4,7 +4,7 @@ from functions.utils.func import *
 from ib_insync import *
 from live.callback import OrderCounter
 
-def exec_ml_close(num_stocks):
+def exec_invport_close():
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------MARKET ORDER FUNCTIONS---------------------------------------------------------------------------
     # Create Market On Close Order
@@ -33,12 +33,12 @@ def exec_ml_close(num_stocks):
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------PARAMS-----------------------------------------------------------------------------------
-    yesterday_date = (datetime.today() - pd.DateOffset(1)).strftime('%Y-%m-%d')
-    long, short = strat_ml_stocks(yesterday_date, num_stocks)
+    port_data = pd.read_parquet(get_strategy_port_data() / 'data_port.parquet.brotli')
+    all_stocks = port_data.columns.tolist()
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # -----------------------------------------------------------------------------------EXECUTE ML CLOSE----------------------------------------------------------------------------
-    print("------------------------------------------------------------------------------EXECUTE ML CLOSE----------------------------------------------------------------------------")
+    # -------------------------------------------------------------------------------EXECUTE INVPORT CLOSE---------------------------------------------------------------------------
+    print("--------------------------------------------------------------------------EXECUTE INVPORT CLOSE---------------------------------------------------------------------------")
     # Connect to IB
     print("Attempting to connect to IBKR TWS Workstation...")
     ib = IB()
@@ -52,7 +52,7 @@ def exec_ml_close(num_stocks):
 
     order_num = 1
     # Close long positions
-    for stock_symbol in long:
+    for stock_symbol in all_stocks:
         print("-" * 60)
         stock = get_contract(stock_symbol[0])
         portfolio = ib.portfolio()
@@ -71,32 +71,6 @@ def exec_ml_close(num_stocks):
         action = 'SELL'
         moc_order = create_moc_order(action, abs(position.position))
         print(f"Placing MOC order to {action}: {abs(position.position)} of {stock_symbol}")
-        trade_moc = ib.placeOrder(stock, moc_order)
-        trade_moc.fillEvent += order_filled
-        print(f"Order Number: {order_num}")
-        order_num += 1
-
-    # Cover short positions
-    for stock_symbol in short:
-        print("-" * 60)
-        stock = get_contract(stock_symbol[0])
-        portfolio = ib.portfolio()
-        position = None
-
-        for item in portfolio:
-            if item.contract == stock:
-                position = item
-                break
-
-        if not position:
-            print(f"No position found for {stock_symbol}")
-            continue
-
-        print(f"Buying back SHORT position for: {stock_symbol}")
-        action = 'BUY'
-        num_share = int(abs(position.position))
-        moc_order = create_moc_order(action, num_share)
-        print(f"Placing MOC order to {action}: {num_share} of {stock_symbol}")
         trade_moc = ib.placeOrder(stock, moc_order)
         trade_moc.fillEvent += order_filled
         print(f"Order Number: {order_num}")
