@@ -66,7 +66,7 @@ async def exec_price():
     symbol_price_tuples = [t for t in symbol_price_tuples if t[1] is not None]
     # Create DataFrame
     price_all = pd.DataFrame(symbol_price_tuples, columns=['ticker', 'Close'])
-    price_all['date'] = pd.to_datetime(past_date)
+    price_all['date'] = pd.to_datetime(current_date)
 
     # Separate price data into ETF and Stocks to trade
     etf_data = price_all[price_all['ticker'].isin(etf_ticker)].set_index(['ticker', 'date'])
@@ -235,6 +235,7 @@ print("-------------------------------------------------------------------------
 print("Attempting to connect to IBKR TWS Workstation...")
 ib = IB()
 ib.connect(host='127.0.0.1', port=7497, clientId=1512)
+current_date = date.today().strftime('%Y-%m-%d')
 print("Connected to IBKR TWS Workstation.")
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -60,6 +60,12 @@ def get_strategy_mrev():
 def get_strategy_mrev_data():
     return get_root_dir() / 'live' / 'strategy_mrev' / 'data'
 
+def get_strategy_port():
+    return get_root_dir() / 'live' / 'strategy_port'
+
+def get_strategy_port_data():
+    return get_root_dir() / 'live' / 'strategy_port' / 'data'
+
 
 def print_data_shape(self, *args, **kwargs):
     print('Shape: ' + str(self.data.shape))

@@ -6,7 +6,7 @@ import asyncio
 
 
 # Execute trades
-async def exec_trade(num_stocks, settlement):
+async def exec_ml_trade(num_stocks, settlement):
     # Execute trades
     def create_moc_order(action, quantity):
         order = Order()

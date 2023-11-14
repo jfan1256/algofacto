@@ -61,7 +61,7 @@ from factor_class.factor_ret_skew import FactorRetSkew
 from factor_class.factor_dividend import FactorDividend
 from factor_class.factor_vol_comp import FactorVolComp
 
-def exec_model(threshold, update_price, start_data, start_factor, start_model, tune, save_prep):
+def exec_ml_model(threshold, update_price, start_data, start_factor, start_model, tune, save_prep):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------GET LIVE DATA----------------------------------------------------------------------------------
     print("---------------------------------------------------------------------------GET LIVE DATA----------------------------------------------------------------------------------")

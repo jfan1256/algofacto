@@ -4,7 +4,7 @@ from functions.utils.func import *
 from ib_insync import *
 from live.callback import OrderCounter
 
-def exec_close(num_stocks):
+def exec_ml_close(num_stocks):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------MARKET ORDER FUNCTIONS---------------------------------------------------------------------------
     # Create Market On Close Order

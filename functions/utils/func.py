@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from sklearn.linear_model import Ridge
 from timebudget import timebudget
 from joblib import Parallel, delayed
+from pandas.tseries.offsets import BDay
 from statsmodels.regression.linear_model import OLS
 from tqdm import tqdm
 from plotly.subplots import make_subplots
@@ -590,4 +591,10 @@ def get_sp500():
     else:
         print("Failed to retrieve data:", response.status_code, response.text)
         return None
+
+# Retrieves 'permno' groups that have data up to current date
+def current_data(group, current_date, window):
+    recent_dates = group.index.get_level_values('date')
+    target_date = pd.to_datetime(current_date) - BDay(window)
+    return recent_dates.max() >= target_date and (recent_dates >= target_date).sum() >= window
 

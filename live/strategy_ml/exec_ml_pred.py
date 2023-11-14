@@ -8,7 +8,7 @@ from scipy.stats import spearmanr
 from live.strategy_ml.live_test import LiveTest
 from functions.utils.func import *
 
-def exec_pred(threshold, num_stocks, leverage, port_opt, use_model):
+def exec_ml_pred(threshold, num_stocks, leverage, port_opt, use_model):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------------
     live = True
