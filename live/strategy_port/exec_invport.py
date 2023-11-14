@@ -210,7 +210,7 @@ def create_weight_present(window, scale, current_date, port, tech_ticker, eng_ti
                           ind_ticker, util_ticker, cp_ticker, com_ticker, bond_ticker, inflation, interest, ffund, unemploy):
     # Inverse Volatility Weights
     print("Calculate inverse vol weights...")
-    vol = port.tail(3).std()
+    vol = port.tail(window).std()
     vol = vol.to_frame().T
     vol.index = [pd.to_datetime(current_date)]
     vol.index.names = ['date']
@@ -321,9 +321,6 @@ def create_weight_present(window, scale, current_date, port, tech_ticker, eng_ti
     # Add Weight
     inv_hur_weight = add_weight(inv_lff_weight, high_ur_mask, scale, hur_ticker, non_hur_ticker)
 
-    # Export Weight
-    print("Export weight...")
-    inv_hur_weight.to_parquet(get_strategy_port_data() / 'data_weight.parquet.brotli', compression='brotli')
     return inv_hur_weight
 
 def get_macro(port, item, name):
@@ -358,7 +355,7 @@ async def exec_price(ib, current_date):
     async def get_market_data(stock):
         print("-" * 60)
         MAX_RETRIES = 10
-        SLEEP_DURATION = 1
+        SLEEP_DURATION = 3.0
 
         for _ in range(MAX_RETRIES):
             market_data = ib.reqMktData(stock, '', False, False)
@@ -399,8 +396,6 @@ async def exec_price(ib, current_date):
     price_all = price_all.unstack('ticker')
     price_all.columns = price_all.columns.get_level_values('ticker')
 
-    # Disconnect from IB
-    ib.disconnect()
     return price_all
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -417,7 +412,7 @@ def exec_invport_data(window, scale, start_date):
     tech_ticker = ['QQQ', 'SMH', 'ARKK', 'KWEB', 'CIBR']
     tech_ret, tech_price = get_ret(tech_ticker, start_date, current_date)
     # Get energy data
-    eng_ticker = ['XLE', 'AMJ', 'ICLN']
+    eng_ticker = ['XLE', 'ICLN']
     eng_ret, eng_price = get_ret(eng_ticker, start_date, current_date)
     # Get healthcare data
     hc_ticker = ['XLV', 'IBB', 'ARKG']
@@ -452,12 +447,17 @@ def exec_invport_data(window, scale, start_date):
     port.to_parquet(get_strategy_port_data() / 'data_port.parquet.brotli', compression='brotli')
     price.to_parquet(get_strategy_port_data() / 'data_price.parquet.brotli', compression='brotli')
 
-    create_weight_past(window=window, scale=scale, port=port, tech_ticker=tech_ticker, eng_ticker=eng_ticker, hc_ticker=hc_ticker,
-                       re_ticker=re_ticker, mat_ticker=mat_ticker, fin_ticker=fin_ticker, cd_ticker=cd_ticker,
-                       ind_ticker=ind_ticker, util_ticker=util_ticker, cp_ticker=cp_ticker, com_ticker=com_ticker, bond_ticker=bond_ticker)
+    past_weight = create_weight_past(window=window, scale=scale, port=port, tech_ticker=tech_ticker, eng_ticker=eng_ticker, hc_ticker=hc_ticker,
+                                     re_ticker=re_ticker, mat_ticker=mat_ticker, fin_ticker=fin_ticker, cd_ticker=cd_ticker,
+                                     ind_ticker=ind_ticker, util_ticker=util_ticker, cp_ticker=cp_ticker, com_ticker=com_ticker, bond_ticker=bond_ticker)
 
-    filename = Path(get_strategy_port_data() / f'trade_stock.csv')
-    port.columns.to_frame().T.to_csv(filename, index=False)
+    ret = (port * past_weight).sum(axis=1)
+    spy = get_spy(start_date='2005-01-01', end_date=current_date)
+    format_date =  current_date.replace('-', '')
+    qs.reports.html(ret, spy, output=get_strategy_port() / 'report' / f'{format_date}.html')
+
+    filename = Path(get_strategy_port() / f'trade_stock.csv')
+    port.columns.to_frame().T.to_csv(filename, index=False, header=False)
 
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -494,24 +494,26 @@ def exec_invport_present(window, scale, current_date, present_price):
     # Get price
     past_price = pd.read_parquet(get_strategy_port_data() / 'data_price.parquet.brotli')
 
+    # Sometimes FMP returns live data as well
+    if current_date in past_price.index:
+        past_price = past_price.iloc[:-1]
+    if current_date in past_weight.index:
+        past_weight = past_weight.iloc[:-1]
+    if current_date in past_port.index:
+        past_port = past_port.iloc[:-1]
+
     # Get present return
     total_price = pd.concat([past_price, present_price], axis=0)
-    present_port = total_price.pct_change().iloc[-1]
+    present_port = total_price.pct_change().iloc[-1].to_frame().T
     total_port = pd.concat([past_port, present_port], axis=0)
 
     # Calculate Weight
-    present_weight = create_weight_present(window=window, scale=scale, port=total_port, tech_ticker=tech_ticker, eng_ticker=eng_ticker, hc_ticker=hc_ticker,
+    present_weight = create_weight_present(window=window, scale=scale, current_date=current_date, port=total_port, tech_ticker=tech_ticker, eng_ticker=eng_ticker, hc_ticker=hc_ticker,
                                            re_ticker=re_ticker, mat_ticker=mat_ticker, fin_ticker=fin_ticker, cd_ticker=cd_ticker,
                                            ind_ticker=ind_ticker, util_ticker=util_ticker, cp_ticker=cp_ticker, com_ticker=com_ticker,
                                            bond_ticker=bond_ticker, inflation=inflation, interest=interest, ffund=ffund, unemploy=unemploy)
 
     total_weight = pd.concat([past_weight, present_weight], axis=0)
-    total_weight.total_weight(get_strategy_port_data() / 'data_weight.parquet.brotli', compression='brotli')
-
-    ret = (total_port * total_weight).sum(axis=1)
-    spy = get_spy(start_date='2005-01-01', end_date=current_date)
-    format_date = date.today().strftime('%Y%m%d')
-    qs.reports.html(ret, spy, output=get_strategy_port() / 'report' / f'{format_date}.html')
     return total_weight
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -555,7 +557,7 @@ def exec_trade(ib, price, weight, settlement, capital):
         ib.disconnect()
         exit()
 
-    available_capital = available_capital*capital
+    available_capital = available_capital * capital
     available_capital_settlement = available_capital / settlement
     stock = price.columns.tolist()
 
@@ -568,11 +570,11 @@ def exec_trade(ib, price, weight, settlement, capital):
         stock_price = price[stock_symbol][0]
         num_share = int(capital_per_stock / stock_price)  # This will provide the number of whole shares
 
-        stock = get_contract(stock_symbol[0])
-        print(f"Buying LONG position for: {stock_symbol[0]}")
+        stock = get_contract(stock_symbol)
+        print(f"Buying LONG position for: {stock_symbol}")
         action = 'BUY'
         moc_order = create_moc_order(action, num_share)
-        print(f"Placing MOC order to {action}: {num_share} of {stock_symbol[0]}")
+        print(f"Placing MOC order to {action}: {num_share} of {stock_symbol}")
         trade_moc = ib.placeOrder(stock, moc_order)
         trade_moc.fillEvent += order_filled
         print(f"Order Number: {order_num}")
@@ -596,8 +598,6 @@ def exec_invport_trade(scale, window, settlement, capital):
     loop = asyncio.get_event_loop()
     # Retrieve live prices
     present_price = loop.run_until_complete(exec_price(ib, current_date))
-    # Close the loop
-    loop.close()
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------EXECUTE INV PORT-------------------------------------------------------------------------------
@@ -610,8 +610,11 @@ def exec_invport_trade(scale, window, settlement, capital):
     # Subscribe the class method to the newOrderEvent
     order_counter = OrderCounter()
     ib.newOrderEvent += order_counter.new_order_event_handler
-    exec_trade(ib=ib, price=present_price, weight=total_weight, settlement=settlement, capital=capital)
+    curr_date_weight = total_weight.loc[total_weight.index==current_date]
+    exec_trade(ib=ib, price=present_price, weight=curr_date_weight, settlement=settlement, capital=capital)
     print(f"----------------------------------------------------Total number of new orders placed: {order_counter.new_order_count}---------------------------------------------------")
+    # Close the loop
+    loop.close()
     ib.disconnect()
 
 
