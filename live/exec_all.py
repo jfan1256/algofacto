@@ -31,9 +31,9 @@ def daily_trade():
     print("Running daily trade at: ", datetime.datetime.now())
     # Execute trades for ML Strategy
     exec_ml_close(num_stocks=50)
-    asyncio.run(exec_ml_trade(num_stocks=50, settlement=3))
+    asyncio.run(exec_ml_trade(num_stocks=50, settlement=3, capital=0.25))
     # Execute trades for Invport Strategy
-    exec_invport_trade(window=3, scale=10)
+    exec_invport_trade(window=3, scale=10, settlement=3, capital=0.25)
 
 # Schedule daily train to run every day at 12:01 AM
 # Schedule daily trade to run every day at 3:40 PM

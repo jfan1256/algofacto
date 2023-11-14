@@ -513,7 +513,7 @@ def exec_invport_present(window, scale, current_date, present_price):
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------EXECUTE TRADE ORDERS-----------------------------------------------------------------------------
 # Execute trades
-def exec_trade(ib, price, weight):
+def exec_trade(ib, price, weight, settlement, capital):
     # Execute trades
     def create_moc_order(action, quantity):
         order = Order()
@@ -543,15 +543,16 @@ def exec_trade(ib, price, weight):
     account_info = ib.accountValues()
     for item in account_info:
         if item.tag == 'NetLiquidation':
-            capital = float(item.value)
-            print(f"Available capital: ${capital}")
+            available_capital = float(item.value)
+            print(f"Available capital: ${available_capital}")
             break
     else:
         print("Could not fetch available capital. Exiting...")
         ib.disconnect()
         exit()
 
-    available_capital = capital/2
+    available_capital = available_capital*capital
+    available_capital_settlement = available_capital / settlement
     stock = price.columns.tolist()
 
     order_num = 1
@@ -559,7 +560,7 @@ def exec_trade(ib, price, weight):
     # Buy long positions
     for stock_symbol in stock:
         print("-" * 60)
-        capital_per_stock = available_capital * weight[stock_symbol][0]
+        capital_per_stock = available_capital_settlement * weight[stock_symbol][0]
         stock_price = price[stock_symbol][0]
         num_share = int(capital_per_stock / stock_price)  # This will provide the number of whole shares
 
@@ -573,7 +574,7 @@ def exec_trade(ib, price, weight):
         print(f"Order Number: {order_num}")
         order_num += 1
 
-def exec_invport_trade(scale=10, window=3):
+def exec_invport_trade(scale, window, settlement, capital):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------CONNECT------------------------------------------------------------------------------------
     print("-------------------------------------------------------------------------------CONNECT------------------------------------------------------------------------------------")
@@ -605,10 +606,10 @@ def exec_invport_trade(scale=10, window=3):
     # Subscribe the class method to the newOrderEvent
     order_counter = OrderCounter()
     ib.newOrderEvent += order_counter.new_order_event_handler
-    exec_trade(ib=ib, price=present_price, weight=total_weight)
+    exec_trade(ib=ib, price=present_price, weight=total_weight, settlement=settlement, capital=capital)
     print(f"----------------------------------------------------Total number of new orders placed: {order_counter.new_order_count}---------------------------------------------------")
     ib.disconnect()
 
 
 exec_invport_data(window=3, scale=10, start_date='2005-01-01')
-exec_invport_trade(window=3, scale=10)
+exec_invport_trade(window=3, scale=10, settlement=3, capital=0.75)

@@ -6,7 +6,7 @@ import asyncio
 
 
 # Execute trades
-async def exec_ml_trade(num_stocks, settlement):
+async def exec_ml_trade(num_stocks, settlement, capital):
     # Execute trades
     def create_moc_order(action, quantity):
         order = Order()
@@ -119,6 +119,7 @@ async def exec_ml_trade(num_stocks, settlement):
         exit()
 
     # Calculations for EWP
+    available_capital = available_capital * capital
     capital_per_stock = (available_capital / settlement) / num_stocks
     order_num = 1
     all_stocks = long + short
