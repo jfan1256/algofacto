@@ -10,6 +10,7 @@ from live.strategy_ml.exec_ml_close import exec_ml_close
 from live.strategy_port_inv.exec_port_inv import exec_port_inv_data, exec_port_inv_trade
 from live.strategy_port_inv.exec_port_inv_close import exec_invport_close
 from live.strategy_mrev_etf.exec_mrev_etf import exec_mrev_etf_trade, exec_mrev_etf_data
+from live.strategy_mrev_etf.exec_mrev_etf_close import exec_mrev_etf_close
 
 # Check if current time is within the provided range
 def within_time_range(start, end):
@@ -34,11 +35,13 @@ def daily_trade():
     print("---------------------------------------------------------------------------------RUN---------------------------------------------------------------------------------------")
     print("Running daily trade at: ", datetime.datetime.now())
     # Execute trades for ML Strategy
-    exec_ml_close(num_stocks=50)
+    exec_mrev_etf_close()
     asyncio.run(exec_ml_trade(num_stocks=50, settlement=3, capital=0.25))
     # Execute trades for Invport Strategy
     exec_invport_close()
     exec_port_inv_trade(scale=10, window=3, settlement=3, capital=0.50)
+    # Execute Mrev ETF Strategy
+    exec_mrev_etf_close()
     exec_mrev_etf_trade(window=168, threshold=2_000_000_000, settlement=3, capital=0.25)
 
 # Schedule daily train to run every day at 12:01 AM

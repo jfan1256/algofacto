@@ -3,6 +3,7 @@ import quantstats as qs
 import math
 import os
 
+from live.callback import OrderCounter
 from ib_insync import *
 from functions.utils.func import *
 
@@ -691,8 +692,6 @@ def exec_mrev_etf_trade(window, threshold, settlement, capital):
     loop = asyncio.get_event_loop()
     # Retrieve live prices
     live_data, live_etf, price_data, price_etf = loop.run_until_complete(exec_price(ib=ib, current_date=current_date))
-    # Close the loop
-    loop.close()
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -----------------------------------------------------------------------------EXECUTE MEAN REVERSION----------------------------------------------------------------------------
@@ -702,6 +701,11 @@ def exec_mrev_etf_trade(window, threshold, settlement, capital):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------EXECUTE TRADE ORDERS-----------------------------------------------------------------------------
     print("-------------------------------------------------------------------------EXECUTE TRADE ORDERS-----------------------------------------------------------------------------")
+    # Subscribe the class method to the newOrderEvent
+    order_counter = OrderCounter()
+    ib.newOrderEvent += order_counter.new_order_event_handler
     exec_trade(ib=ib,long_stock=long_stock, short_stock=short_stock, etf_weight=beta_weight, price_data=price_data, price_etf=price_etf, settlement=settlement, capital=capital)
-
+    print(f"----------------------------------------------------Total number of new orders placed: {order_counter.new_order_count}---------------------------------------------------")
+    # Close the loop
+    loop.close()
     ib.disconnect()
