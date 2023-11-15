@@ -400,7 +400,7 @@ async def exec_price(ib, current_date):
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------EXECUTE GET DATA-------------------------------------------------------------------------------
-def exec_invport_data(window, scale, start_date):
+def exec_port_inv_data(window, scale, start_date):
     current_date = (date.today()).strftime('%Y-%m-%d')
     # Get commodity data
     com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
@@ -454,15 +454,15 @@ def exec_invport_data(window, scale, start_date):
     ret = (port * past_weight).sum(axis=1)
     spy = get_spy(start_date='2005-01-01', end_date=current_date)
     format_date =  current_date.replace('-', '')
-    qs.reports.html(ret, spy, output=get_strategy_port() / 'report' / f'invport_{format_date}.html')
+    qs.reports.html(ret, spy, output=get_strategy_port() / 'report' / f'port_inv_{format_date}.html')
 
-    filename = Path(get_strategy_port() / f'trade_stock_invport.csv')
+    filename = Path(get_strategy_port() / f'trade_stock_port_inv.csv')
     port.columns.to_frame().T.to_csv(filename, index=False, header=False)
 
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------EXECUTE TRADE WEIGHTS----------------------------------------------------------------------------
-def exec_invport_present(window, scale, current_date, present_price):
+def exec_port_inv_present(window, scale, current_date, present_price):
     # Get tickers
     df_tickers = pd.read_parquet(get_strategy_port_data() / 'data_stock.parquet.brotli')
     category = df_tickers.reset_index().groupby('category')['ticker'].apply(list).to_dict()
@@ -580,7 +580,7 @@ def exec_trade(ib, price, weight, settlement, capital):
         print(f"Order Number: {order_num}")
         order_num += 1
 
-def exec_invport_trade(scale, window, settlement, capital):
+def exec_port_inv_trade(scale, window, settlement, capital):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------CONNECT------------------------------------------------------------------------------------
     print("-------------------------------------------------------------------------------CONNECT------------------------------------------------------------------------------------")
@@ -602,7 +602,7 @@ def exec_invport_trade(scale, window, settlement, capital):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------EXECUTE INV PORT-------------------------------------------------------------------------------
     print("---------------------------------------------------------------------------EXECUTE INV PORT-------------------------------------------------------------------------------")
-    total_weight = exec_invport_present(window, scale, current_date, present_price)
+    total_weight = exec_port_inv_present(window, scale, current_date, present_price)
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------EXECUTE TRADE ORDERS-----------------------------------------------------------------------------
@@ -618,5 +618,5 @@ def exec_invport_trade(scale, window, settlement, capital):
     ib.disconnect()
 
 
-exec_invport_data(window=3, scale=10, start_date='2005-01-01')
-exec_invport_trade(window=3, scale=10, settlement=3, capital=0.75)
+# exec_port_inv_data(window=3, scale=10, start_date='2005-01-01')
+# exec_port_inv_trade(scale=10, window=3, settlement=3, capital=0.75)
