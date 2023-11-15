@@ -454,9 +454,9 @@ def exec_invport_data(window, scale, start_date):
     ret = (port * past_weight).sum(axis=1)
     spy = get_spy(start_date='2005-01-01', end_date=current_date)
     format_date =  current_date.replace('-', '')
-    qs.reports.html(ret, spy, output=get_strategy_port() / 'report' / f'{format_date}.html')
+    qs.reports.html(ret, spy, output=get_strategy_port() / 'report' / f'invport_{format_date}.html')
 
-    filename = Path(get_strategy_port() / f'trade_stock.csv')
+    filename = Path(get_strategy_port() / f'trade_stock_invport.csv')
     port.columns.to_frame().T.to_csv(filename, index=False, header=False)
 
 
