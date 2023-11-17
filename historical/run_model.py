@@ -12,7 +12,7 @@ if live:
 else:
     stock = read_stock(get_large_dir(live) / 'permno_to_train_fund.csv')
 
-start = '2008-01-01'
+start = '2013-01-01'
 end = '2023-01-01'
 save = False
 lightgbm_params = {
@@ -40,8 +40,8 @@ start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = AlphaModel(live=live, model_name='lightgbm_trial_83', tuning=['optuna', 30], plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
-                   weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=126, test_len=21, **lightgbm_params)
+alpha = AlphaModel(live=live, model_name='lightgbm_trial_100', tuning='default', plot_loss=False, plot_hist=False, pred='sign', stock='permno', lookahead=1, trend=21, incr=True, opt='wfo',
+                   weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
 
 # alpha = AlphaModel(model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=False, opt='ewo',
 #                    weight=False, outlier=False, early=True, pretrain_len=0, train_len=1260, valid_len=252, test_len=21, **catboost_params)
@@ -80,9 +80,9 @@ del sign_ret
 # alpha.add_factor(macro)
 # del macro
 
-# vol_comp = PrepFactor(live=live, factor_name='factor_vol_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(vol_comp)
-# del vol_comp
+vol_comp = PrepFactor(live=live, factor_name='factor_vol_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(vol_comp)
+del vol_comp
 
 # sign_volume = PrepFactor(live=live, factor_name='factor_sign_volume', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(sign_volume, categorical=True)
@@ -296,25 +296,25 @@ del earning_streak
 # alpha.add_factor(ms, categorical=True)
 # del ms
 
-# dividend = PrepFactor(live=live, factor_name='factor_dividend', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(dividend, categorical=True)
-# del dividend
+dividend = PrepFactor(live=live, factor_name='factor_dividend', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(dividend, categorical=True)
+del dividend
 
 # div_season = PrepFactor(live=live, factor_name='factor_div_season', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(div_season, categorical=True)
 # del div_season
 
-# grcapx = PrepFactor(live=live, factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(grcapx)
-# del grcapx
+grcapx = PrepFactor(live=live, factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(grcapx)
+del grcapx
 
 # gradexp = PrepFactor(live=live, factor_name='factor_gradexp', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(gradexp)
 # del gradexp
 
-# ret_skew = PrepFactor(live=live, factor_name='factor_ret_skew', group='permno', interval='D', kind='skew', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(ret_skew)
-# del ret_skew
+ret_skew = PrepFactor(live=live, factor_name='factor_ret_skew', group='permno', interval='D', kind='skew', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(ret_skew)
+del ret_skew
 
 # size = PrepFactor(live=live, factor_name='factor_size', group='permno', interval='D', kind='size', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(size)

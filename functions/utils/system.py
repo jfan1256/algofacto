@@ -54,11 +54,11 @@ def get_result_model(live, model):
 def get_strategy_ml():
     return get_root_dir() / 'live' / 'strategy_ml'
 
-def get_strategy_mrev():
-    return get_root_dir() / 'live' / 'strategy_mrev'
+def get_strategy_mrev_etf():
+    return get_root_dir() / 'live' / 'strategy_mrev_etf'
 
-def get_strategy_mrev_data():
-    return get_root_dir() / 'live' / 'strategy_mrev' / 'data'
+def get_strategy_mrev_etf_data():
+    return get_root_dir() / 'live' / 'strategy_mrev_etf' / 'data'
 
 def get_strategy_port():
     return get_root_dir() / 'live' / 'strategy_port'

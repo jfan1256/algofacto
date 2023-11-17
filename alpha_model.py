@@ -37,6 +37,7 @@ class AlphaModel:
                  pred: str = 'price',
                  stock: str = None,
                  lookahead: int = 1,
+                 trend: int = 0,
                  incr: bool = False,
                  opt: str = None,
                  weight: bool = False,
@@ -60,6 +61,7 @@ class AlphaModel:
         self.pred = pred
         self.stock = stock
         self.lookahead = lookahead
+        self.trend = trend
         self.incr = incr
         self.opt = opt
         self.weight = weight
@@ -153,8 +155,10 @@ class AlphaModel:
         else:
             if self.pred == 'sign':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
-                self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-                self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'target_{self.lookahead}D'].apply(lambda x: np.sign(x))
+                # self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
+                # self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'target_{self.lookahead}D'].apply(lambda x: np.sign(x))
+                self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].rolling(window=self.trend).sum().shift(-self.lookahead).apply(
+                    lambda x: 1 if x > 0 else 0).reset_index(level=0, drop=True)
                 self.data = remove_nan_before_end(self.data, f'target_{self.lookahead}D')
             elif self.pred == 'price':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
@@ -507,7 +511,8 @@ class AlphaModel:
                     elif self.pred == 'sign':
                         print('Predicting......')
                         # Get the model predictions using different number of trees from the model
-                        test_pred_ret = {str(n): (2 * (model.predict(test_factors) >= 0.5).astype(int) - 1) if n == 1000 else (2 * (model.predict(test_factors, num_iteration=n) >= 0.5).astype(int) - 1) for n in num_iterations}
+                        test_pred_ret = {str(n): model.predict(test_factors) if n == 1000 else model.predict(test_factors, num_iteration=n) for n in num_iterations}
+                        # test_pred_ret = {str(n): (2 * (model.predict(test_factors) >= 0.5).astype(int) - 1) if n == 1000 else (2 * (model.predict(test_factors, num_iteration=n) >= 0.5).astype(int) - 1) for n in num_iterations}
                         print("-" * 60)
 
                     # Create a prediction dataset
@@ -537,7 +542,7 @@ class AlphaModel:
                     print("-" * 60)
 
                 # If model was training with early stopping, save the average training curve and learning curve across all training periods
-                if self.early:
+                if self.early and self.pred == 'price':
                     #Plot training loss and validation loss and track training time
                     eval_results = plot_avg_loss(log_loss)
                     lgb.plot_metric(eval_results)
@@ -554,7 +559,11 @@ class AlphaModel:
                     ic_by_day = pd.concat([by_day.apply(lambda x: spearmanr(x[ret], x[str(n)])[0]).to_frame(n) for n in num_iterations], axis=1)
                     daily_ic_mean = list(ic_by_day.mean())
                 elif self.pred == 'sign':
-                    as_by_day = pd.concat([by_day.apply(lambda x: accuracy_score(x[ret], x[str(n)])).to_frame(n) for n in num_iterations], axis=1)
+                    as_by_day = pd.concat([
+                        by_day.apply(lambda x: accuracy_score(x[ret], x[str(n)].apply(lambda p: 1 if p > 0.5 else 0))).to_frame(n)
+                        for n in num_iterations
+                    ], axis=1)
+                    # as_by_day = pd.concat([by_day.apply(lambda x: accuracy_score(x[ret], x[str(n)])).to_frame(n) for n in num_iterations], axis=1)
                     daily_as_mean = list(as_by_day.mean())
 
                 # Record training time for this model training period

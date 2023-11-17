@@ -319,7 +319,7 @@ def exec_mrev_etf_data(window, threshold):
     beta_data_past['s_score'] = (beta_data_past[f'epsil_sector_01_{window:02}'] - rolling_mean) / rolling_std
 
     # Export data
-    beta_data_past.to_parquet(get_strategy_mrev_data() / 'data_beta_etf.parquet.brotli', compression='brotli')
+    beta_data_past.to_parquet(get_strategy_mrev_etf_data() / 'data_beta_etf.parquet.brotli', compression='brotli')
 
     # Convert ETF Dataframe to multi-index
     stock = read_stock(get_large_dir(live) / 'permno_live.csv')
@@ -348,12 +348,12 @@ def exec_mrev_etf_data(window, threshold):
     # Save backtest plot
     spy = get_spy(start_date='2005-01-01', end_date=current_date)
     format_date =  current_date.replace('-', '')
-    qs.reports.html(ewp_ret, spy, output=get_strategy_mrev() / 'report' / f'mrev_etf_{format_date}.html')
+    qs.reports.html(ewp_ret, spy, output=get_strategy_mrev_etf() / 'report' / f'mrev_etf_{format_date}.html')
 
     # Export data
-    result_past_copy[['signal', 'position', 'market_cap']].to_parquet(get_strategy_mrev_data() / 'data_signal_etf.parquet.brotli', compression='brotli')
-    stock_weight.to_parquet(get_strategy_mrev_data() / 'data_stock_etf.parquet.brotli', compression='brotli')
-    beta_weight.to_parquet(get_strategy_mrev_data() / 'data_hedge_etf.parquet.brotli', compression='brotli')
+    result_past_copy[['signal', 'position', 'market_cap']].to_parquet(get_strategy_mrev_etf_data() / 'data_signal_etf.parquet.brotli', compression='brotli')
+    stock_weight.to_parquet(get_strategy_mrev_etf_data() / 'data_stock_etf.parquet.brotli', compression='brotli')
+    beta_weight.to_parquet(get_strategy_mrev_etf_data() / 'data_hedge_etf.parquet.brotli', compression='brotli')
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------EXECUTE GET LIVE WEIGHTS------------------------------------------------------------------------
@@ -457,7 +457,7 @@ def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, thre
     beta_data_live = beta_data_live[beta_data_live.columns[1:14]]
 
     # Combine live beta with historical beta
-    beta_data_past = pd.read_parquet(get_strategy_mrev_data() / 'data_beta_etf.parquet.brotli')
+    beta_data_past = pd.read_parquet(get_strategy_mrev_etf_data() / 'data_beta_etf.parquet.brotli')
     beta_data_live = pd.concat([beta_data_past, beta_data_live], axis=0).sort_index(level=['permno', 'date'])
     beta_data_live = beta_data_live.fillna(0)
 
@@ -473,7 +473,7 @@ def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, thre
     # Merge the necessary columns together into one dataframe
     combined_live = beta_data_live.merge(sector_multi_live, left_index=True, right_index=True, how='left')
     combined_live = combined_live.merge(live_data[['RET_01']], left_index=True, right_index=True, how='left')
-    signal_past = pd.read_parquet(get_strategy_mrev_data() / 'data_signal_etf.parquet.brotli')
+    signal_past = pd.read_parquet(get_strategy_mrev_etf_data() / 'data_signal_etf.parquet.brotli')
     combined_live = combined_live.merge(signal_past[['signal', 'position']], left_index=True, right_index=True, how='left')
     combined_live = combined_live.fillna(0)
 
@@ -522,13 +522,13 @@ def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, thre
     all_columns = ['date'] + [f'Long_{i:02}' for i in range(1, len(long) + 1)] + [f'Short_{i:02}' for i in range(1, len(short) + 1)]
     stock_data = [current_date] + long_ticker + short_ticker
     df_combined_stock = pd.DataFrame([stock_data], columns=all_columns)
-    filename_stock = Path(get_strategy_mrev() / f'trade_stock_mrev.csv')
+    filename_stock = Path(get_strategy_mrev_etf() / f'trade_stock_mrev_etf.csv')
 
     etf_ticker = beta_weight.columns.tolist()
     etf_columns = ['date'] + [f'ETF_{i:02}' for i in range(1, len(etf_ticker) + 1)]
     etf_data = [current_date] + etf_ticker
     df_combined_etf = pd.DataFrame([etf_data], columns=etf_columns)
-    filename_etf = Path(get_strategy_mrev() / f'trade_etf_mrev.csv')
+    filename_etf = Path(get_strategy_mrev_etf() / f'trade_etf_mrev_etf.csv')
 
     # Assuming df_combined_stock and df_combined_etf are your dataframes for stock and ETF respectively
     # and filename_stock and filename_etf are the corresponding filenames for stock and ETF data
@@ -709,3 +709,5 @@ def exec_mrev_etf_trade(window, threshold, settlement, capital):
     # Close the loop
     loop.close()
     ib.disconnect()
+
+exec_mrev_etf_data(window=168, threshold=2_000_000_000)

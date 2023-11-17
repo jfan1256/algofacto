@@ -226,7 +226,7 @@ def exec_ml_model(threshold, update_price, start_data, start_factor, start_model
     format_end = date.today().strftime('%Y%m%d')
     model_name = f'lightgbm_{format_end}'
 
-    alpha = AlphaModel(live=live, model_name=model_name, end=current_date, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=True, opt='wfo',
+    alpha = AlphaModel(live=live, model_name=model_name, end=current_date, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0, incr=True, opt='wfo',
                        weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
