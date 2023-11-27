@@ -576,6 +576,44 @@ def get_data_fmp(ticker_list, start, current_date):
         print("No data available for any ticker.")
         return None
 
+def get_adj_factor(ticker_list, date):
+    api_key = "f913bbd3dad0c411c864c0d960a711e7"
+    frames = []
+
+    for ticker in tqdm(ticker_list, desc="Fetching data", unit="ticker"):
+        url = f"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?from={date}&to={date}&apikey={api_key}"
+        response = requests.get(url)
+        data = response.json()
+
+        # Check if there's historical data in the response
+        if 'historical' in data:
+            df = pd.DataFrame(data['historical'])
+            df['ticker'] = ticker
+            frames.append(df)
+        else:
+            print(f"Skipped {ticker} - No data available")
+
+    if frames:  # Only proceed if there are frames to concatenate
+        price = pd.concat(frames)
+        price['date'] = pd.to_datetime(price['date'], errors='coerce')
+        price = price.set_index(['ticker', 'date'])
+        cols_to_convert = ['open', 'high', 'low', 'close', 'adjClose', 'volume']
+        price[cols_to_convert] = price[cols_to_convert].astype(float)
+        price = price.rename(columns={
+            'open': 'Open',
+            'high': 'High',
+            'low': 'Low',
+            'adjClose': 'Adj Close',
+            'close': 'Close',
+            'volume': 'Volume'
+        })
+        price = price.sort_index(level=['ticker', 'date'])
+        price['adj_factor'] = price['Adj Close'] / price['Close']
+        return price[['adj_factor']]
+    else:
+        print("No data available for any ticker.")
+        return None
+
 def get_dividend_fmp(ticker_list, start, current_date):
     api_key = "f913bbd3dad0c411c864c0d960a711e7"
     frames = []

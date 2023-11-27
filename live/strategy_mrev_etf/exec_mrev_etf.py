@@ -248,6 +248,11 @@ async def exec_price(ib, current_date):
     trade_data['permno'] = trade_data['ticker'].map(ticker_to_permno_dict)
     trade_data = trade_data.set_index(['permno', 'date']).drop('ticker', axis=1)
 
+    # Get Adjustment Factor and adjust live price data
+    adj_factor_trade = get_adj_factor(trade_ticker, past_date)
+    trade_data['adj_factor'] = adj_factor_trade['adj_factor_trade']
+    trade_data['Close'] = trade_data['Close'] / trade_data['adj_factor']
+
     # Add live trade price to the end of the historical price dataset and calculate returns
     T = [1]
     live_data = pd.concat([past_data, trade_data], axis=0).sort_index(level=['permno', 'date'])
@@ -257,11 +262,17 @@ async def exec_price(ib, current_date):
 
     # Add live etf price to the end of the historical price dataset
     past_etf = pd.read_parquet(get_parquet_dir(live) / 'data_etf.parquet.brotli', columns=['Close'])
+
+    # Get Adjustment Factor and adjust live price data
+    adj_factor_etf = get_adj_factor(etf_ticker, past_date)
+    etf_data['adj_factor'] = adj_factor_etf['adj_factor_trade']
+    etf_data['Close'] = etf_data['Close'] / etf_data['adj_factor']
+
     # Add live trade price to the end of the historical price dataset
     live_etf = pd.concat([past_etf, etf_data], axis=0).sort_index(level=['ticker', 'date'])
     price_etf = live_etf.copy(deep=True)[['Close']]
-    # Create returns and unstack dataframe to only have 'date' index and 'ETF ticker' columns
 
+    # Create returns and unstack dataframe to only have 'date' index and 'ETF ticker' columns
     live_etf = create_return(live_etf, T)
     live_etf = live_etf.drop(['Close'], axis=1)
     live_etf = live_etf.unstack('ticker').swaplevel(axis=1)
