@@ -96,7 +96,7 @@ def create_weight_past(window, scale, port, tech_ticker, eng_ticker, hc_ticker, 
     print("Get Inflation data...")
     inflation = get_macro(port, 'T5YIE', '5YIF')
     print("Export data...")
-    inflation.to_parquet(get_strategy_port_data() / 'data_if.parquet.brotli', compression='brotli')
+    inflation.to_parquet(get_strategy_port_ims_data() / 'data_if.parquet.brotli', compression='brotli')
     # High inflation tickers
     print("Calculate high inflation weights...")
     hinf_ticker = bond_ticker + com_ticker + cp_ticker + eng_ticker + util_ticker
@@ -121,7 +121,7 @@ def create_weight_past(window, scale, port, tech_ticker, eng_ticker, hc_ticker, 
     print("Get Interest data...")
     interest = get_macro(port, 'REAINTRATREARAT10Y', 'rIR')
     print("Export data...")
-    interest.to_parquet(get_strategy_port_data() / 'data_ir.parquet.brotli', compression='brotli')
+    interest.to_parquet(get_strategy_port_ims_data() / 'data_ir.parquet.brotli', compression='brotli')
     # High interest ticker
     print("Calculate high interest weights...")
     hir_ticker = com_ticker + cp_ticker + eng_ticker + util_ticker + fin_ticker
@@ -145,7 +145,7 @@ def create_weight_past(window, scale, port, tech_ticker, eng_ticker, hc_ticker, 
     print("Get FFund data...")
     ffund = get_macro(port, 'FEDFUNDS', 'FF')
     print("Export data...")
-    ffund.to_parquet(get_strategy_port_data() / 'data_ffund.parquet.brotli', compression='brotli')
+    ffund.to_parquet(get_strategy_port_ims_data() / 'data_ffund.parquet.brotli', compression='brotli')
     # High FFund rate ticker
     print("Calculate high ffund weights...")
     hff_ticker = cp_ticker + util_ticker + fin_ticker + hc_ticker + ind_ticker
@@ -168,7 +168,7 @@ def create_weight_past(window, scale, port, tech_ticker, eng_ticker, hc_ticker, 
     # Get unemployment
     print("Get unemployment data...")
     unemploy = get_macro(port, 'UNRATE', 'UR')
-    unemploy.to_parquet(get_strategy_port_data() / 'data_ur.parquet.brotli', compression='brotli')
+    unemploy.to_parquet(get_strategy_port_ims_data() / 'data_ur.parquet.brotli', compression='brotli')
     # High employment ticker
     print("Calculate high unemployment weights...")
     hur_ticker = cp_ticker + util_ticker + hc_ticker + tech_ticker + ind_ticker
@@ -181,7 +181,7 @@ def create_weight_past(window, scale, port, tech_ticker, eng_ticker, hc_ticker, 
 
     # Export Weight
     print("Export weight...")
-    inv_hur_weight.to_parquet(get_strategy_port_data() / 'data_weight.parquet.brotli', compression='brotli')
+    inv_hur_weight.to_parquet(get_strategy_port_ims_data() / 'data_weight.parquet.brotli', compression='brotli')
 
     # Export ticker list
     ticker_categories = {
@@ -202,7 +202,7 @@ def create_weight_past(window, scale, port, tech_ticker, eng_ticker, hc_ticker, 
     df_tickers = pd.DataFrame([(ticker, category) for category, tickers in ticker_categories.items() for ticker in tickers], columns=['ticker', 'category'])
     df_tickers = df_tickers.set_index('ticker')
     print("Export tickers...")
-    df_tickers.to_parquet(get_strategy_port_data() / 'data_stock.parquet.brotli', compression='brotli')
+    df_tickers.to_parquet(get_strategy_port_ims_data() / 'data_stock.parquet.brotli', compression='brotli')
     return inv_hur_weight
 
 # Create weight for inverse portfolio
@@ -380,7 +380,7 @@ async def exec_price(ib, current_date):
 
     # Get stocks
     live = True
-    past_data = pd.read_parquet(get_strategy_port_data() / 'data_port.parquet.brotli')
+    past_data = pd.read_parquet(get_strategy_port_ims_data() / 'data_port.parquet.brotli')
     all_stocks = past_data.columns.tolist()
 
     # Create a list of coroutines for each stock's closing price fetch
@@ -400,7 +400,7 @@ async def exec_price(ib, current_date):
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------------------------------------EXECUTE GET DATA-------------------------------------------------------------------------------
-def exec_port_inv_data(window, scale, start_date):
+def exec_port_ims_data(window, scale, start_date):
     current_date = (date.today()).strftime('%Y-%m-%d')
     # Get commodity data
     com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
@@ -444,8 +444,8 @@ def exec_port_inv_data(window, scale, start_date):
     price = price.unstack('ticker')
     port.columns = port.columns.get_level_values('ticker')
     price.columns = price.columns.get_level_values('ticker')
-    port.to_parquet(get_strategy_port_data() / 'data_port.parquet.brotli', compression='brotli')
-    price.to_parquet(get_strategy_port_data() / 'data_price.parquet.brotli', compression='brotli')
+    port.to_parquet(get_strategy_port_ims_data() / 'data_port.parquet.brotli', compression='brotli')
+    price.to_parquet(get_strategy_port_ims_data() / 'data_price.parquet.brotli', compression='brotli')
 
     past_weight = create_weight_past(window=window, scale=scale, port=port, tech_ticker=tech_ticker, eng_ticker=eng_ticker, hc_ticker=hc_ticker,
                                      re_ticker=re_ticker, mat_ticker=mat_ticker, fin_ticker=fin_ticker, cd_ticker=cd_ticker,
@@ -454,17 +454,17 @@ def exec_port_inv_data(window, scale, start_date):
     ret = (port * past_weight).sum(axis=1)
     spy = get_spy(start_date='2005-01-01', end_date=current_date)
     format_date =  current_date.replace('-', '')
-    qs.reports.html(ret, spy, output=get_strategy_port() / 'report' / f'port_inv_{format_date}.html')
+    qs.reports.html(ret, spy, output=get_strategy_port_ims() / 'report' / f'port_ims_{format_date}.html')
 
-    filename = Path(get_strategy_port() / f'trade_stock_port_inv.csv')
+    filename = Path(get_strategy_port_ims() / f'trade_stock_port_ims.csv')
     port.columns.to_frame().T.to_csv(filename, index=False, header=False)
 
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------EXECUTE TRADE WEIGHTS----------------------------------------------------------------------------
-def exec_port_inv_present(window, scale, current_date, present_price):
+def exec_port_ims_present(window, scale, current_date, present_price):
     # Get tickers
-    df_tickers = pd.read_parquet(get_strategy_port_data() / 'data_stock.parquet.brotli')
+    df_tickers = pd.read_parquet(get_strategy_port_ims_data() / 'data_stock.parquet.brotli')
     category = df_tickers.reset_index().groupby('category')['ticker'].apply(list).to_dict()
     cp_ticker = category['cp']
     util_ticker = category['util']
@@ -480,19 +480,19 @@ def exec_port_inv_present(window, scale, current_date, present_price):
     fin_ticker = category['fin']
 
     # Get macro
-    inflation = pd.read_parquet(get_strategy_port_data() / 'data_if.parquet.brotli')
-    interest = pd.read_parquet(get_strategy_port_data() / 'data_ir.parquet.brotli')
-    ffund = pd.read_parquet(get_strategy_port_data() / 'data_ffund.parquet.brotli')
-    unemploy = pd.read_parquet(get_strategy_port_data() / 'data_ur.parquet.brotli')
+    inflation = pd.read_parquet(get_strategy_port_ims_data() / 'data_if.parquet.brotli')
+    interest = pd.read_parquet(get_strategy_port_ims_data() / 'data_ir.parquet.brotli')
+    ffund = pd.read_parquet(get_strategy_port_ims_data() / 'data_ffund.parquet.brotli')
+    unemploy = pd.read_parquet(get_strategy_port_ims_data() / 'data_ur.parquet.brotli')
 
     # Get port
-    past_port = pd.read_parquet(get_strategy_port_data() / 'data_port.parquet.brotli')
+    past_port = pd.read_parquet(get_strategy_port_ims_data() / 'data_port.parquet.brotli')
 
     # Get weight
-    past_weight = pd.read_parquet(get_strategy_port_data() / 'data_weight.parquet.brotli')
+    past_weight = pd.read_parquet(get_strategy_port_ims_data() / 'data_weight.parquet.brotli')
 
     # Get price
-    past_price = pd.read_parquet(get_strategy_port_data() / 'data_price.parquet.brotli')
+    past_price = pd.read_parquet(get_strategy_port_ims_data() / 'data_price.parquet.brotli')
 
     # Sometimes FMP returns live data as well
     if current_date in past_price.index:
@@ -580,7 +580,7 @@ def exec_trade(ib, price, weight, settlement, capital):
         print(f"Order Number: {order_num}")
         order_num += 1
 
-def exec_port_inv_trade(scale, window, settlement, capital):
+def exec_port_ims_trade(scale, window, settlement, capital):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------------CONNECT------------------------------------------------------------------------------------
     print("-------------------------------------------------------------------------------CONNECT------------------------------------------------------------------------------------")
@@ -600,9 +600,9 @@ def exec_port_inv_trade(scale, window, settlement, capital):
     present_price = loop.run_until_complete(exec_price(ib, current_date))
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    # --------------------------------------------------------------------------------EXECUTE INV PORT-------------------------------------------------------------------------------
-    print("---------------------------------------------------------------------------EXECUTE INV PORT-------------------------------------------------------------------------------")
-    total_weight = exec_port_inv_present(window, scale, current_date, present_price)
+    # --------------------------------------------------------------------------------EXECUTE IMS PORT-------------------------------------------------------------------------------
+    print("---------------------------------------------------------------------------EXECUTE IMS PORT-------------------------------------------------------------------------------")
+    total_weight = exec_port_ims_present(window, scale, current_date, present_price)
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------EXECUTE TRADE ORDERS-----------------------------------------------------------------------------
@@ -618,5 +618,5 @@ def exec_port_inv_trade(scale, window, settlement, capital):
     ib.disconnect()
 
 
-# exec_port_inv_data(window=3, scale=10, start_date='2005-01-01')
-# exec_port_inv_trade(scale=10, window=3, settlement=3, capital=0.75)
+# exec_port_ims_data(window=3, scale=10, start_date='2005-01-01')
+# exec_port_ims_trade(scale=10, window=3, settlement=3, capital=0.75)

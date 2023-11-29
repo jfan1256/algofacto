@@ -7,8 +7,8 @@ from live.strategy_ml.exec_ml_model import exec_ml_model
 from live.strategy_ml.exec_ml_pred import exec_ml_pred
 from live.strategy_ml.exec_ml_trade import exec_ml_trade
 from live.strategy_ml.exec_ml_close import exec_ml_close
-from live.strategy_port_inv.exec_port_inv import exec_port_inv_data, exec_port_inv_trade
-from live.strategy_port_inv.exec_port_inv_close import exec_invport_close
+from live.strategy_port_ims.exec_port_inv import exec_port_ims_data, exec_port_inv_trade
+from live.strategy_port_ims.exec_port_inv_close import exec_invport_close
 from live.strategy_mrev_etf.exec_mrev_etf import exec_mrev_etf_trade, exec_mrev_etf_data
 from live.strategy_mrev_etf.exec_mrev_etf_close import exec_mrev_etf_close
 
@@ -23,7 +23,7 @@ def daily_train():
         print("---------------------------------------------------------------------------------RUN---------------------------------------------------------------------------------------")
         print("Running daily training at: ", datetime.datetime.now())
         # Get data for Invport Strategy
-        exec_port_inv_data(window=3, scale=10, start_date='2005-01-01')
+        exec_port_ims_data(window=3, scale=10, start_date='2005-01-01')
         # Get data for Mrev ETF Strategy
         exec_mrev_etf_data(window=168, threshold=2_000_000_000)
         # Get, train, predict ML Strategy

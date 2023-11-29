@@ -60,11 +60,11 @@ def get_strategy_mrev_etf():
 def get_strategy_mrev_etf_data():
     return get_root_dir() / 'live' / 'strategy_mrev_etf' / 'data'
 
-def get_strategy_port():
-    return get_root_dir() / 'live' / 'strategy_port'
+def get_strategy_port_ims():
+    return get_root_dir() / 'live' / 'strategy_port_ims'
 
-def get_strategy_port_data():
-    return get_root_dir() / 'live' / 'strategy_port' / 'data'
+def get_strategy_port_ims_data():
+    return get_root_dir() / 'live' / 'strategy_port_ims' / 'data'
 
 
 def print_data_shape(self, *args, **kwargs):
