@@ -5,7 +5,7 @@ import quantstats as qs
 import os
 
 from scipy.stats import spearmanr
-from live.strategy_ml.live_test import LiveTest
+from live.strategy_ml.live_pred import LivePred
 from functions.utils.func import *
 
 def exec_ml_pred(threshold, num_stocks, leverage, port_opt, use_model):
@@ -19,7 +19,7 @@ def exec_ml_pred(threshold, num_stocks, leverage, port_opt, use_model):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------INITIATE LIVE TEST------------------------------------------------------------------------------
     print("--------------------------------------------------------------------------INITIATE LIVE TEST------------------------------------------------------------------------------")
-    live_test = LiveTest(live=live, num_stocks=num_stocks, leverage=leverage, port_opt=port_opt, model_name=model_name, current_date=current_date, dir_path=dir_path)
+    live_test = LivePred(live=live, num_stocks=num_stocks, leverage=leverage, port_opt=port_opt, model_name=model_name, current_date=current_date, dir_path=dir_path)
     files = live_test.read_result('metrics')
 
     # Create directory for backtest report

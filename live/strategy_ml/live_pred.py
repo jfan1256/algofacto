@@ -11,7 +11,7 @@ from functions.utils.system import *
 import warnings
 
 warnings.filterwarnings('ignore')
-class LiveTest:
+class LivePred:
     def __init__(self,
                  live: bool = None,
                  model_name: str = None,

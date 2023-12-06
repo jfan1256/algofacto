@@ -11,6 +11,8 @@ from live.strategy_port_ims.exec_port_ims import exec_port_ims_data, exec_port_i
 from live.strategy_port_ims.exec_port_ims_close import exec_port_ims_close
 from live.strategy_mrev_etf.exec_mrev_etf import exec_mrev_etf_trade, exec_mrev_etf_data
 from live.strategy_mrev_etf.exec_mrev_etf_close import exec_mrev_etf_close
+from live.exec_factor import exec_factor
+from live.exec_data import exec_data
 
 # Check if current time is within the provided range
 def within_time_range(start, end):
@@ -22,12 +24,16 @@ def daily_train():
     if within_time_range(datetime.time(0, 1), datetime.time(2, 0)):
         print("---------------------------------------------------------------------------------RUN---------------------------------------------------------------------------------------")
         print("Running daily training at: ", datetime.datetime.now())
+        # Get Live Data (Large Datasets)
+        exec_data(threshold=6_000_000_000, update_price=False, start_data='2004-01-01')
+        # Get Factor Data
+        exec_factor(start_factor='2004-01-01')
         # Get data for Invport Strategy
         exec_port_ims_data(window=3, scale=10, start_date='2005-01-01')
         # Get data for Mrev ETF Strategy
         exec_mrev_etf_data(window=168, threshold=2_000_000_000)
         # Get, train, predict ML Strategy
-        exec_ml_model(threshold=6_000_000_000, update_price=False, start_data='2004-01-01', start_factor='2004-01-01', start_model='2008-01-01', tune=['optuna', 30], save_prep=True)
+        exec_ml_model(start_model='2008-01-01', tune=['optuna', 30], save_prep=True)
         exec_ml_pred(threshold=2_000_000_000, num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=6)
 
 # Job to execute trade
