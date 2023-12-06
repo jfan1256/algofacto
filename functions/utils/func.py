@@ -31,6 +31,7 @@ import yfinance as yf
 warnings.filterwarnings('ignore')
 
 
+
 # Gets dataframe for a specified stock
 def get_stock_data(data, stock):
     idx = pd.IndexSlice
