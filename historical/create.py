@@ -138,7 +138,7 @@ start_time = time.time()
 # FactorTime(live=live, file_name='factor_time', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorMacro(live=live, file_name='factor_macro', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno', general=True).create_factor()
 # FactorTalib(live=live, file_name='factor_talib', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-# FactorFundRaw(live=live, file_name='factor_fund_raw', skip=True, stock=stock, start=start, end=end).create_factor()
+FactorFundRaw(live=live, file_name='factor_fund_raw', skip=True, stock=stock, start=start, end=end).create_factor()
 # FactorFundQ(live=live, file_name='factor_fund_q', skip=True, stock=stock, start=start, end=end).create_factor()
 # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # # -----------------------------------------------------------------------------------PCA-----------------------------------------------------------------------------------------
