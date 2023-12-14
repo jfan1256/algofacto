@@ -81,10 +81,8 @@ def exec_factor(start_factor):
     FactorVolComp(live=live, file_name='factor_vol_comp', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -----------------------------------------------------------------------------------PCA-----------------------------------------------------------------------------------------
-    FactorLoadRet(live=live, file_name='factor_load_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21,
-                  component=5).create_factor()
-    FactorLoadVolume(live=live, file_name='factor_load_volume', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21,
-                     component=5).create_factor()
+    FactorLoadRet(live=live, file_name='factor_load_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, component=5).create_factor()
+    FactorLoadVolume(live=live, file_name='factor_load_volume', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, component=5).create_factor()
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ---------------------------------------------------------------------------------CONDITION-------------------------------------------------------------------------------------
     FactorCondRet(live=live, file_name='factor_cond_ret', stock=stock, start=start_factor, end=current_date, batch_size=10, splice_size=20, group='permno').create_factor()
