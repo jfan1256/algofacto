@@ -324,8 +324,8 @@ def exec_mrev_etf_data(window, threshold):
     beta_data_past = beta_data_past.fillna(0)
 
     # Calculate rolling mean and standard deviation
-    rolling_mean = beta_data_past[f'epsil_sector_01_{window:02}'].rolling(window=window).mean()
-    rolling_std = beta_data_past[f'epsil_sector_01_{window:02}'].rolling(window=window).std()
+    rolling_mean = beta_data_past.groupby('permno')[f'epsil_sector_01_{window:02}'].rolling(window=window).mean().reset_index(level=0, drop=True)
+    rolling_std = beta_data_past.groupby('permno')[f'epsil_sector_01_{window:02}'].rolling(window=window).std().reset_index(level=0, drop=True)
     # Calculate the rolling Z-score
     beta_data_past['s_score'] = (beta_data_past[f'epsil_sector_01_{window:02}'] - rolling_mean) / rolling_std
 
@@ -473,9 +473,8 @@ def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, thre
     beta_data_live = beta_data_live.fillna(0)
 
     # Calculate rolling mean and standard deviation
-    rolling_mean = beta_data_live[f'epsil_sector_01_{window:02}'].rolling(window=window).mean()
-    rolling_std = beta_data_live[f'epsil_sector_01_{window:02}'].rolling(window=window).std()
-
+    rolling_mean = beta_data_live.groupby('permno')[f'epsil_sector_01_{window:02}'].rolling(window=window).mean().reset_index(level=0, drop=True)
+    rolling_std = beta_data_live.groupby('permno')[f'epsil_sector_01_{window:02}'].rolling(window=window).std().reset_index(level=0, drop=True)
     # Calculate the rolling Z-score
     beta_data_live['s_score'] = (beta_data_live[f'epsil_sector_01_{window:02}'] - rolling_mean) / rolling_std
 
