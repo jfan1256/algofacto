@@ -478,69 +478,8 @@ def remove_nan_before_end(data, column):
     mask = data.index.get_level_values('date') != data.index.get_level_values('date').unique().max()
     data = data[~(data[column].isna() & mask)]
     return data
-    # # Convert end_date to Timestamp
-    # end_date = pd.Timestamp(end)
-    # # Define the filter function
-    # def filter_last_row(group):
-    #     if abs(end_date - group.index[-1][1]).days >= 5:
-    #         return group.iloc[:-1]
-    #     return group
-    #
-    # # Group by 'permno' and apply the filter function
-    # filtered_df = data.groupby(grouper).apply(filter_last_row)
-    # # Drop the added 'permno' index
-    # filtered_df.index = filtered_df.index.droplevel(0)
-    # return filtered_df
 
-# Retrieve stock list from stocks to trade live
-def strat_ml_stocks(target_date, num_stocks):
-    filename = Path(get_strategy_ml() / f'trade_stock_{num_stocks}.csv')
-
-    # Read the file
-    df = pd.read_csv(filename)
-    # Filter based on date
-    date_data = df[df['date'] == target_date].squeeze()
-
-    # If no data for the date
-    if date_data.empty:
-        print("No data for this date")
-        return
-
-    # Extract stocks from the columns
-    long_cols = [col for col in df.columns if col.startswith('Long_')]
-    short_cols = [col for col in df.columns if col.startswith('Short_')]
-    long_stocks = date_data[long_cols].dropna().tolist()
-    short_stocks = date_data[short_cols].dropna().tolist()
-    long_tuples = [ast.literal_eval(item) for item in long_stocks]
-    short_tuples = [ast.literal_eval(item) for item in short_stocks]
-    return long_tuples, short_tuples
-
-# Retrieve stock list from stocks to trade live
-def strat_mrev_stocks(dir, name, target_date):
-    filename = Path(dir / f'trade_stock_mrev_{name}.csv')
-
-    # Read the file
-    df = pd.read_csv(filename)
-    # Filter based on date
-    date_data = df[df['date'] == target_date].squeeze()
-
-    # If no data for the date
-    if date_data.empty:
-        print("No data for this date")
-        return
-
-    # Extract stocks from the columns
-    long_cols = [col for col in df.columns if col.startswith('Long_')]
-    short_cols = [col for col in df.columns if col.startswith('Short_')]
-    etf_cols = [col for col in df.columns if col.startswith('ETF_')]
-    long_stocks = date_data[long_cols].dropna().tolist()
-    short_stocks = date_data[short_cols].dropna().tolist()
-    etf_stocks = date_data[etf_cols].dropna().tolist()
-    long_tuples = [ast.literal_eval(item) for item in long_stocks]
-    short_tuples = [ast.literal_eval(item) for item in short_stocks]
-    etf_tuples = [ast.literal_eval(item) for item in etf_stocks]
-    return long_tuples, short_tuples, etf_tuples
-
+# Get stock price data from FMP from start to current_date
 def get_data_fmp(ticker_list, start, current_date):
     api_key = "f913bbd3dad0c411c864c0d960a711e7"
     frames = []
@@ -577,7 +516,30 @@ def get_data_fmp(ticker_list, start, current_date):
         print("No data available for any ticker.")
         return None
 
-def get_adj_factor(ticker_list, date):
+# Get all stock news per ticker from fmp
+def get_news_fmp(tickers):
+    api_key = "f913bbd3dad0c411c864c0d960a711e7"
+    base_url = "https://financialmodelingprep.com/api/v3/stock_news"
+    limit = 1000
+    all_data = []
+    for ticker in tqdm(tickers):
+        page = 0
+        while True:
+            url = f"{base_url}?tickers={ticker}&page={page}&limit={limit}&apikey={api_key}"
+            response = requests.get(url)
+            data = response.json()
+            if not data or 'error' in data:
+                break
+            all_data.extend(data)
+            page += 1
+
+    df = pd.DataFrame(all_data).rename(columns={'symbol': 'ticker', 'publishedDate': 'date'}).drop('image', axis=1)
+    df['date'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')
+    df = df.set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+    return df
+
+# Get adjustment factor for close price for date from FMP
+def get_adj_factor_fmp(ticker_list, date):
     api_key = "f913bbd3dad0c411c864c0d960a711e7"
     frames = []
 
@@ -615,6 +577,7 @@ def get_adj_factor(ticker_list, date):
         print("No data available for any ticker.")
         return None
 
+# Get dividend data per ticker from start to current_date
 def get_dividend_fmp(ticker_list, start, current_date):
     api_key = "f913bbd3dad0c411c864c0d960a711e7"
     frames = []
@@ -643,8 +606,8 @@ def get_dividend_fmp(ticker_list, start, current_date):
         print("No dividend data available for any ticker.")
         return None
 
-# Get sp500 constituents
-def get_sp500():
+# Get sp500 constituents from FMP
+def get_sp500_fmp():
     api_key = "f913bbd3dad0c411c864c0d960a711e7"
     url = f"https://financialmodelingprep.com/api/v3/historical/sp500_constituent?apikey={api_key}"
     response = requests.get(url)
@@ -657,9 +620,12 @@ def get_sp500():
         print("Failed to retrieve data:", response.status_code, response.text)
         return None
 
-# Retrieves 'permno' groups that have data up to current date
-def current_data(group, current_date, window):
-    recent_dates = group.index.get_level_values('date')
-    target_date = pd.to_datetime(current_date) - BDay(window)
-    return recent_dates.max() >= target_date and (recent_dates >= target_date).sum() >= window
+# Retrieves 'permno' groups that have data up from current_date-window to current date
+def current_data(data, current_date, window):
+    def retrieve_group(group, current_date, window):
+        recent_dates = group.index.get_level_values('date')
+        target_date = pd.to_datetime(current_date) - BDay(window)
+        return recent_dates.max() >= target_date and (recent_dates >= target_date).sum() >= window
+    return [(name, group) for name, group in data.groupby(level='permno') if retrieve_group(group, current_date, window)]
+
 

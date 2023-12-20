@@ -31,6 +31,32 @@ def exec_mrev_etf_close():
             print(f"Could not find a unique contract for {symbol}")
             return None
 
+    # Retrieve stock list from stocks to trade live
+    def strat_mrev_stocks(dir, name, target_date):
+        filename = Path(dir / f'trade_stock_mrev_{name}.csv')
+
+        # Read the file
+        df = pd.read_csv(filename)
+        # Filter based on date
+        date_data = df[df['date'] == target_date].squeeze()
+
+        # If no data for the date
+        if date_data.empty:
+            print("No data for this date")
+            return
+
+        # Extract stocks from the columns
+        long_cols = [col for col in df.columns if col.startswith('Long_')]
+        short_cols = [col for col in df.columns if col.startswith('Short_')]
+        etf_cols = [col for col in df.columns if col.startswith('ETF_')]
+        long_stocks = date_data[long_cols].dropna().tolist()
+        short_stocks = date_data[short_cols].dropna().tolist()
+        etf_stocks = date_data[etf_cols].dropna().tolist()
+        long_tuples = [ast.literal_eval(item) for item in long_stocks]
+        short_tuples = [ast.literal_eval(item) for item in short_stocks]
+        etf_tuples = [ast.literal_eval(item) for item in etf_stocks]
+        return long_tuples, short_tuples, etf_tuples
+
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------PARAMS-----------------------------------------------------------------------------------
     yesterday_date = (datetime.today() - pd.DateOffset(1)).strftime('%Y-%m-%d')

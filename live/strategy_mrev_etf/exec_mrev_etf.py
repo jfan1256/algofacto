@@ -249,7 +249,7 @@ async def exec_price(ib, current_date):
     trade_data = trade_data.set_index(['permno', 'date']).drop('ticker', axis=1)
 
     # Get Adjustment Factor and adjust live price data
-    adj_factor_trade = get_adj_factor(trade_ticker, past_date)
+    adj_factor_trade = get_adj_factor_fmp(trade_ticker, past_date)
     trade_data['adj_factor'] = adj_factor_trade['adj_factor_trade']
     trade_data['Close'] = trade_data['Close'] / trade_data['adj_factor']
 
@@ -264,7 +264,7 @@ async def exec_price(ib, current_date):
     past_etf = pd.read_parquet(get_parquet_dir(live) / 'data_etf.parquet.brotli', columns=['Close'])
 
     # Get Adjustment Factor and adjust live price data
-    adj_factor_etf = get_adj_factor(etf_ticker, past_date)
+    adj_factor_etf = get_adj_factor_fmp(etf_ticker, past_date)
     etf_data['adj_factor'] = adj_factor_etf['adj_factor_trade']
     etf_data['Close'] = etf_data['Close'] / etf_data['adj_factor']
 
@@ -399,7 +399,7 @@ def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, thre
 
     # Function to execute the parallelization for last window of data
     def rolling_ols_last(data, ret, factor_data, factor_cols, window, name):
-        valid_groups = [(name, group) for name, group in data.groupby(level='permno') if current_data(group, current_date, window)]
+        valid_groups = current_data(data, current_date, window)
         print(len(valid_groups))
         tasks = [(group, ret, factor_data, factor_cols, window, permno, data.index.names[0]) for permno, group in valid_groups]
         results = Parallel(n_jobs=-1)(delayed(per_stock_ols_last)(*task) for task in tasks)
