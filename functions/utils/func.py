@@ -535,6 +535,7 @@ def get_news_fmp(tickers):
 
     df = pd.DataFrame(all_data).rename(columns={'symbol': 'ticker', 'publishedDate': 'date'}).drop('image', axis=1)
     df['date'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')
+    df['date'] = pd.to_datetime(df['date'])
     df = df.set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
     return df
 
