@@ -2,7 +2,7 @@ import pandas as pd
 
 from functions.utils.func import *
 from ib_insync import *
-from live.callback import OrderCounter
+from live_trade.callback import OrderCounter
 
 def exec_mrev_etf_close():
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ def exec_mrev_etf_close():
             print(f"Could not find a unique contract for {symbol}")
             return None
 
-    # Retrieve stock list from stocks to trade live
+    # Retrieve stock list from stocks to trade live_trade
     def strat_mrev_stocks(dir, name, target_date):
         filename = Path(dir / f'trade_stock_mrev_{name}.csv')
 

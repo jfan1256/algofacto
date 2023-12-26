@@ -24,7 +24,7 @@ class FactorSBSector(Factor):
         self.factor_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
         self.risk_free = pd.read_parquet(get_parquet_dir(self.live) / 'data_rf.parquet.brotli')
 
-        # Read in live market data
+        # Read in live_trade market data
         sector_df = get_data_fmp(ticker_list=['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU'], start=self.start, current_date=self.end)
         T = [1]
         sector_df = sector_df[['Open', 'High', 'Low', 'Volume', 'Adj Close']]

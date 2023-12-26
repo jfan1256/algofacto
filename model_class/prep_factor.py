@@ -42,7 +42,7 @@ class PrepFactor:
         # Set self.stock to list of all stocks in dataframe
         if self.stock == 'all':
             self.stock = get_stock_idx(data_all)
-        # Remove historical returns from factors except for factor_return
+        # Remove historical_trade returns from factors except for factor_return
         if self.factor_name == 'factor_ret':
             self.data = data_all
             self.data = get_stocks_data(self.data, self.stock)

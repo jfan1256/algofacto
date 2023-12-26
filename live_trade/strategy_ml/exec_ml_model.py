@@ -1,5 +1,5 @@
-from prep_factor import PrepFactor
-from alpha_model import AlphaModel
+from model_class.prep_factor import PrepFactor
+from model_class.alpha_model import AlphaModel
 
 from functions.utils.func import *
 

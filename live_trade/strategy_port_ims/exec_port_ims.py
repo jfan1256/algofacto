@@ -9,7 +9,7 @@ import quantstats as qs
 from ib_insync import *
 from functions.utils.func import *
 from fredapi import Fred
-from live.callback import OrderCounter
+from live_trade.callback import OrderCounter
 from urllib.request import urlopen
 
 # Get return data
@@ -494,7 +494,7 @@ def exec_port_ims_present(window, scale, current_date, present_price):
     # Get price
     past_price = pd.read_parquet(get_strategy_port_ims_data() / 'data_price.parquet.brotli')
 
-    # Sometimes FMP returns live data as well
+    # Sometimes FMP returns live_trade data as well
     if current_date in past_price.index:
         past_price = past_price.iloc[:-1]
     if current_date in past_weight.index:
@@ -596,7 +596,7 @@ def exec_port_ims_trade(scale, window, settlement, capital):
     print("----------------------------------------------------------------------------EXECUTE PRICES--------------------------------------------------------------------------------")
     # Create an event loop
     loop = asyncio.get_event_loop()
-    # Retrieve live prices
+    # Retrieve live_trade prices
     present_price = loop.run_until_complete(exec_price(ib, current_date))
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

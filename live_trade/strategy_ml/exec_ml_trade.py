@@ -1,6 +1,6 @@
 from ib_insync import *
 from functions.utils.func import *
-from live.callback import OrderCounter
+from live_trade.callback import OrderCounter
 import math
 import asyncio
 
@@ -93,7 +93,7 @@ async def exec_ml_trade(num_stocks, settlement, capital):
         print(f"Order Number: {order_num}")
         print("-" * 60)
 
-    # Retrieve stock list from stocks to trade live
+    # Retrieve stock list from stocks to trade live_trade
     def strat_ml_stocks(target_date, num_stocks):
         filename = Path(get_strategy_ml() / f'trade_stock_{num_stocks}.csv')
 

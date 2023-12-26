@@ -419,8 +419,8 @@ class LiveData:
         last_date = crsp_ticker.index.get_level_values('date').max()
         ticker_list = crsp_ticker.loc[crsp_ticker.index.get_level_values('date') == last_date, 'ticker'].tolist()
 
-        # Read in live market data
-        print("Read in live market data...")
+        # Read in live_trade market data
+        print("Read in live_trade market data...")
         start_year = datetime.strptime(self.current_date, "%Y-%m-%d")
         start_year = start_year.replace(month=1, day=1)
         start_year = start_year.strftime("%Y-%m-%d")
@@ -430,8 +430,8 @@ class LiveData:
         print("Extract permno ticker pair used for mapping...")
         permno_ticker_map = crsp_ticker.loc[crsp_ticker.index.get_level_values('date') == last_date][['ticker']]
 
-        # Map permno ticker pair to live market data
-        print("Map permno ticker pair to live market data...")
+        # Map permno ticker pair to live_trade market data
+        print("Map permno ticker pair to live_trade market data...")
         permno_ticker_map = permno_ticker_map.reset_index()
         price_change = price.reset_index()
         price_change['permno'] = price_change['ticker'].map(permno_ticker_map.set_index('ticker').to_dict()['permno'])
@@ -450,8 +450,8 @@ class LiveData:
         price_change = price_change.rename(columns={'Adj Close': 'Close'})
         price_change_price = price_change[['Open', 'High', 'Low', 'Close', 'Volume']]
 
-        # Concat and sort historical price and live price
-        print("Concat and sort historical price and live price...")
+        # Concat and sort historical_trade price and live_trade price
+        print("Concat and sort historical_trade price and live_trade price...")
         combined_price = pd.concat([crsp_price, price_change_price], axis=0)
         combined_price = combined_price.sort_index(level=['permno', 'date'])
 
@@ -473,8 +473,8 @@ class LiveData:
         combined_price = combined_price.drop(permnos_to_remove, level='permno')
         combined_price = combined_price.drop('RET_01', axis=1)
 
-        # Concat and sort historical ticker and live ticker
-        print("Concat and sort historical ticker and live ticker...")
+        # Concat and sort historical_trade ticker and live_trade ticker
+        print("Concat and sort historical_trade ticker and live_trade ticker...")
         price_change_ticker = price_change[['ticker']]
         combined_ticker = pd.concat([crsp_ticker, price_change_ticker], axis=0)
         combined_ticker = combined_ticker.sort_index(level=['permno', 'date'])
@@ -494,8 +494,8 @@ class LiveData:
         print('Export Tickers...')
         combined_ticker.to_parquet(get_parquet_dir(self.live) / 'data_ticker.parquet.brotli', compression='brotli')
 
-        # Export permno list for live trading
-        print("Export permno list for live trading...")
+        # Export permno list for live_trade trading
+        print("Export permno list for live_trade trading...")
         print(f'Number of stocks: {len(get_stock_idx(combined_price))}')
         export_stock(combined_price, get_large_dir(self.live) / 'permno_live.csv')
 
@@ -714,8 +714,8 @@ class LiveData:
         annual = annual[['IndustryFama']]
         annual = annual.fillna(-1).astype(int)
 
-        # Retrieve live trade stock list
-        print("Retrieve live trade stock list...")
+        # Retrieve live_trade trade stock list
+        print("Retrieve live_trade trade stock list...")
         stock = read_stock(get_large_dir(self.live) / 'permno_live.csv')
         industry = industry[industry['permno'].isin(stock)]
 

@@ -1,4 +1,4 @@
-from live.live_data import LiveData
+from live_trade.live_data import LiveData
 
 from functions.utils.func import *
 
@@ -28,5 +28,5 @@ def exec_data(threshold, update_price, start_data):
 
     elapsed_time = time.time() - start_time
     minutes, seconds = divmod(elapsed_time, 60)
-    print(f"Total time to get live data: {int(minutes)}:{int(seconds):02}")
+    print(f"Total time to get live_trade data: {int(minutes)}:{int(seconds):02}")
     print("-" * 60)

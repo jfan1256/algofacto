@@ -11,60 +11,60 @@ def get_root_dir() -> Path:
 
 def get_parquet_dir(live) -> Path:
     if live:
-        return get_root_dir() / 'live' / 'parquet'
+        return get_root_dir() / 'live_trade' / 'parquet'
     else:
-        return get_root_dir() / 'historical' / 'parquet'
+        return get_root_dir() / 'historical_trade' / 'parquet'
 
 def get_factor_dir(live) -> Path:
     if live:
-        return get_root_dir() / 'live' / 'factor'
+        return get_root_dir() / 'live_trade' / 'factor'
     else:
-        return get_root_dir() / 'historical' / 'factor'
+        return get_root_dir() / 'historical_trade' / 'factor'
 
 
 def get_prep_dir(live) -> Path:
     if live:
-        return get_root_dir() / 'live' / 'prep'
+        return get_root_dir() / 'live_trade' / 'prep'
     else:
-        return get_root_dir() / 'historical' / 'prep'
+        return get_root_dir() / 'historical_trade' / 'prep'
 
 
 def get_large_dir(live) -> Path:
     if live:
-        return get_root_dir() / 'live' / 'large'
+        return get_root_dir() / 'live_trade' / 'large'
     else:
-        return get_root_dir() / 'historical' / 'large'
+        return get_root_dir() / 'historical_trade' / 'large'
 
 
 def get_result(live) -> Path:
     if live:
-        return get_root_dir() / 'live' / 'strategy_ml' / 'result'
+        return get_root_dir() / 'live_trade' / 'strategy_ml' / 'result'
     else:
-        return get_root_dir() / 'historical' / 'result'
+        return get_root_dir() / 'historical_trade' / 'result'
 
 def get_report(live) -> Path:
     if live:
-        return get_root_dir() / 'live' / 'strategy_ml' / 'report'
+        return get_root_dir() / 'live_trade' / 'strategy_ml' / 'report'
     else:
-        return get_root_dir() / 'historical' / 'report'
+        return get_root_dir() / 'historical_trade' / 'report'
 
 def get_result_model(live, model):
     return get_result(live) / f'{model}'
 
 def get_strategy_ml():
-    return get_root_dir() / 'live' / 'strategy_ml'
+    return get_root_dir() / 'live_trade' / 'strategy_ml'
 
 def get_strategy_mrev_etf():
-    return get_root_dir() / 'live' / 'strategy_mrev_etf'
+    return get_root_dir() / 'live_trade' / 'strategy_mrev_etf'
 
 def get_strategy_mrev_etf_data():
-    return get_root_dir() / 'live' / 'strategy_mrev_etf' / 'data'
+    return get_root_dir() / 'live_trade' / 'strategy_mrev_etf' / 'data'
 
 def get_strategy_port_ims():
-    return get_root_dir() / 'live' / 'strategy_port_ims'
+    return get_root_dir() / 'live_trade' / 'strategy_port_ims'
 
 def get_strategy_port_ims_data():
-    return get_root_dir() / 'live' / 'strategy_port_ims' / 'data'
+    return get_root_dir() / 'live_trade' / 'strategy_port_ims' / 'data'
 
 
 def print_data_shape(self, *args, **kwargs):

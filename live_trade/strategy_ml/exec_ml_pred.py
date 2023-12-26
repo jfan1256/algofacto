@@ -5,7 +5,7 @@ import quantstats as qs
 import os
 
 from scipy.stats import spearmanr
-from live.strategy_ml.live_pred import LivePred
+from live_trade.strategy_ml.live_pred import LivePred
 from functions.utils.func import *
 
 def exec_ml_pred(threshold, num_stocks, leverage, port_opt, use_model):
