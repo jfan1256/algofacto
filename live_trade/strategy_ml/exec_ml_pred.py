@@ -38,7 +38,7 @@ def exec_ml_pred(threshold, num_stocks, leverage, port_opt, use_model):
     # Iterate through each trial
     for i, row in files.iterrows():
         # Read file in
-        read_file = live_test.get_max_ic_file(row)
+        read_file = live_test.get_max_metric_file(row)
         # Execute ranking of stocks
         returns = live_test.sharpe_ret(read_file, iteration=False)
         # Convert Permno to Ticker
@@ -75,7 +75,7 @@ def exec_ml_pred(threshold, num_stocks, leverage, port_opt, use_model):
     # Append the individual trial predictions to a dataframe
     for idx in max_sharpe_idxs:
         print(f'Best Sharpe Idx: {idx}')
-        best_model_params = live_test.get_max_ic_file(files.iloc[idx])
+        best_model_params = live_test.get_max_metric_file(files.iloc[idx])
         merged = live_test.price(best_model_params, dir_path, iteration=False, plot=False)
         collect.append(merged['predictions'])
 

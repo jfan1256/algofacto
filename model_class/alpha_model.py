@@ -8,9 +8,11 @@ from scipy.stats import spearmanr
 from datetime import timedelta
 from sklearn.preprocessing import MinMaxScaler
 from catboost import CatBoostRegressor, CatBoostClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from catboost import Pool
 from sklearn.metrics import accuracy_score
-from typing import Optional, Union, List
+from typing import Optional
+
 
 import os
 import time
@@ -83,7 +85,7 @@ class AlphaModel:
         assert self.tuning[0] == 'optuna' or self.tuning[0] == 'gridsearch' or self.tuning == 'default' or self.tuning=='best', \
             ValueError("must use either ['optuna', num_trials=int], ['gridsearch', num_search=int], or 'default' for tuning parameter")
         assert self.lookahead>=1, ValueError('lookahead must be greater than 0')
-        if self.early == False:
+        if self.early == False and 'randomforest' not in self.model_name:
             assert self.plot_loss == False, ValueError("cannot plot validation loss if early is set to False")
             assert self.valid_len == 0, ValueError("must set valid_len to 0 is early is set to False")
         if self.early:
@@ -143,8 +145,13 @@ class AlphaModel:
         if self.outlier:
             if self.pred == 'sign':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
-                self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-                self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'target_{self.lookahead}D'].apply(lambda x: np.sign(x))
+                self.data[f'target_{self.lookahead}D'] = (
+                    self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}']
+                    .apply(lambda x: (1 + x).rolling(window=self.trend).apply(np.prod, raw=True) - 1)
+                    .shift(-self.lookahead)
+                    .apply(lambda x: 1 if x > 0 else 0)
+                    .reset_index(level=0, drop=True)
+                )
                 self.data = remove_nan_before_end(self.data, f'target_{self.lookahead}D')
             elif self.pred == 'price':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
@@ -155,10 +162,13 @@ class AlphaModel:
         else:
             if self.pred == 'sign':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
-                # self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].shift(-self.lookahead)
-                # self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'target_{self.lookahead}D'].apply(lambda x: np.sign(x))
-                self.data[f'target_{self.lookahead}D'] = self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}'].rolling(window=self.trend).sum().shift(-self.lookahead).apply(
-                    lambda x: 1 if x > 0 else 0).reset_index(level=0, drop=True)
+                self.data[f'target_{self.lookahead}D'] = (
+                    self.data.groupby(level=self.stock)[f'RET_{self.lookahead:02}']
+                    .apply(lambda x: (1 + x).rolling(window=self.trend).apply(np.prod, raw=True) - 1)
+                    .shift(-self.lookahead)
+                    .apply(lambda x: 1 if x > 0 else 0)
+                    .reset_index(level=0, drop=True)
+                )
                 self.data = remove_nan_before_end(self.data, f'target_{self.lookahead}D')
             elif self.pred == 'price':
                 self.actual_return = self.data[[f'RET_{self.lookahead:02}']]
@@ -228,16 +238,11 @@ class AlphaModel:
 
             # If the last index exceeds the number of days (index out of bounds), break the loop
             if test_end_idx >= len(days):
+                test_end_idx = len(days) - 1
+                split_idx.append([train_start_idx, train_end_idx, test_start_idx, test_end_idx])
                 break
 
             split_idx.append([train_start_idx, train_end_idx, test_start_idx, test_end_idx])
-
-        # Check if the last test_end date is not the last available date
-        if days[test_end_idx] < days[-1]:
-            test_start_idx = test_end_idx + 1
-            test_end_idx = len(days) - 1  # Last available date
-            train_end_idx = test_start_idx - lookahead  # Adjusting the training end index
-            split_idx[-1] = [train_start_idx, train_end_idx, test_start_idx, test_end_idx]
 
         dates = data.reset_index()[['date']]
         for train_start, train_end, test_start, test_end in split_idx:
@@ -512,7 +517,6 @@ class AlphaModel:
                         print('Predicting......')
                         # Get the model predictions using different number of trees from the model
                         test_pred_ret = {str(n): model.predict(test_factors) if n == 1000 else model.predict(test_factors, num_iteration=n) for n in num_iterations}
-                        # test_pred_ret = {str(n): (2 * (model.predict(test_factors) >= 0.5).astype(int) - 1) if n == 1000 else (2 * (model.predict(test_factors, num_iteration=n) >= 0.5).astype(int) - 1) for n in num_iterations}
                         print("-" * 60)
 
                     # Create a prediction dataset
@@ -563,7 +567,6 @@ class AlphaModel:
                         by_day.apply(lambda x: accuracy_score(x[ret], x[str(n)].apply(lambda p: 1 if p > 0.5 else 0))).to_frame(n)
                         for n in num_iterations
                     ], axis=1)
-                    # as_by_day = pd.concat([by_day.apply(lambda x: accuracy_score(x[ret], x[str(n)])).to_frame(n) for n in num_iterations], axis=1)
                     daily_as_mean = list(as_by_day.mean())
 
                 # Record training time for this model training period
@@ -573,15 +576,15 @@ class AlphaModel:
                 if self.pred == 'price':
                     metrics = pd.Series(list(param_val_train) + [t] + daily_ic_mean, index=metric_cols)
                     metrics = metrics.to_frame().T
-                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | dIC_mean max: {ic_by_day.mean().max(): 6.2%}'
+                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {ic_by_day.mean().max(): 6.2%}'
                     ic_by_day.columns = ic_by_day.columns.map(str)
-                    ic_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'dailyIC.parquet.brotli', compression='brotli')
+                    ic_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
                 elif self.pred == 'sign':
                     metrics = pd.Series(list(param_val_train) + [t] + daily_as_mean, index=metric_cols)
                     metrics = metrics.to_frame().T
-                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | dAS_mean max: {as_by_day.mean().max(): 6.2%}'
+                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {as_by_day.mean().max(): 6.2%}'
                     as_by_day.columns = as_by_day.columns.map(str)
-                    as_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'dailyAS.parquet.brotli', compression='brotli')
+                    as_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
 
                 # Print params
                 for metric_name in param_name_train:
@@ -623,7 +626,7 @@ class AlphaModel:
                 param_names = list(params.keys())
             num_iterations = [150, 200, 300, 400, 500, 750, 1000]
             # This will be used for the metric dataset during training
-            metric_cols = (param_names + ['time'] + ["dIC_mean_" + str(n) for n in num_iterations])
+            metric_cols = (param_names + ['time'] + ["daily_metric_" + str(n) for n in num_iterations])
 
             # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
             # --------------------------------------------------------------------------CREATING LABELS--------------------------------------------------------------------------------------
@@ -763,7 +766,7 @@ class AlphaModel:
             print("Number of finished trials: {}".format(len(study.trials)))
             print("Best trial:")
             trial = study.best_trial
-            print("     IC: {}".format(trial.value))
+            print("     Metric: {}".format(trial.value))
             print("     Params: ")
             for name, number in trial.params.items():
                 print("         {}: {}".format(name, number))
@@ -886,11 +889,9 @@ class AlphaModel:
                     if self.pred == 'price':
                         # Get the model predictions using different number of trees from the model
                         test_pred_ret = {str(n): model.predict(test_factors) for n in num_iterations}
-                        # test_pred_ret = {str(n): model.predict(test_factors, ntree_end=n) for n in num_iterations}
                     elif self.pred == 'sign':
                         # Get the model predictions using different number of trees from the model
-                        test_pred_ret = {str(n): (model.predict(test_factors) >= 0.5).astype(int) for n in num_iterations}
-                        # test_pred_ret = {str(n): (model.predict(test_factors, ntree_end=n) >= 0.5).astype(int) for n in num_iterations}
+                        test_pred_ret = {str(n): model.predict(test_factors) for n in num_iterations}
 
                     # Create a prediction dataset
                     opt_pred.append(test_ret.assign(**test_pred_ret).assign(i=i))
@@ -898,16 +899,18 @@ class AlphaModel:
                     # Plot histogram plot for each training period if self.plot_hist is True
                     if self.plot_hist:
                         self._plot_histo(test_ret.assign(**test_pred_ret).assign(i=i), self.actual_return, data_train.iloc[train_idx].index.get_level_values('date')[-1] + timedelta(days=5))
-
-                    # Save the SHAP plots for training period at start, middle, and end
-                    if i == 0 or i == n_splits // 2 or i == n_splits - 1:
-                        print('Exporting beeswarm and waterfall SHAP plot......')
-                        explainer = shap.TreeExplainer(model)
-                        sv = explainer.shap_values(Pool(test_factors, test_ret, cat_features=self.categorical))
-                        sv_wf = explainer(test_factors)
-                        plot_beeswarm_cb(sv, test_factors, key, i)
-                        plot_waterfall_cb(sv_wf, key, i)
-                        print("-" * 60)
+                    
+                    # Save SHAP plot if self.shap is set to True
+                    if self.shap:
+                        # Save the SHAP plots for training period at start, middle, and end
+                        if i == 0 or i == n_splits // 2 or i == n_splits - 1:
+                            print('Exporting beeswarm and waterfall SHAP plot......')
+                            explainer = shap.TreeExplainer(model)
+                            sv = explainer.shap_values(Pool(test_factors, test_ret, cat_features=self.categorical))
+                            sv_wf = explainer(test_factors)
+                            plot_beeswarm_cb(sv, test_factors, key, i)
+                            plot_waterfall_cb(sv_wf, key, i)
+                            print("-" * 60)
 
                     # Save feature gain and split
                     if i == 0:
@@ -926,10 +929,12 @@ class AlphaModel:
                 by_day = all_pred_ret.groupby(level='date')
                 if self.pred == 'price':
                     ic_by_day = pd.concat([by_day.apply(lambda x: spearmanr(x[ret], x[str(n)])[0]).to_frame(n) for n in num_iterations], axis=1)
-                    # ic_by_day = pd.concat([by_day.apply(lambda x: spearmanr(x[ret], x[str(n)])[0]).to_frame(n) for n in num_iterations], axis=1)
                     daily_ic_mean = list(ic_by_day.mean())
                 elif self.pred == 'sign':
-                    as_by_day = pd.concat([by_day.apply(lambda x: accuracy_score(x[ret], x[str(n)])).to_frame(n) for n in num_iterations], axis=1)
+                    as_by_day = pd.concat([
+                        by_day.apply(lambda x: accuracy_score(x[ret], x[str(n)].apply(lambda p: 1 if p > 0.5 else 0))).to_frame(n)
+                        for n in num_iterations
+                    ], axis=1)
                     daily_as_mean = list(as_by_day.mean())
 
                 # Record training time for this model training period
@@ -939,15 +944,15 @@ class AlphaModel:
                 if self.pred == 'price':
                     metrics = pd.Series(list(param_val_train) + [t] + daily_ic_mean, index=metric_cols)
                     metrics = metrics.to_frame().T
-                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | dIC_mean max: {ic_by_day.mean().max(): 6.2%}'
+                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {ic_by_day.mean().max(): 6.2%}'
                     ic_by_day.columns = ic_by_day.columns.map(str)
-                    ic_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'dailyIC.parquet.brotli', compression='brotli')
+                    ic_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
                 elif self.pred == 'sign':
                     metrics = pd.Series(list(param_val_train) + [t] + daily_as_mean, index=metric_cols)
                     metrics = metrics.to_frame().T
-                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | dAS_mean max: {as_by_day.mean().max(): 6.2%}'
+                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {as_by_day.mean().max(): 6.2%}'
                     as_by_day.columns = as_by_day.columns.map(str)
-                    as_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'dailyAS.parquet.brotli', compression='brotli')
+                    as_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
 
                 # Print params
                 for metric_name in param_name_train:
@@ -984,7 +989,7 @@ class AlphaModel:
             param_names = list(params.keys())
             num_iterations = [1000]
             # This will be used for the metric dataset during training
-            metric_cols = (param_names + ['time'] + ["dIC_mean_" + str(n) for n in num_iterations])
+            metric_cols = (param_names + ['time'] + ["daily_metric_" + str(n) for n in num_iterations])
 
             # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
             # --------------------------------------------------------------------------CREATING LABELS--------------------------------------------------------------------------------------
@@ -1073,7 +1078,7 @@ class AlphaModel:
             print("Number of finished trials: {}".format(len(study.trials)))
             print("Best trial:")
             trial = study.best_trial
-            print("     IC: {}".format(trial.value))
+            print("     Metric: {}".format(trial.value))
             print("     Params: ")
             for name, number in trial.params.items():
                 print("         {}: {}".format(name, number))
@@ -1084,3 +1089,264 @@ class AlphaModel:
             os.makedirs(get_result(self.live) / f'{self.model_name}')
             # Execute train
             model_training(None)
+
+
+    def randomforest(self):
+        # Model to train (this function is created so that it can be used for gridsearch, optuna, and default training)
+        def model_training(trial):
+            # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            # ------------------------------------------------------------------FUNCTIONS WITHIN MODEL_TRAINING------------------------------------------------------------------------------
+            # Executes the optimization training process
+            def train_model(export_key, param_name_train, param_val_train):
+                # Get the parameters
+                params = dict(zip(param_name_train, param_val_train))
+                params.update(base_params)
+                # Set up cross-validation and track time
+                T = 0
+                track_wfo = time.time()
+
+                # Creates the indices for wfo or ewo
+                opt_pred, gain, split = [], [], []
+                if self.opt == 'wfo':
+                    n_splits = (get_timeframe_length(data_train) - self.train_len) // self.test_len
+                    opt = self._wfo(data=data_train, n_splits=n_splits, lookahead=self.lookahead, train_period_length=self.train_len, test_period_length=self.test_len)
+                elif self.opt == 'ewo':
+                    n_splits = (get_timeframe_length(data_train)) // self.test_len
+                    opt = self._ewo(data=data_train, n_splits=n_splits, lookahead=self.lookahead, train_period_length=self.train_len, test_period_length=self.test_len)
+
+                # Execute training
+                print("Train model......")
+                print("-" * 60)
+                # Iterate over wfo periods
+                for i, (train_idx, test_idx) in enumerate(opt):
+                    start_train = data_train.index.get_level_values('date')[train_idx].min().strftime('%Y-%m-%d')
+                    end_train = data_train.index.get_level_values('date')[train_idx].max().strftime('%Y-%m-%d')
+                    start_test = data_train.index.get_level_values('date')[test_idx].min().strftime('%Y-%m-%d')
+                    end_test = data_train.index.get_level_values('date')[test_idx].max().strftime('%Y-%m-%d')
+                    print(f'Training from {start_train} to {end_train} || Testing from {start_test} to {end_test}:')
+
+                    # Select train subset save last self.valid_len for validation
+                    rf_train = data_train.iloc[train_idx[:-self.valid_len]]
+                    rf_val = data_train.iloc[train_idx[-self.valid_len:]]
+                    # Split into Train/Validation
+                    X_train = rf_train.drop(ret, axis=1)
+                    y_train = rf_train[ret]
+                    X_val = rf_val.drop(ret, axis=1)
+                    y_val = rf_val[ret]
+                    # Early stop on RMSE or AUC
+                    print('Start training......')
+                    track_early_stopping = time.time()
+                    if self.pred == 'price':
+                        model = RandomForestRegressor(**params)
+                    elif self.pred == 'sign':
+                        model = RandomForestClassifier(**params)
+                    # Train model
+                    model.fit(X_train, y_train)
+
+                    # Print training time
+                    print('Train time:', round(time.time() - track_early_stopping, 2), 'seconds')
+
+                    # Evaluate model performance on validation set
+                    train_score = model.score(X_train, y_train)
+                    val_score = model.score(X_val, y_val)
+                    print(f'Train Score: {train_score}, Validation Score: {val_score}')
+
+                    # Plotting feature importance if self.plot_loss is True
+                    if self.plot_loss:
+                        importances = model.feature_importances_
+                        indices = np.argsort(importances)
+                        plt.title('Feature Importances')
+                        plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+                        plt.yticks(range(len(indices)), [X_train.columns[i] for i in indices])
+                        plt.xlabel('Relative Importance')
+                        plt.show()
+
+                    # Capture predictions
+                    test_set = data_train.iloc[test_idx, :]
+                    test_factors = test_set.loc[:, factors]
+                    test_ret = test_set.loc[:, ret]
+                    # Predict for price or sign
+                    print('Predicting......')
+                    if self.pred == 'price':
+                        # Get the model predictions
+                        test_pred_ret = model.predict(test_factors)
+                    elif self.pred == 'sign':
+                        # Get the model predictions
+                        test_pred_ret = model.predict_proba(test_factors)[:, 1]
+
+                    # Create a DataFrame for predictions
+                    pred_col_name = '0'
+                    test_ret[pred_col_name] = test_pred_ret
+                    # Append the prediction DataFrame
+                    opt_pred.append(test_ret.assign(i=i))
+
+                    # Plot histogram plot for each training period if self.plot_hist is True
+                    if self.plot_hist:
+                        self._plot_histo(test_ret, self.actual_return, data_train.iloc[train_idx].index.get_level_values('date')[-1] + timedelta(days=5))
+
+                    print("-" * 60)
+
+                # Create the dataset with model predictions
+                params = {key: value.__name__ if callable(value) else value for key, value in params.items()}
+                all_pred_ret = pd.concat(opt_pred).assign(**params)
+
+                # Compute IC or AS per day cross-sectionally
+                by_day = all_pred_ret.groupby(level='date')
+                if self.pred == 'price':
+                    # Spearman Rank Correlation
+                    ic_by_day = by_day.apply(lambda x: spearmanr(x[ret], x['0'])[0]).to_frame('0')
+                    daily_ic_mean = ic_by_day.mean().tolist()
+                elif self.pred == 'sign':
+                    # Accuracy Score
+                    as_by_day = by_day.apply(lambda x: accuracy_score(x[ret], x['0'].map(lambda p: 1 if p > 0.5 else 0))).to_frame('0')
+                    daily_as_mean = as_by_day.mean().tolist()
+
+                # Record training time for this model training period
+                t = time.time() - track_wfo
+                T += t
+
+                # Save and print metrics
+                if self.pred == 'price':
+                    metrics = pd.Series(list(param_val_train) + [t] + daily_ic_mean, index=metric_cols)
+                    metrics = metrics.to_frame().T
+                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {ic_by_day.mean().max(): 6.2%}'
+                    ic_by_day.columns = ic_by_day.columns.map(str)
+                    ic_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
+                elif self.pred == 'sign':
+                    metrics = pd.Series(list(param_val_train) + [t] + daily_as_mean, index=metric_cols)
+                    metrics = metrics.to_frame().T
+                    msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {as_by_day.mean().max(): 6.2%}'
+                    as_by_day.columns = as_by_day.columns.map(str)
+                    as_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
+
+                # Print params
+                for metric_name in param_name_train:
+                    msg += f" | {metric_name}: {metrics[metric_name].iloc[0]}"
+                print(msg)
+                print("-" * 60)
+
+                # Export actual returns, metrics, gain, split, and predictions
+                self.actual_return.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'returns.parquet.brotli', compression='brotli')
+                metrics.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'metrics.parquet.brotli', compression='brotli')
+                all_pred_ret.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'predictions.parquet.brotli', compression='brotli')
+
+                # If optuna is true, optimize for dailyIC mean
+                if self.tuning[0] == 'optuna':
+                    if self.pred == 'price':
+                        objective_value = ic_by_day.mean().max()
+                        return objective_value
+                    elif self.pred == 'sign':
+                        objective_value = as_by_day.mean().max()
+                        return objective_value
+
+            # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            # ----------------------------------------------------------------------TUNING PARAMETERS----------------------------------------------------------------------------------------
+            # Base params used for training
+            base_params = {'n_jobs': -1, 'random_state': 42}
+
+            # Get parameters and set num_iterations used for prediction
+            params = self._get_parameters(self)
+            param_names = list(params.keys())
+            # This will be used for the metric dataset during training
+            metric_cols = (param_names + ['time'] + ['daily_metric_0'])
+
+            # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------CREATING LABELS--------------------------------------------------------------------------------------
+            # Create forward returns
+            self._create_fwd()
+            # Get list of target returns and factors used for prediction
+            ret = sorted(self.data.filter(like='target').columns)
+            factors = [col for col in self.data.columns if col not in ret]
+
+            # Get start date and end date for train data
+            data_train = self.data.loc[:, factors + ret]
+            # Fillna with -9999 because Random Forest cannot handle NAN values
+            data_train = data_train.fillna(-9999)
+            start_date_train = str(data_train.index.get_level_values('date').unique()[0].date())
+            end_date_train = str(data_train.index.get_level_values('date').unique()[-1].date())
+            # Print the start date and end date for train period
+            print("Train: " + str(start_date_train) + " --> " + str(end_date_train))
+            print("-" * 60)
+
+            # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            # --------------------------------------------------------------------------TRAINING MODEL---------------------------------------------------------------------------------------
+            # Train model with optuna, gridsearch, or default
+            if self.tuning[0] == 'optuna':
+                # Get param values and print the key (formatted params)
+                param_vals = list(params.values())
+                key = '_'.join([str(float(p)) for p in param_vals])
+                print(f'Key: {key}')
+                # Create the directory
+                os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                # Train model and return the optimization metric for optuna
+                return train_model(key, param_names, param_vals)
+            elif self.tuning[0] == 'gridsearch':
+                # Get and create all possible combinations of params
+                cv_params = list(product(*params.values()))
+                n_params = len(cv_params)
+                # Randomized grid search
+                cvp = np.random.choice(list(range(n_params)), size=int(n_params / 2), replace=False)
+                cv_params_ = [cv_params[i] for i in cvp][:self.tuning[1]]
+                print("Number of gridsearch iterations: " + str(len(cv_params_)))
+                # Iterate over (shuffled) hyperparameter combinations
+                for p, param_vals in enumerate(cv_params_):
+                    key = '_'.join([str(float(p)) for p in param_vals])
+                    print(f'Key: {key}')
+                    # Create the directory
+                    os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                    # Train model
+                    train_model(key, param_names, param_vals)
+            elif self.tuning == 'default':
+                # Get param values and print the key (formatted params)
+                param_vals = list(params.values())
+                key = '_'.join([str(float(p)) for p in param_vals])
+                print(f'Key: {key}')
+                # Create the directory
+                os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                # Train model
+                train_model(key, param_names, param_vals)
+            elif self.tuning == 'best':
+                # Get list of best params
+                for param_set in params:
+                    # Get param values and print the key (formatted params)
+                    param_vals = list(param_set.values())
+                    key = '_'.join([str(float(p)) for p in param_vals])
+                    print(f'Key: {key}')
+                    # Create the directory
+                    os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                    # Train model
+                    train_model(key, param_names, param_vals)
+
+        # ===============================================================================================================================================================================
+        # --------------------------------------------------------------------------MODEL_TRAINING()-------------------------------------------------------------------------------------
+        # Cannot run incremental training with catboost
+        assert not self.incr, 'Cannot run incremental training with random forest'
+        assert not self.early, 'Cannot run early stopping with random forest'
+        assert not self.shap, 'Cannot plot SHAP for random forest'
+        print('List of categorical inputs:')
+        print(self.categorical)
+        print(f'Length: {len(self.categorical)}')
+        if self.tuning[0] == 'optuna':
+            # Create new directory/override directory named self.model_name
+            shutil.rmtree(get_result(self.live) / f'{self.model_name}', ignore_errors=True)
+            os.makedirs(get_result(self.live) / f'{self.model_name}')
+            # Create study that maximizes metric score
+            study = optuna.create_study(direction="maximize")
+            # Execute train
+            study.optimize(model_training, n_trials=self.tuning[1])
+            # Print the best model's result
+            print("Number of finished trials: {}".format(len(study.trials)))
+            print("Best trial:")
+            trial = study.best_trial
+            print("     Metric: {}".format(trial.value))
+            print("     Params: ")
+            for name, number in trial.params.items():
+                print("         {}: {}".format(name, number))
+            print("-" * 60)
+        else:
+            # Create new directory/override directory named self.model_name
+            shutil.rmtree(get_result(self.live) / f'{self.model_name}', ignore_errors=True)
+            os.makedirs(get_result(self.live) / f'{self.model_name}')
+            # Execute train
+            model_training(None)
+            

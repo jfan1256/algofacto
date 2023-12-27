@@ -47,7 +47,7 @@ class LivePred:
 
     # Calculates the product of the daily_ic_mean and maximum overall IC in each result to find the best performing model
     @staticmethod
-    def get_max_ic(data):
+    def get_max_metric(data):
         collection = {}
         for index, row in data.iterrows():
             collection[max(row.loc[(row.index.str.startswith("dIC"))])] = index
@@ -55,7 +55,7 @@ class LivePred:
         return data.iloc[max_ic_idx]
 
     # Gets the files of the best performing model
-    def get_max_ic_file(self, data):
+    def get_max_metric_file(self, data):
         files = {}
         time_index = data.to_frame().index.get_loc('time')
         param_vals = data.iloc[:time_index].values
@@ -73,7 +73,7 @@ class LivePred:
 
     # Get all files under a specific folder
     def get_all(self):
-        return self.get_max_ic_file(self.get_max_ic(self.read_result('metrics')))
+        return self.get_max_metric_file(self.get_max_metric(self.read_result('metrics')))
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -----------------------------------------------------------------------PORTFOLIO OPTIMIZATION----------------------------------------------------------------------------------
@@ -199,7 +199,7 @@ class LivePred:
         # Gets the predictions of the highest overall IC in the boosted round cases
         if iteration == False:
             best_prediction = best_model_params['predictions'][
-                [str(extract_number(best_model_params['metrics'].loc[:, best_model_params['metrics'].columns.str.startswith("dIC")].idxmax(axis=1)[0])), 'i']]
+                [str(extract_number(best_model_params['metrics'].loc[:, best_model_params['metrics'].columns.str.startswith("daily_metric")].idxmax(axis=1)[0])), 'i']]
         else:
             best_prediction = best_model_params['predictions'][[str(iteration), 'i']]
         actual_return = best_model_params['returns']
@@ -233,10 +233,10 @@ class LivePred:
         # Prepare the plot
         plt.style.use('ggplot')
         fig, ax = plt.subplots(figsize=(10, 6))
-        best_model_params['dailyIC'][best_prediction.columns[0]].rolling(window=42).mean().plot(
-            ax=ax, linewidth=0.5, color='blue', linestyle='-', title='Daily IC Plot'
+        best_model_params['daily_metric'][best_prediction.columns[0]].rolling(window=42).mean().plot(
+            ax=ax, linewidth=0.5, color='blue', linestyle='-', title='Daily Metric Plot'
         )
-        ax.set(xlabel='Date', ylabel='DailyIC')
+        ax.set(xlabel='Date', ylabel='Daily Metric')
         ax.grid(True, which='both', linestyle='--', linewidth=0.5)
         plt.tight_layout()
 
@@ -308,12 +308,12 @@ class LivePred:
         return merged
 
     def plot_ensemble(self, merged, ic_by_day):
-        print(f'Daily IC Mean: {round(ic_by_day.mean()[0], 5)}')
+        print(f'Daily Metric Mean: {round(ic_by_day.mean()[0], 5)}')
         # Prepare the plot
         plt.style.use('ggplot')
         fig, ax = plt.subplots(figsize=(10, 6))
-        ic_by_day.rolling(window=42).mean().plot(ax=ax, linewidth=0.5, color='blue', linestyle='-', title='Daily IC Plot')
-        ax.set(xlabel='Date', ylabel='DailyIC')
+        ic_by_day.rolling(window=42).mean().plot(ax=ax, linewidth=0.5, color='blue', linestyle='-', title='Daily Metric Plot')
+        ax.set(xlabel='Date', ylabel='Daily Metric')
         ax.grid(True, which='both', linestyle='--', linewidth=0.5)
         plt.tight_layout()
 
@@ -406,7 +406,7 @@ class LivePred:
         # Gets the predictions of the highest overall IC in the boosted round cases
         if iteration == False:
             best_prediction = best_model_params['predictions'][
-                [str(extract_number(best_model_params['metrics'].loc[:, best_model_params['metrics'].columns.str.startswith("dIC")].idxmax(axis=1)[0])), 'i']]
+                [str(extract_number(best_model_params['metrics'].loc[:, best_model_params['metrics'].columns.str.startswith("daily_metric")].idxmax(axis=1)[0])), 'i']]
         else:
             best_prediction = best_model_params['predictions'][[str(iteration), 'i']]
         actual_return = best_model_params['returns']

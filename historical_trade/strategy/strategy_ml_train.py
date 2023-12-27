@@ -12,9 +12,10 @@ if live:
 else:
     stock = read_stock(get_large_dir(live) / 'permno_to_train_fund.csv')
 
-start = '2013-01-01'
-end = '2023-01-01'
+start = '2010-01-01'
+end = '2015-01-01'
 save = False
+
 lightgbm_params = {
     'max_depth':          {'optuna': ('suggest_categorical', [6]),              'gridsearch': [4, 6, 8],                     'default': 6},
     'learning_rate':      {'optuna': ('suggest_float', 0.10, 0.50, False),      'gridsearch': [0.005, 0.01, 0.1, 0.15],      'default': 0.15},
@@ -36,12 +37,19 @@ catboost_params = {
     'l2_leaf_reg':        {'optuna': ('suggest_float', 1e-5, 10, True),         'gridsearch': [0.0001, 0.001, 0.01],         'default': 3.0}
 }
 
+randomforest_params = {
+    'n_estimators':       {'optuna': ('suggest_int', 100, 1000),                            'gridsearch': [100, 300, 500, 800],               'default': 100},
+    'max_depth':          {'optuna': ('suggest_int', 4, 30),                                'gridsearch': [4, 6, 8, 12, 16, 20],              'default': 6},
+    'min_samples_split':  {'optuna': ('suggest_int', 2, 10),                                'gridsearch': [2, 4, 6, 8],                       'default': 2},
+    'min_samples_leaf':   {'optuna': ('suggest_int', 1, 4),                                 'gridsearch': [1, 2, 3],                          'default': 1}
+}
+
 start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = AlphaModel(live=live, model_name='lightgbm_trial_100', tuning='default', plot_loss=False, plot_hist=False, pred='sign', stock='permno', lookahead=1, trend=21, incr=True, opt='wfo',
-                   weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
+alpha = AlphaModel(live=live, model_name='randomforest_trial_4', tuning='default', shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1,
+                   trend=1, incr=False, opt='ewo', weight=False, outlier=False, early=False, pretrain_len=0, train_len=504, valid_len=21, test_len=21, **randomforest_params)
 
 # alpha = AlphaModel(model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=False, opt='ewo',
 #                    weight=False, outlier=False, early=True, pretrain_len=0, train_len=1260, valid_len=252, test_len=21, **catboost_params)
@@ -84,13 +92,13 @@ vol_comp = PrepFactor(live=live, factor_name='factor_vol_comp', group='permno', 
 alpha.add_factor(vol_comp)
 del vol_comp
 
-# sign_volume = PrepFactor(live_trade=live_trade, factor_name='factor_sign_volume', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(sign_volume, categorical=True)
-# del sign_volume
+sign_volume = PrepFactor(live=live, factor_name='factor_sign_volume', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(sign_volume, categorical=True)
+del sign_volume
 
-# sign_volatility = PrepFactor(live_trade=live_trade, factor_name='factor_sign_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(sign_volatility, categorical=True)
-# del sign_volatility
+sign_volatility = PrepFactor(live=live, factor_name='factor_sign_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(sign_volatility, categorical=True)
+del sign_volatility
 
 # fund_raw = PrepFactor(live_trade=live_trade, factor_name='factor_fund_raw', group='permno', interval='D', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(fund_raw)
@@ -110,9 +118,9 @@ load_volume = PrepFactor(live=live, factor_name='factor_load_volume', group='per
 alpha.add_factor(load_volume)
 del load_volume
 
-# load_volatility = PrepFactor(live_trade=live_trade, factor_name='factor_load_volatility', group='permno', interval='D', kind='loading', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(load_volatility)
-# del load_volatility
+load_volatility = PrepFactor(live=live, factor_name='factor_load_volatility', group='permno', interval='D', kind='loading', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(load_volatility)
+del load_volatility
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------CONDITION-----------------------------------------------------------------------------------------
@@ -120,15 +128,15 @@ cond_ret = PrepFactor(live=live, factor_name='factor_cond_ret', group='permno', 
 alpha.add_factor(cond_ret, categorical=True)
 del cond_ret
 
-# cond_ind_mom = PrepFactor(live_trade=live_trade, factor_name='factor_cond_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
+# cond_ind_mom = PrepFactor(live=live, factor_name='factor_cond_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(cond_ind_mom, categorical=True)
 # del cond_ind_mom
 #
-# cond_ind_mom_fama = PrepFactor(live_trade=live_trade, factor_name='factor_cond_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
+# cond_ind_mom_fama = PrepFactor(live=live, factor_name='factor_cond_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(cond_ind_mom_fama, categorical=True)
 # del cond_ind_mom_fama
 #
-# cond_ind_mom_sub = PrepFactor(live_trade=live_trade, factor_name='factor_cond_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
+# cond_ind_mom_sub = PrepFactor(live=live, factor_name='factor_cond_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(cond_ind_mom_sub, categorical=True)
 # del cond_ind_mom_sub
 
@@ -162,17 +170,17 @@ ind_mom_sub = PrepFactor(live=live, factor_name='factor_ind_mom_sub', group='per
 alpha.add_factor(ind_mom_sub)
 del ind_mom_sub
 
-# ind_vwr = PrepFactor(live_trade=live_trade, factor_name='factor_ind_vwr', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(ind_vwr)
-# del ind_vwr
+ind_vwr = PrepFactor(live=live, factor_name='factor_ind_vwr', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(ind_vwr)
+del ind_vwr
 
-# ind_vwr_fama = PrepFactor(live_trade=live_trade, factor_name='factor_ind_vwr_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(ind_vwr_fama)
-# del ind_vwr_fama
+ind_vwr_fama = PrepFactor(live=live, factor_name='factor_ind_vwr_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(ind_vwr_fama)
+del ind_vwr_fama
 
-# ind_vwr_sub = PrepFactor(live_trade=live_trade, factor_name='factor_ind_vwr_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(ind_vwr_sub)
-# del ind_vwr_sub
+ind_vwr_sub = PrepFactor(live=live, factor_name='factor_ind_vwr_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(ind_vwr_sub)
+del ind_vwr_sub
 
 # ind_mom_comp = PrepFactor(live_trade=live_trade, factor_name='factor_ind_mom_comp', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(ind_mom_comp)
@@ -292,9 +300,9 @@ earning_streak = PrepFactor(live=live, factor_name='factor_earning_streak', grou
 alpha.add_factor(earning_streak)
 del earning_streak
 
-# ms = PrepFactor(live_trade=live_trade, factor_name='factor_ms', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(ms, categorical=True)
-# del ms
+ms = PrepFactor(live=live, factor_name='factor_ms', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(ms, categorical=True)
+del ms
 
 dividend = PrepFactor(live=live, factor_name='factor_dividend', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(dividend, categorical=True)
@@ -308,31 +316,31 @@ grcapx = PrepFactor(live=live, factor_name='factor_grcapx', group='permno', inte
 alpha.add_factor(grcapx)
 del grcapx
 
-# gradexp = PrepFactor(live_trade=live_trade, factor_name='factor_gradexp', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(gradexp)
-# del gradexp
+gradexp = PrepFactor(live=live, factor_name='factor_gradexp', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(gradexp)
+del gradexp
 
 ret_skew = PrepFactor(live=live, factor_name='factor_ret_skew', group='permno', interval='D', kind='skew', stock=stock, div=False, start=start, end=end, save=save).prep()
 alpha.add_factor(ret_skew)
 del ret_skew
 
-# size = PrepFactor(live_trade=live_trade, factor_name='factor_size', group='permno', interval='D', kind='size', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(size)
-# del size
+size = PrepFactor(live=live, factor_name='factor_size', group='permno', interval='D', kind='size', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(size)
+del size
 
-# ret_max = PrepFactor(live_trade=live_trade, factor_name='factor_ret_max', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(ret_max)
-# del ret_max
+ret_max = PrepFactor(live=live, factor_name='factor_ret_max', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(ret_max)
+del ret_max
 
-# mom_season9 = PrepFactor(live_trade=live_trade, factor_name='factor_mom_season9', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+# mom_season9 = PrepFactor(live=live, factor_name='factor_mom_season9', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(mom_season9)
 # del mom_season9
 #
-# mom_season21 = PrepFactor(live_trade=live_trade, factor_name='factor_mom_season21', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+# mom_season21 = PrepFactor(live=live, factor_name='factor_mom_season21', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(mom_season21)
 # del mom_season21
 
-# mom_season_shorter = PrepFactor(live_trade=live_trade, factor_name='factor_mom_season_shorter', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+# mom_season_shorter = PrepFactor(live=live, factor_name='factor_mom_season_shorter', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(mom_season_shorter)
 # del mom_season_shorter
 
@@ -340,13 +348,13 @@ del ret_skew
 # alpha.add_factor(earning_disparity)
 # del earning_disparity
 
-# mom_off_season6 = PrepFactor(live_trade=live_trade, factor_name='factor_mom_off_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(mom_off_season6)
-# del mom_off_season6
-#
-# mom_off_season11 = PrepFactor(live_trade=live_trade, factor_name='factor_mom_off_season11', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(mom_off_season11)
-# del mom_off_season11
+mom_off_season6 = PrepFactor(live=live, factor_name='factor_mom_off_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(mom_off_season6)
+del mom_off_season6
+
+mom_off_season11 = PrepFactor(live=live, factor_name='factor_mom_off_season11', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(mom_off_season11)
+del mom_off_season11
 #
 # resid_mom = PrepFactor(live_trade=live_trade, factor_name='factor_resid_mom', group='permno', interval='D', kind='trend', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(resid_mom)
@@ -382,9 +390,9 @@ sb_sector = PrepFactor(live=live, factor_name='factor_sb_sector', group='permno'
 alpha.add_factor(sb_sector)
 del sb_sector
 
-# sb_inverse = PrepFactor(live_trade=live_trade, factor_name='factor_sb_inverse', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(sb_inverse)
-# del sb_inverse
+sb_inverse = PrepFactor(live=live, factor_name='factor_sb_inverse', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(sb_inverse)
+del sb_inverse
 
 # sb_oil = PrepFactor(live_trade=live_trade, factor_name='factor_sb_oil', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(sb_oil)
@@ -534,17 +542,17 @@ del clust_ind_mom_sub
 # alpha.add_factor(clust_ret_comp, categorical=True)
 # del clust_ret_comp
 
-# clust_load_volume = PrepFactor(live_trade=live_trade, factor_name='factor_clust_load_volume', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(clust_load_volume, categorical=True)
-# del clust_load_volume
+clust_load_volume = PrepFactor(live=live, factor_name='factor_clust_load_volume', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(clust_load_volume, categorical=True)
+del clust_load_volume
 
-# clust_volatility = PrepFactor(live_trade=live_trade, factor_name='factor_clust_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(clust_volatility, categorical=True)
-# del clust_volatility
+clust_volatility = PrepFactor(live=live, factor_name='factor_clust_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(clust_volatility, categorical=True)
+del clust_volatility
 
-# clust_volume = PrepFactor(live_trade=live_trade, factor_name='factor_clust_volume', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-# alpha.add_factor(clust_volume, categorical=True)
-# del clust_volume
+clust_volume = PrepFactor(live=live, factor_name='factor_clust_volume', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(clust_volume, categorical=True)
+del clust_volume
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------TRAINING------------------------------------------------------------------------------------------
@@ -559,6 +567,8 @@ if 'lightgbm' in alpha.model_name:
     alpha.lightgbm()
 elif 'catboost' in alpha.model_name:
     alpha.catboost()
+if 'randomforest' in alpha.model_name:
+    alpha.randomforest()
 
 
 
