@@ -67,7 +67,7 @@ class LiveData:
 
 
     # Create CRSP Price
-    def create_crsp_price(self, threshold):
+    def create_crsp_price(self, threshold, set_length):
         print("-" * 60)
         # Read in CRSP dataset
         print('Read in CRSP dataset')
@@ -107,8 +107,8 @@ class LiveData:
         crsp = crsp[crsp['Close'] >= 0]
 
         # Remove stocks that do not have at least 3 years worth of year data
-        print('Set length to 3 years...')
-        crsp = set_length(crsp, 3)
+        print(f'Set length to {set_length} years...')
+        crsp = set_length(crsp, set_length)
 
         # Drop permno that do not have over _B market cap
         print(f"Drop permnos that do not have over {threshold}B market cap...")

@@ -45,12 +45,12 @@ class LivePred:
                 continue
         return pd.concat(data, axis=0).reset_index(drop=True)
 
-    # Calculates the product of the daily_ic_mean and maximum overall IC in each result to find the best performing model
+    # Get the maximum overall daily_metric in each result to find the best performing model
     @staticmethod
     def get_max_metric(data):
         collection = {}
         for index, row in data.iterrows():
-            collection[max(row.loc[(row.index.str.startswith("dIC"))])] = index
+            collection[max(row.loc[(row.index.str.startswith("daily_metric"))])] = index
         max_ic_idx = collection[max(list(collection.keys()))]
         return data.iloc[max_ic_idx]
 
@@ -82,39 +82,22 @@ class LivePred:
         weight = self.leverage / len(returns.columns)
         return np.full(len(returns.columns), weight)
 
-    def exec_port_opt(self, data, option):
+    def exec_port_opt(self, data):
         if self.port_opt == 'equal_weight':
-            if option == 'long':
-                # Get long returns
-                long_returns = pd.DataFrame(data['longRet'].tolist())
-                long_weights = self.ewp(long_returns)
+            # Get long returns
+            long_returns = pd.DataFrame(data['longRet'].tolist())
+            long_weights = self.ewp(long_returns)
+            long_weights = np.tile(long_weights, (len(long_returns), 1))
 
-                # Calculate equal-weights and sum up to get total strategy return
-                long_weights = np.tile(long_weights, (len(long_returns), 1))
-                total_ret = np.sum(long_returns.values * long_weights, axis=1)
-            elif option == 'short':
-                # Get short returns
-                short_returns = -1 * pd.DataFrame(data['shortRet'].tolist())
-                short_weights = self.ewp(short_returns)
+            # Get short returns
+            short_returns = -1 * pd.DataFrame(data['shortRet'].tolist())
+            short_weights = self.ewp(short_returns)
+            short_weights = np.tile(short_weights, (len(short_returns), 1))
 
-                # Calculate equal-weights and sum up to get total strategy return
-                short_weights = np.tile(short_weights, (len(short_returns), 1))
-                total_ret = np.sum(short_returns.values * short_weights, axis=1)
-            elif option == 'both':
-                # Get long returns
-                long_returns = pd.DataFrame(data['longRet'].tolist())
-                long_weights = self.ewp(long_returns)
-                long_weights = np.tile(long_weights, (len(long_returns), 1))
-
-                # Get short returns
-                short_returns = -1 * pd.DataFrame(data['shortRet'].tolist())
-                short_weights = self.ewp(short_returns)
-                short_weights = np.tile(short_weights, (len(short_returns), 1))
-
-                # Calculate equal-weights and sum up to get total strategy return
-                total_ret = np.sum(long_returns.values * long_weights, axis=1) + np.sum(short_returns.values * short_weights, axis=1)
+            # Calculate equal-weights and sum up to get total strategy return
+            total_ret = np.sum(long_returns.values * long_weights, axis=1) + np.sum(short_returns.values * short_weights, axis=1)
             data['totalRet'] = total_ret
-            return data
+        return data, long_weights, short_weights
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -----------------------------------------------------------------PROCESSING PERIODS (BACKTEST)---------------------------------------------------------------------------------
@@ -196,7 +179,7 @@ class LivePred:
         return period_returns
 
     def price(self, best_model_params, dir_path, iteration, plot):
-        # Gets the predictions of the highest overall IC in the boosted round cases
+        # Gets the predictions of the highest overall daily_metric in the boosted round cases
         if iteration == False:
             best_prediction = best_model_params['predictions'][
                 [str(extract_number(best_model_params['metrics'].loc[:, best_model_params['metrics'].columns.str.startswith("daily_metric")].idxmax(axis=1)[0])), 'i']]
@@ -401,9 +384,9 @@ class LivePred:
                 text_content += border_line
         return text_content
 
-    # Gets the best model predictions (determined from IC) used for SHARPE calculation
+    # Gets the best model predictions (determined from daily_metric) used for SHARPE calculation
     def sharpe_ret(self, best_model_params, iteration):
-        # Gets the predictions of the highest overall IC in the boosted round cases
+        # Gets the predictions of the highest overall daily_metric in the boosted round cases
         if iteration == False:
             best_prediction = best_model_params['predictions'][
                 [str(extract_number(best_model_params['metrics'].loc[:, best_model_params['metrics'].columns.str.startswith("daily_metric")].idxmax(axis=1)[0])), 'i']]

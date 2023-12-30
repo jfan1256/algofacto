@@ -314,18 +314,18 @@ class AlphaModel:
             def plot_beeswarm_gbm(sv, explainer, X, key, i):
                 if self.pred == 'price':
                     shap.plots.beeswarm(sv, max_display=80, show=False)
-                    plt.savefig(str(get_result(self.live) / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                    plt.savefig(str(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
                     plt.close()
                 elif self.pred == 'sign':
                     values = explainer.shap_values(X)
                     shap.summary_plot(values, feature_names=X.columns.tolist(), max_display=80, show=False)
-                    plt.savefig(str(get_result(self.live) / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                    plt.savefig(str(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
                     plt.close()
 
             # Save waterfall SHAP plot
             def plot_waterfall_gbm(sv, key, i):
                 shap.plots.waterfall(sv[0], max_display=80, show=False)
-                plt.savefig(str(get_result(self.live) / f'{self.model_name}' / f'params_{key}' / f'waterfall_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                plt.savefig(str(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}' / f'waterfall_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
                 plt.close()
 
             # Save lightgbm gain importance
@@ -550,7 +550,7 @@ class AlphaModel:
                     #Plot training loss and validation loss and track training time
                     eval_results = plot_avg_loss(log_loss)
                     lgb.plot_metric(eval_results)
-                    plt.savefig(str(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / f'loss.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                    plt.savefig(str(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / f'loss.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
                     plt.close()
 
                 # Create the dataset that assigns the number of trees used for prediction to its respective prediction
@@ -578,13 +578,13 @@ class AlphaModel:
                     metrics = metrics.to_frame().T
                     msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {ic_by_day.mean().max(): 6.2%}'
                     ic_by_day.columns = ic_by_day.columns.map(str)
-                    ic_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
+                    ic_by_day.assign(**params).to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
                 elif self.pred == 'sign':
                     metrics = pd.Series(list(param_val_train) + [t] + daily_as_mean, index=metric_cols)
                     metrics = metrics.to_frame().T
                     msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {as_by_day.mean().max(): 6.2%}'
                     as_by_day.columns = as_by_day.columns.map(str)
-                    as_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
+                    as_by_day.assign(**params).to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
 
                 # Print params
                 for metric_name in param_name_train:
@@ -593,11 +593,11 @@ class AlphaModel:
                 print("-" * 60)
 
                 # Export actual returns, metrics, gain, split, and predictions
-                self.actual_return.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'returns.parquet.brotli', compression='brotli')
-                metrics.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'metrics.parquet.brotli', compression='brotli')
-                gain.T.describe().T.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'gain.parquet.brotli', compression='brotli')
-                split.T.describe().T.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'split.parquet.brotli', compression='brotli')
-                all_pred_ret.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'predictions.parquet.brotli', compression='brotli')
+                self.actual_return.to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'returns.parquet.brotli', compression='brotli')
+                metrics.to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'metrics.parquet.brotli', compression='brotli')
+                gain.T.describe().T.assign(**params).to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'gain.parquet.brotli', compression='brotli')
+                split.T.describe().T.assign(**params).to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'split.parquet.brotli', compression='brotli')
+                all_pred_ret.to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'predictions.parquet.brotli', compression='brotli')
 
                 # If optuna is true, optimize for dailyIC mean
                 if self.tuning[0] == 'optuna':
@@ -709,7 +709,7 @@ class AlphaModel:
                 key = '_'.join([str(float(p)) for p in param_vals])
                 print(f'Key: {key}')
                 # Create the directory
-                os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                 # Train model and return the optimization metric for optuna
                 return train_model(key, param_names, param_vals)
             elif self.tuning[0] == 'gridsearch':
@@ -725,7 +725,7 @@ class AlphaModel:
                     key = '_'.join([str(float(p)) for p in param_vals])
                     print(f'Key: {key}')
                     # Create the directory
-                    os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                    os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                     # Train model
                     train_model(key, param_names, param_vals)
             elif self.tuning == 'default':
@@ -734,7 +734,7 @@ class AlphaModel:
                 key = '_'.join([str(float(p)) for p in param_vals])
                 print(f'Key: {key}')
                 # Create the directory
-                os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                 # Train model
                 train_model(key, param_names, param_vals)
             elif self.tuning == 'best':
@@ -745,7 +745,7 @@ class AlphaModel:
                     key = '_'.join([str(float(p)) for p in param_vals])
                     print(f'Key: {key}')
                     # Create the directory
-                    os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                    os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                     # Train model
                     train_model(key, param_names, param_vals)
 
@@ -756,8 +756,8 @@ class AlphaModel:
         print(f'Length: {len(self.categorical)}')
         if self.tuning[0] == 'optuna':
             # Create new directory/override directory named self.model_name
-            shutil.rmtree(get_result(self.live) / f'{self.model_name}', ignore_errors=True)
-            os.makedirs(get_result(self.live) / f'{self.model_name}')
+            shutil.rmtree(get_result(self.live, self.model_name) / f'{self.model_name}', ignore_errors=True)
+            os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}')
             # Create study that maximizes metric score
             study = optuna.create_study(direction="maximize")
             # Execute train
@@ -773,8 +773,8 @@ class AlphaModel:
             print("-" * 60)
         else:
             # Create new directory/override directory named self.model_name
-            shutil.rmtree(get_result(self.live) / f'{self.model_name}', ignore_errors=True)
-            os.makedirs(get_result(self.live) / f'{self.model_name}')
+            shutil.rmtree(get_result(self.live, self.model_name) / f'{self.model_name}', ignore_errors=True)
+            os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}')
             # Execute train
             model_training(None)
 
@@ -786,13 +786,13 @@ class AlphaModel:
             # Save beeswarm SHAP plot
             def plot_beeswarm_cb(sv, X, key, i):
                 shap.summary_plot(sv, X, max_display=80, show=False)
-                plt.savefig(str(get_result(self.live) / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                plt.savefig(str(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}' / f'beeswarm_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
                 plt.close()
 
             # Save waterfall SHAP plot
             def plot_waterfall_cb(sv, key, i):
                 shap.plots.waterfall(sv[0], max_display=80, show=False)
-                plt.savefig(str(get_result(self.live) / f'{self.model_name}' / f'params_{key}' / f'waterfall_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
+                plt.savefig(str(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}' / f'waterfall_{i}.png'), dpi=700, format="png", bbox_inches='tight', pad_inches=1)
                 plt.close()
 
             # Save catboost gain importance
@@ -946,13 +946,13 @@ class AlphaModel:
                     metrics = metrics.to_frame().T
                     msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {ic_by_day.mean().max(): 6.2%}'
                     ic_by_day.columns = ic_by_day.columns.map(str)
-                    ic_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
+                    ic_by_day.assign(**params).to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
                 elif self.pred == 'sign':
                     metrics = pd.Series(list(param_val_train) + [t] + daily_as_mean, index=metric_cols)
                     metrics = metrics.to_frame().T
                     msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {as_by_day.mean().max(): 6.2%}'
                     as_by_day.columns = as_by_day.columns.map(str)
-                    as_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
+                    as_by_day.assign(**params).to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
 
                 # Print params
                 for metric_name in param_name_train:
@@ -961,11 +961,11 @@ class AlphaModel:
                 print("-" * 60)
 
                 # Export actual returns, metrics, gain, split, and predictions
-                self.actual_return.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'returns.parquet.brotli', compression='brotli')
-                metrics.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'metrics.parquet.brotli', compression='brotli')
-                gain.T.describe().T.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'gain.parquet.brotli', compression='brotli')
-                split.T.describe().T.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'split.parquet.brotli', compression='brotli')
-                all_pred_ret.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'predictions.parquet.brotli', compression='brotli')
+                self.actual_return.to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'returns.parquet.brotli', compression='brotli')
+                metrics.to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'metrics.parquet.brotli', compression='brotli')
+                gain.T.describe().T.assign(**params).to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'gain.parquet.brotli', compression='brotli')
+                split.T.describe().T.assign(**params).to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'split.parquet.brotli', compression='brotli')
+                all_pred_ret.to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'predictions.parquet.brotli', compression='brotli')
 
                 # If optuna is true, optimize for dailyIC mean
                 if self.tuning[0] == 'optuna':
@@ -1019,7 +1019,7 @@ class AlphaModel:
                 key = '_'.join([str(float(p)) for p in param_vals])
                 print(f'Key: {key}')
                 # Create the directory
-                os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                 # Train model and return the optimization metric for optuna
                 return train_model(key, param_names, param_vals)
             elif self.tuning[0] == 'gridsearch':
@@ -1035,7 +1035,7 @@ class AlphaModel:
                     key = '_'.join([str(float(p)) for p in param_vals])
                     print(f'Key: {key}')
                     # Create the directory
-                    os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                    os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                     # Train model
                     train_model(key, param_names, param_vals)
             elif self.tuning == 'default':
@@ -1044,7 +1044,7 @@ class AlphaModel:
                 key = '_'.join([str(float(p)) for p in param_vals])
                 print(f'Key: {key}')
                 # Create the directory
-                os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                 # Train model
                 train_model(key, param_names, param_vals)
             elif self.tuning == 'best':
@@ -1055,7 +1055,7 @@ class AlphaModel:
                     key = '_'.join([str(float(p)) for p in param_vals])
                     print(f'Key: {key}')
                     # Create the directory
-                    os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                    os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                     # Train model
                     train_model(key, param_names, param_vals)
 
@@ -1068,8 +1068,8 @@ class AlphaModel:
         print(f'Length: {len(self.categorical)}')
         if self.tuning[0] == 'optuna':
             # Create new directory/override directory named self.model_name
-            shutil.rmtree(get_result(self.live) / f'{self.model_name}', ignore_errors=True)
-            os.makedirs(get_result(self.live) / f'{self.model_name}')
+            shutil.rmtree(get_result(self.live, self.model_name) / f'{self.model_name}', ignore_errors=True)
+            os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}')
             # Create study that maximizes metric score
             study = optuna.create_study(direction="maximize")
             # Execute train
@@ -1085,8 +1085,8 @@ class AlphaModel:
             print("-" * 60)
         else:
             # Create new directory/override directory named self.model_name
-            shutil.rmtree(get_result(self.live) / f'{self.model_name}', ignore_errors=True)
-            os.makedirs(get_result(self.live) / f'{self.model_name}')
+            shutil.rmtree(get_result(self.live, self.model_name) / f'{self.model_name}', ignore_errors=True)
+            os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}')
             # Execute train
             model_training(None)
 
@@ -1211,13 +1211,13 @@ class AlphaModel:
                     metrics = metrics.to_frame().T
                     msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {ic_by_day.mean().max(): 6.2%}'
                     ic_by_day.columns = ic_by_day.columns.map(str)
-                    ic_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
+                    ic_by_day.assign(**params).to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
                 elif self.pred == 'sign':
                     metrics = pd.Series(list(param_val_train) + [t] + daily_as_mean, index=metric_cols)
                     metrics = metrics.to_frame().T
                     msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {as_by_day.mean().max(): 6.2%}'
                     as_by_day.columns = as_by_day.columns.map(str)
-                    as_by_day.assign(**params).to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
+                    as_by_day.assign(**params).to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
 
                 # Print params
                 for metric_name in param_name_train:
@@ -1226,9 +1226,9 @@ class AlphaModel:
                 print("-" * 60)
 
                 # Export actual returns, metrics, gain, split, and predictions
-                self.actual_return.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'returns.parquet.brotli', compression='brotli')
-                metrics.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'metrics.parquet.brotli', compression='brotli')
-                all_pred_ret.to_parquet(get_result(self.live) / f'{self.model_name}' / f'params_{export_key}' / 'predictions.parquet.brotli', compression='brotli')
+                self.actual_return.to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'returns.parquet.brotli', compression='brotli')
+                metrics.to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'metrics.parquet.brotli', compression='brotli')
+                all_pred_ret.to_parquet(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'predictions.parquet.brotli', compression='brotli')
 
                 # If optuna is true, optimize for dailyIC mean
                 if self.tuning[0] == 'optuna':
@@ -1277,7 +1277,7 @@ class AlphaModel:
                 key = '_'.join([str(float(p)) for p in param_vals])
                 print(f'Key: {key}')
                 # Create the directory
-                os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                 # Train model and return the optimization metric for optuna
                 return train_model(key, param_names, param_vals)
             elif self.tuning[0] == 'gridsearch':
@@ -1293,7 +1293,7 @@ class AlphaModel:
                     key = '_'.join([str(float(p)) for p in param_vals])
                     print(f'Key: {key}')
                     # Create the directory
-                    os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                    os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                     # Train model
                     train_model(key, param_names, param_vals)
             elif self.tuning == 'default':
@@ -1302,7 +1302,7 @@ class AlphaModel:
                 key = '_'.join([str(float(p)) for p in param_vals])
                 print(f'Key: {key}')
                 # Create the directory
-                os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                 # Train model
                 train_model(key, param_names, param_vals)
             elif self.tuning == 'best':
@@ -1313,7 +1313,7 @@ class AlphaModel:
                     key = '_'.join([str(float(p)) for p in param_vals])
                     print(f'Key: {key}')
                     # Create the directory
-                    os.makedirs(get_result(self.live) / f'{self.model_name}' / f'params_{key}')
+                    os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                     # Train model
                     train_model(key, param_names, param_vals)
 
@@ -1328,8 +1328,8 @@ class AlphaModel:
         print(f'Length: {len(self.categorical)}')
         if self.tuning[0] == 'optuna':
             # Create new directory/override directory named self.model_name
-            shutil.rmtree(get_result(self.live) / f'{self.model_name}', ignore_errors=True)
-            os.makedirs(get_result(self.live) / f'{self.model_name}')
+            shutil.rmtree(get_result(self.live, self.model_name) / f'{self.model_name}', ignore_errors=True)
+            os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}')
             # Create study that maximizes metric score
             study = optuna.create_study(direction="maximize")
             # Execute train
@@ -1345,8 +1345,8 @@ class AlphaModel:
             print("-" * 60)
         else:
             # Create new directory/override directory named self.model_name
-            shutil.rmtree(get_result(self.live) / f'{self.model_name}', ignore_errors=True)
-            os.makedirs(get_result(self.live) / f'{self.model_name}')
+            shutil.rmtree(get_result(self.live, self.model_name) / f'{self.model_name}', ignore_errors=True)
+            os.makedirs(get_result(self.live, self.model_name) / f'{self.model_name}')
             # Execute train
             model_training(None)
             

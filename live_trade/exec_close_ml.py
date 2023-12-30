@@ -4,7 +4,7 @@ from functions.utils.func import *
 from ib_insync import *
 from live_trade.callback import OrderCounter
 
-def exec_ml_close(num_stocks):
+def exec_ml_ret_close():
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ------------------------------------------------------------------------------MARKET ORDER FUNCTIONS---------------------------------------------------------------------------
     # Create Market On Close Order
@@ -32,8 +32,8 @@ def exec_ml_close(num_stocks):
             return None
 
     # Retrieve stock list from stocks to trade live_trade
-    def strat_ml_stocks(target_date, num_stocks):
-        filename = Path(get_strategy_ml() / f'trade_stock_{num_stocks}.csv')
+    def strat_ml_stocks(target_date):
+        filename = Path(get_strategy_ml_ret() / f'trade_stock_ml_ret.csv')
 
         # Read the file
         df = pd.read_csv(filename)
@@ -57,7 +57,7 @@ def exec_ml_close(num_stocks):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------PARAMS-----------------------------------------------------------------------------------
     yesterday_date = (datetime.today() - pd.DateOffset(1)).strftime('%Y-%m-%d')
-    long, short = strat_ml_stocks(yesterday_date, num_stocks)
+    long, short = strat_ml_stocks(yesterday_date)
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -----------------------------------------------------------------------------------EXECUTE ML CLOSE----------------------------------------------------------------------------

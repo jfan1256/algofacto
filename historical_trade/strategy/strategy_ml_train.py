@@ -12,8 +12,8 @@ if live:
 else:
     stock = read_stock(get_large_dir(live) / 'permno_to_train_fund.csv')
 
-start = '2010-01-01'
-end = '2015-01-01'
+start = '2008-01-01'
+end = '2023-01-01'
 save = False
 
 lightgbm_params = {
@@ -38,7 +38,7 @@ catboost_params = {
 }
 
 randomforest_params = {
-    'n_estimators':       {'optuna': ('suggest_int', 100, 1000),                            'gridsearch': [100, 300, 500, 800],               'default': 100},
+    'n_estimators':       {'optuna': ('suggest_int', 100, 1000),                            'gridsearch': [100, 300, 500, 800],               'default': 50},
     'max_depth':          {'optuna': ('suggest_int', 4, 30),                                'gridsearch': [4, 6, 8, 12, 16, 20],              'default': 6},
     'min_samples_split':  {'optuna': ('suggest_int', 2, 10),                                'gridsearch': [2, 4, 6, 8],                       'default': 2},
     'min_samples_leaf':   {'optuna': ('suggest_int', 1, 4),                                 'gridsearch': [1, 2, 3],                          'default': 1}
@@ -48,7 +48,7 @@ start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = AlphaModel(live=live, model_name='randomforest_trial_4', tuning='default', shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1,
+alpha = AlphaModel(live=live, model_name='randomforest_trial_8', tuning='default', shap=False, plot_loss=False, plot_hist=False, pred='sign', stock='permno', lookahead=1,
                    trend=1, incr=False, opt='ewo', weight=False, outlier=False, early=False, pretrain_len=0, train_len=504, valid_len=21, test_len=21, **randomforest_params)
 
 # alpha = AlphaModel(model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=False, opt='ewo',

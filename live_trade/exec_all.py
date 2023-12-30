@@ -1,18 +1,21 @@
 import schedule
-import time
 import datetime
 import asyncio
 
-from live_trade.strategy_ml.exec_ml_model import exec_ml_model
-from live_trade.strategy_ml.exec_ml_pred import exec_ml_pred
-from live_trade.strategy_ml.exec_ml_trade import exec_ml_trade
-from live_trade.strategy_ml.exec_ml_close import exec_ml_close
-from live_trade.strategy_port_ims.exec_port_ims import exec_port_ims_data, exec_port_ims_trade
+from functions.utils.func import *
+
+from live_trade.live_retrieve import LiveRetrieve
+
+from live_trade.strategy_ml_trend.strategy_ml_trend import StrategyMLTrend
+from live_trade.strategy_ml_ret.strategy_ml_ret import StrategyMLRet
+
+from live_trade.exec_trade_ml import exec_ml_ret_trade
+from live_trade.exec_close_ml import exec_ml_ret_close
+from live_trade.exec_close_ims import exec_port_ims_data, exec_port_ims_trade
 from live_trade.strategy_port_ims.exec_port_ims_close import exec_port_ims_close
 from live_trade.strategy_mrev_etf.exec_mrev_etf import exec_mrev_etf_trade, exec_mrev_etf_data
-from live_trade.strategy_mrev_etf.exec_mrev_etf_close import exec_mrev_etf_close
-from live_trade.exec_factor import exec_factor
-from live_trade.exec_data import exec_data
+from live_trade.exec_close_mrev import exec_mrev_etf_close
+
 
 # Check if current time is within the provided range
 def within_time_range(start, end):
@@ -21,28 +24,39 @@ def within_time_range(start, end):
 
 # Job to execute train
 def daily_train():
-    if within_time_range(datetime.time(0, 1), datetime.time(2, 0)):
-        print("---------------------------------------------------------------------------------RUN---------------------------------------------------------------------------------------")
-        print("Running daily training at: ", datetime.datetime.now())
-        # Get Live Data (Large Datasets)
-        exec_data(threshold=6_000_000_000, update_price=False, start_data='2004-01-01')
-        # Get Factor Data
-        exec_factor(start_factor='2004-01-01')
-        # Get data for Invport Strategy
-        exec_port_ims_data(window=3, scale=10, start_date='2005-01-01')
-        # Get data for Mrev ETF Strategy
-        exec_mrev_etf_data(window=168, threshold=2_000_000_000)
-        # Get, train, predict ML Strategy
-        exec_ml_model(start_model='2008-01-01', tune=['optuna', 30], save_prep=True)
-        exec_ml_pred(threshold=2_000_000_000, num_stocks=50, leverage=0.5, port_opt='equal_weight', use_model=6)
+    current_date = date.today().strftime('%Y-%m-%d')
+
+    live_retrieve = LiveRetrieve(current_date=current_date, threshold=6_000_000_000, set_length=3,
+                                 update_crsp_price=False, start_data='2004-01-01', start_factor='2004-01-01')
+
+    strat_ml_ret = StrategyMLRet(allocate=0.5, current_date=current_date, start_model='2008-01-01',
+                                   threshold=2_000_000_000, num_stocks=50, leverage=0.5, port_opt='equal_weight', use_top=6)
+
+    start_ml_trend = StrategyMLTrend(allocate=0.5, current_date=current_date, start_model='2008-01-01',
+                                     threshold=2_000_000_000, num_stocks=50, leverage=0.5, port_opt='equal_weight', use_top=1)
+
+    print("Running daily training at: ", datetime.datetime.now())
+    # Retrieve live data and create factor data
+    live_retrieve.exec_data()
+    live_retrieve.exec_factor()
+    # Get data for Invport Strategy
+    exec_port_ims_data(window=3, scale=10, start_date='2005-01-01')
+    # Get data for Mrev ETF Strategy
+    exec_mrev_etf_data(window=168, threshold=2_000_000_000)
+    # Execute model training and predicting for StrategyMLRet
+    strat_ml_ret.exec_ml_ret_model()
+    strat_ml_ret.exec_ml_ret_pred()
+    # Execute model training and predicting for StrategyMLTrend
+    start_ml_trend.exec_ml_trend_model()
+    start_ml_trend.exec_ml_trend_model()
 
 # Job to execute trade
 def daily_trade():
     print("---------------------------------------------------------------------------------RUN---------------------------------------------------------------------------------------")
     print("Running daily trade at: ", datetime.datetime.now())
     # Execute trades for ML Strategy
-    exec_mrev_etf_close()
-    asyncio.run(exec_ml_trade(num_stocks=50, settlement=3, capital=0.25))
+    exec_ml_ret_close()
+    asyncio.run(exec_ml_ret_trade(num_stocks=50, settlement=3, capital=0.25))
     # Execute trades for Invport Strategy
     exec_port_ims_close()
     exec_port_ims_trade(scale=10, window=3, settlement=3, capital=0.50)

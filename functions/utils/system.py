@@ -36,23 +36,30 @@ def get_large_dir(live) -> Path:
         return get_root_dir() / 'historical_trade' / 'large'
 
 
-def get_result(live) -> Path:
-    if live:
-        return get_root_dir() / 'live_trade' / 'strategy_ml' / 'result'
+def get_result(live, model_name) -> Path:
+    if live and 'lightgbm' in model_name:
+        return get_root_dir() / 'live_trade' / 'strategy_ml_ret' / 'result'
+    elif live and 'randomforest' in model_name:
+        return get_root_dir() / 'live_trade' / 'strategy_ml_trend' / 'result'
     else:
         return get_root_dir() / 'historical_trade' / 'result'
 
-def get_report(live) -> Path:
-    if live:
-        return get_root_dir() / 'live_trade' / 'strategy_ml' / 'report'
+def get_report(live, model_name) -> Path:
+    if live and 'lightgbm' in model_name:
+        return get_root_dir() / 'live_trade' / 'strategy_ml_ret' / 'report'
+    elif live and 'randomforest' in model_name:
+        return get_root_dir() / 'live_trade' / 'strategy_ml_trend' / 'report'
     else:
         return get_root_dir() / 'historical_trade' / 'report'
 
 def get_result_model(live, model):
-    return get_result(live) / f'{model}'
+    return get_result(live, model) / f'{model}'
 
-def get_strategy_ml():
-    return get_root_dir() / 'live_trade' / 'strategy_ml'
+def get_live_stock():
+    return get_root_dir() / 'live_trade' / 'stock'
+
+def get_strategy_ml_ret():
+    return get_root_dir() / 'live_trade' / 'strategy_ml_ret'
 
 def get_strategy_mrev_etf():
     return get_root_dir() / 'live_trade' / 'strategy_mrev_etf'
@@ -66,10 +73,8 @@ def get_strategy_port_ims():
 def get_strategy_port_ims_data():
     return get_root_dir() / 'live_trade' / 'strategy_port_ims' / 'data'
 
-
 def print_data_shape(self, *args, **kwargs):
     print('Shape: ' + str(self.data.shape))
-
 
 def show_processing_animation(animation: any, message_func=None, post_func=None):
     def decorator(func):
