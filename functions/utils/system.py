@@ -38,17 +38,17 @@ def get_large_dir(live) -> Path:
 
 def get_result(live, model_name) -> Path:
     if live and 'lightgbm' in model_name:
-        return get_root_dir() / 'live_trade' / 'strategy_ml_ret' / 'result'
+        return get_root_dir() / 'live_trade' / 'strat_ml_ret' / 'result'
     elif live and 'randomforest' in model_name:
-        return get_root_dir() / 'live_trade' / 'strategy_ml_trend' / 'result'
+        return get_root_dir() / 'live_trade' / 'strat_ml_trend' / 'result'
     else:
         return get_root_dir() / 'historical_trade' / 'result'
 
 def get_report(live, model_name) -> Path:
     if live and 'lightgbm' in model_name:
-        return get_root_dir() / 'live_trade' / 'strategy_ml_ret' / 'report'
+        return get_root_dir() / 'live_trade' / 'strat_ml_ret' / 'report'
     elif live and 'randomforest' in model_name:
-        return get_root_dir() / 'live_trade' / 'strategy_ml_trend' / 'report'
+        return get_root_dir() / 'live_trade' / 'strat_ml_trend' / 'report'
     else:
         return get_root_dir() / 'historical_trade' / 'report'
 
@@ -58,20 +58,20 @@ def get_result_model(live, model):
 def get_live_stock():
     return get_root_dir() / 'live_trade' / 'stock'
 
-def get_strategy_ml_ret():
-    return get_root_dir() / 'live_trade' / 'strategy_ml_ret'
+def get_strat_ml_ret():
+    return get_root_dir() / 'live_trade' / 'strat_ml_ret'
 
-def get_strategy_mrev_etf():
-    return get_root_dir() / 'live_trade' / 'strategy_mrev_etf'
+def get_strat_mrev_etf():
+    return get_root_dir() / 'live_trade' / 'strat_mrev_etf'
 
-def get_strategy_mrev_etf_data():
-    return get_root_dir() / 'live_trade' / 'strategy_mrev_etf' / 'data'
+def get_strat_mrev_etf_data():
+    return get_root_dir() / 'live_trade' / 'strat_mrev_etf' / 'data'
 
-def get_strategy_port_ims():
-    return get_root_dir() / 'live_trade' / 'strategy_port_ims'
+def get_strat_port_ims():
+    return get_root_dir() / 'live_trade' / 'strat_port_ims'
 
-def get_strategy_port_ims_data():
-    return get_root_dir() / 'live_trade' / 'strategy_port_ims' / 'data'
+def get_strat_port_ims_data():
+    return get_root_dir() / 'live_trade' / 'strat_port_ims' / 'data'
 
 def print_data_shape(self, *args, **kwargs):
     print('Shape: ' + str(self.data.shape))

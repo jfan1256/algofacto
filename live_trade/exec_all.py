@@ -6,14 +6,14 @@ from functions.utils.func import *
 
 from live_trade.live_retrieve import LiveRetrieve
 
-from live_trade.strategy_ml_trend.strategy_ml_trend import StrategyMLTrend
-from live_trade.strategy_ml_ret.strategy_ml_ret import StrategyMLRet
+from live_trade.strat_ml_trend.strat_ml_trend import StrategyMLTrend
+from live_trade.strat_ml_ret.strat_ml_ret import StrategyMLRet
 
 from live_trade.exec_trade_ml import exec_ml_ret_trade
 from live_trade.exec_close_ml import exec_ml_ret_close
-from live_trade.exec_close_ims import exec_port_ims_data, exec_port_ims_trade
-from live_trade.strategy_port_ims.exec_port_ims_close import exec_port_ims_close
-from live_trade.strategy_mrev_etf.exec_mrev_etf import exec_mrev_etf_trade, exec_mrev_etf_data
+from live_trade.strat_port_ims.exec_port_ims import exec_port_ims_data, exec_port_ims_trade
+from live_trade.exec_close_ims import exec_port_ims_close
+from live_trade.strat_mrev_etf.exec_mrev_etf import exec_mrev_etf_trade, exec_mrev_etf_data
 from live_trade.exec_close_mrev import exec_mrev_etf_close
 
 
