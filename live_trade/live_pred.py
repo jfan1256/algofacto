@@ -33,7 +33,7 @@ class LivePred:
     # Reads in all the results in the "modelName" folder
     def read_result(self, result_name):
         data = []
-        result_data_dir = get_result_model(self.live, self.model_name)
+        result_data_dir = get_ml_result_model(self.live, self.model_name)
         for i, folder_name in enumerate(os.listdir(result_data_dir)):
             try:
                 if folder_name.startswith("params"):
@@ -62,7 +62,7 @@ class LivePred:
         key = [f'{float(p)}' for p in (param_vals)]
         key = '_'.join(key)
 
-        result_data_dir = get_result_model(self.live, self.model_name) / f'params_{key}'
+        result_data_dir = get_ml_result_model(self.live, self.model_name) / f'params_{key}'
         for file in os.listdir(result_data_dir):
             if file.endswith(".parquet.brotli"):
                 files[extract_first_string(file)] = pd.read_parquet(os.path.join(result_data_dir, file))

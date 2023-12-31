@@ -330,7 +330,7 @@ def exec_mrev_etf_data(window, threshold):
     beta_data_past['s_score'] = (beta_data_past[f'epsil_sector_01_{window:02}'] - rolling_mean) / rolling_std
 
     # Export data
-    beta_data_past.to_parquet(get_strat_mrev_etf_data() / 'data_beta_etf.parquet.brotli', compression='brotli')
+    beta_data_past.to_parquet(get_strat_mrev_etf() / 'data' / 'data_beta_etf.parquet.brotli', compression='brotli')
 
     # Convert ETF Dataframe to multi-index
     stock = read_stock(get_large_dir(live) / 'permno_live.csv')
@@ -362,9 +362,9 @@ def exec_mrev_etf_data(window, threshold):
     qs.reports.html(ewp_ret, spy, output=get_strat_mrev_etf() / 'report' / f'mrev_etf_{format_date}.html')
 
     # Export data
-    result_past_copy[['signal', 'position', 'market_cap']].to_parquet(get_strat_mrev_etf_data() / 'data_signal_etf.parquet.brotli', compression='brotli')
-    stock_weight.to_parquet(get_strat_mrev_etf_data() / 'data_stock_etf.parquet.brotli', compression='brotli')
-    beta_weight.to_parquet(get_strat_mrev_etf_data() / 'data_hedge_etf.parquet.brotli', compression='brotli')
+    result_past_copy[['signal', 'position', 'market_cap']].to_parquet(get_strat_mrev_etf() / 'data' / 'data_signal_etf.parquet.brotli', compression='brotli')
+    stock_weight.to_parquet(get_strat_mrev_etf() / 'data' / 'data_stock_etf.parquet.brotli', compression='brotli')
+    beta_weight.to_parquet(get_strat_mrev_etf() / 'data' / 'data_hedge_etf.parquet.brotli', compression='brotli')
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------EXECUTE GET LIVE WEIGHTS------------------------------------------------------------------------
@@ -468,7 +468,7 @@ def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, thre
     beta_data_live = beta_data_live[beta_data_live.columns[1:14]]
 
     # Combine live_trade beta with historical_trade beta
-    beta_data_past = pd.read_parquet(get_strat_mrev_etf_data() / 'data_beta_etf.parquet.brotli')
+    beta_data_past = pd.read_parquet(get_strat_mrev_etf() / 'data' / 'data_beta_etf.parquet.brotli')
     beta_data_live = pd.concat([beta_data_past, beta_data_live], axis=0).sort_index(level=['permno', 'date'])
     beta_data_live = beta_data_live.fillna(0)
 
@@ -483,7 +483,7 @@ def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, thre
     # Merge the necessary columns together into one dataframe
     combined_live = beta_data_live.merge(sector_multi_live, left_index=True, right_index=True, how='left')
     combined_live = combined_live.merge(live_data[['RET_01']], left_index=True, right_index=True, how='left')
-    signal_past = pd.read_parquet(get_strat_mrev_etf_data() / 'data_signal_etf.parquet.brotli')
+    signal_past = pd.read_parquet(get_strat_mrev_etf() / 'data' / 'data_signal_etf.parquet.brotli')
     combined_live = combined_live.merge(signal_past[['signal', 'position']], left_index=True, right_index=True, how='left')
     combined_live = combined_live.fillna(0)
 

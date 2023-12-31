@@ -2,9 +2,11 @@ import schedule
 import datetime
 import asyncio
 
+from ib_insync import *
 from functions.utils.func import *
 
-from live_trade.live_retrieve import LiveRetrieve
+from live_trade.live_create import LiveCreate
+from live_trade.live_price import LivePrice
 
 from live_trade.strat_ml_trend.strat_ml_trend import StrategyMLTrend
 from live_trade.strat_ml_ret.strat_ml_ret import StrategyMLRet
@@ -26,8 +28,8 @@ def within_time_range(start, end):
 def daily_train():
     current_date = date.today().strftime('%Y-%m-%d')
 
-    live_retrieve = LiveRetrieve(current_date=current_date, threshold=6_000_000_000, set_length=3,
-                                 update_crsp_price=False, start_data='2004-01-01', start_factor='2004-01-01')
+    live_retrieve = LiveCreate(current_date=current_date, threshold=6_000_000_000, set_length=3,
+                               update_crsp_price=False, start_data='2004-01-01', start_factor='2004-01-01')
 
     strat_ml_ret = StrategyMLRet(allocate=0.5, current_date=current_date, start_model='2008-01-01',
                                    threshold=2_000_000_000, num_stocks=50, leverage=0.5, port_opt='equal_weight', use_top=6)
@@ -52,8 +54,20 @@ def daily_train():
 
 # Job to execute trade
 def daily_trade():
-    print("---------------------------------------------------------------------------------RUN---------------------------------------------------------------------------------------")
     print("Running daily trade at: ", datetime.datetime.now())
+    current_date = date.today().strftime('%Y-%m-%d')
+
+    # Connect to IB
+    print("Attempting to connect to IBKR TWS Workstation...")
+    ibkr_server = IB()
+    ibkr_server.connect(host='127.0.0.1', port=7497, clientId=1512)
+    print("Connected to IBKR TWS Workstation.")
+
+    # Retrieve live close prices
+    loop = asyncio.get_event_loop()
+    live_price = LivePrice(ibkr_server=ibkr_server, current_date=current_date)
+    loop.run_until_complete(live_price.exec_live_price())
+
     # Execute trades for ML Strategy
     exec_ml_ret_close()
     asyncio.run(exec_ml_ret_trade(num_stocks=50, settlement=3, capital=0.25))

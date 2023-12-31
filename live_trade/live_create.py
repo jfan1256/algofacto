@@ -75,7 +75,7 @@ from factor_class.factor_clust_load_volume import FactorClustLoadVolume
 
 from live_trade.live_data import LiveData
 
-class LiveRetrieve:
+class LiveCreate:
     def __init__(self,
                  threshold,
                  set_length,
