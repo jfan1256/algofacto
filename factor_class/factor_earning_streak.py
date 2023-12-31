@@ -22,8 +22,8 @@ class FactorEarningStreak(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         # Read in actual summary and summary statistic files from WRDS
-        actual = pd.read_csv(get_large_dir(self.live) / 'summary_actual_adj_ibes.csv')
-        statistic = pd.read_csv(get_large_dir(self.live) / 'summary_statistic_adj_ibes.csv')
+        actual = pd.read_csv(get_large(self.live) / 'summary_actual_adj_ibes.csv')
+        statistic = pd.read_csv(get_large(self.live) / 'summary_statistic_adj_ibes.csv')
         actual.columns = actual.columns.str.lower()
         statistic.columns = statistic.columns.str.lower()
         actual = actual.set_index(['ticker', 'statpers'])
@@ -44,7 +44,7 @@ class FactorEarningStreak(Factor):
         # Convert to Positive Streak vs Negative Streak
         combined = combined[combined['streak'] == 1]
         # Convert ticker to permno
-        ticker = pd.read_parquet(get_parquet_dir(self.live) / 'data_ticker.parquet.brotli')
+        ticker = pd.read_parquet(get_parquet(self.live) / 'data_ticker.parquet.brotli')
         ticker = get_stocks_data(ticker, self.stock)
         ticker = ticker.reset_index()
         ticker['date'] = ticker['date'].dt.to_period('M')

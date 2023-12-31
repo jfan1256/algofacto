@@ -22,11 +22,11 @@ class FactorInvGrowth(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['invtq']
-        inv_growth = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
+        inv_growth = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
         inv_growth = get_stocks_data(inv_growth, self.stock)
 
         # Convert CPI to multiindex
-        medianCPI = pd.read_csv(get_large_dir(self.live) / 'macro' / 'medianCPI.csv')
+        medianCPI = pd.read_csv(get_large(self.live) / 'macro' / 'medianCPI.csv')
         medianCPI.columns = ['date', 'medCPI']
         medianCPI['date'] = pd.to_datetime(medianCPI['date']).dt.to_period('M').dt.to_timestamp('M')
 

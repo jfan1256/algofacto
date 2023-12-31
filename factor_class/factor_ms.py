@@ -22,8 +22,8 @@ class FactorMS(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['atq', 'xrdq', 'xsgaq', 'fqtr', 'niq', 'capxy', 'oancfy', 'saleq']
-        ms = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
-        fund_a = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=['sich'])
+        ms = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
+        fund_a = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_a.parquet.brotli', columns=['sich'])
         ms = ms.merge(fund_a, left_index=True, right_index=True, how='left')
         ms = get_stocks_data(ms, self.stock)
 

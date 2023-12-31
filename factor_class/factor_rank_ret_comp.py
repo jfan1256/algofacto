@@ -21,7 +21,7 @@ class FactorRankRetComp(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        ret_comp = pd.read_parquet(get_factor_dir(self.live) / 'factor_ret_comp.parquet.brotli')
+        ret_comp = pd.read_parquet(get_factor(self.live) / 'factor_ret_comp.parquet.brotli')
         ret_comp = get_stocks_data(ret_comp, self.stock)
         collect = []
         ret_comp = ret_comp.drop(['Open', 'High', 'Close', 'Low', 'Volume'], axis=1)

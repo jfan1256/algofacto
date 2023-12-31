@@ -28,11 +28,11 @@ class PrepFactor:
         self.limit = limit  # limit ranges from 1 to number of parquet files for factor
         self.start = start  # Suggested start date is 2010
         self.end = end  # Suggested start date is 2022
-        self.path = Path(get_prep_dir(live) / f'{self.factor_name}.parquet.brotli')
+        self.path = Path(get_prep(live) / f'{self.factor_name}.parquet.brotli')
         self.save = save
 
     def get_factor(self):
-        factor_data_dir = get_factor_dir(live)
+        factor_data_dir = get_factor(live)
         directory_name = next(name for name in os.listdir(factor_data_dir) if
                               os.path.isdir(os.path.join(factor_data_dir, name)) and name == self.factor_name)
         files = glob.glob(str(factor_data_dir / directory_name) + "/*.parquet.brotli")
@@ -65,7 +65,7 @@ class PrepFactor:
             return self.data
         else:
             # Resample from not daily to daily
-            date_data = pd.read_parquet(get_parquet_dir(live) / 'data_date.parquet.brotli')
+            date_data = pd.read_parquet(get_parquet(live) / 'data_date.parquet.brotli')
             self.data = pd.merge(date_data.loc[self.tickers], self.data, left_index=True, right_index=True, how='left')
             self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
             self.data = self.data.ffill()
@@ -75,7 +75,7 @@ class PrepFactor:
         if self.div:
             # Divid factor by closing price
             if self.div:
-                price_data = pd.read_parquet(get_parquet_dir(live) / 'data_price.parquet.brotli')
+                price_data = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli')
                 self.data = pd.merge(self.data, price_data.Close.loc[self.tickers], left_index=True, right_index=True, how='left')
                 self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
                 """self.data = pd.concat([price_data.Close.loc[self.tickers], self.data], axis=1)"""

@@ -63,7 +63,7 @@ class LiveData:
 
         # Export link table
         print("Export link table...")
-        link_table.to_parquet(get_parquet_dir(self.live) / 'data_link.parquet.brotli', compression='brotli')
+        link_table.to_parquet(get_parquet(self.live) / 'data_link.parquet.brotli', compression='brotli')
 
 
     # Create CRSP Price
@@ -71,7 +71,7 @@ class LiveData:
         print("-" * 60)
         # Read in CRSP dataset
         print('Read in CRSP dataset')
-        crsp = pd.read_csv(get_large_dir(self.live) / 'crsp_price.csv')
+        crsp = pd.read_csv(get_large(self.live) / 'crsp_price.csv')
 
         # Rename Columns
         print('Rename columns...')
@@ -125,13 +125,13 @@ class LiveData:
         permnos_to_drop = filtered_df[filtered_df['ticker'].isin(duplicated_tickers)].index.get_level_values('permno').unique()
         crsp = crsp[~crsp.index.get_level_values('permno').isin(permnos_to_drop)]
         ticker = crsp[['ticker']]
-        ticker.to_parquet(get_parquet_dir(self.live) / 'data_crsp_ticker.parquet.brotli', compression='brotli')
+        ticker.to_parquet(get_parquet(self.live) / 'data_crsp_ticker.parquet.brotli', compression='brotli')
 
         # Export ohclv
         print('Export ohclv...')
         ohclv = crsp[['Open', 'High', 'Low', 'Close', 'Volume']]
         ohclv = ohclv.astype(float)
-        ohclv.to_parquet(get_parquet_dir(self.live) / 'data_crsp_price.parquet.brotli', compression='brotli')
+        ohclv.to_parquet(get_parquet(self.live) / 'data_crsp_price.parquet.brotli', compression='brotli')
 
         # Set up Exchange Mapping
         print("Set up Exchange Mapping...")
@@ -162,7 +162,7 @@ class LiveData:
         print("Convert to permno/ticker multindex and export data...")
         exchange = exchange_copy.groupby(['permno', 'ticker'])['exchcd'].last()
         exchange = exchange.reset_index().rename(columns={'exchcd': 'exchange'}).set_index(['permno', 'ticker'])
-        exchange.to_parquet(get_parquet_dir(self.live) / 'data_exchange.parquet.brotli', compression='brotli')
+        exchange.to_parquet(get_parquet(self.live) / 'data_exchange.parquet.brotli', compression='brotli')
 
     def create_compustat_quarterly(self):
         print("-" * 60)
@@ -191,7 +191,7 @@ class LiveData:
 
         # Read in link table
         print("Read in link table...")
-        link_table = pd.read_parquet(get_parquet_dir(self.live) / 'data_link.parquet.brotli')
+        link_table = pd.read_parquet(get_parquet(self.live) / 'data_link.parquet.brotli')
         link_table = link_table.drop(['cusip', 'conm'], axis=1)
 
         # Merge link table and Compustat Quarterly
@@ -274,7 +274,7 @@ class LiveData:
 
         # Export data
         print("Export data...")
-        quarterly_numeric.to_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', compression='brotli')
+        quarterly_numeric.to_parquet(get_parquet(self.live) / 'data_fund_raw_q.parquet.brotli', compression='brotli')
 
     # Create Compustat Annual
     def create_compustat_annual(self):
@@ -309,7 +309,7 @@ class LiveData:
 
         # Read in link table
         print("Read in link table...")
-        link_table = pd.read_parquet(get_parquet_dir(self.live) / 'data_link.parquet.brotli')
+        link_table = pd.read_parquet(get_parquet(self.live) / 'data_link.parquet.brotli')
         link_table = link_table.drop(['cusip', 'conm'], axis=1)
 
         # Merge link table and Compustat Annual
@@ -376,7 +376,7 @@ class LiveData:
 
         # Export data
         print("Export data...")
-        annual.to_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', compression='brotli')
+        annual.to_parquet(get_parquet(self.live) / 'data_fund_raw_a.parquet.brotli', compression='brotli')
 
 
     # Create Common Stock List
@@ -384,9 +384,9 @@ class LiveData:
         print("-" * 60)
         # Read in files
         print("Read in files...")
-        quarterly = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli')
-        annual = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli')
-        price = pd.read_parquet(get_parquet_dir(self.live) / 'data_crsp_price.parquet.brotli')
+        quarterly = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_q.parquet.brotli')
+        annual = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_a.parquet.brotli')
+        price = pd.read_parquet(get_parquet(self.live) / 'data_crsp_price.parquet.brotli')
         quarterly_list = get_stock_idx(quarterly)
         annual_list = get_stock_idx(annual)
         price_list = get_stock_idx(price)
@@ -404,7 +404,7 @@ class LiveData:
         print(f'Number of stocks: {len(common_stock_list)}')
         common = pd.DataFrame(index=common_stock_list)
         common.index.names = ['permno']
-        export_stock(common, get_large_dir(self.live) / 'permno_common.csv')
+        export_stock(common, get_large(self.live) / 'permno_common.csv')
 
 
     # Create Live Price
@@ -412,8 +412,8 @@ class LiveData:
         print("-" * 60)
         # Get ticker list from crsp_ticker
         print("Get common ticker list...")
-        crsp_ticker = pd.read_parquet(get_parquet_dir(self.live) / 'data_crsp_ticker.parquet.brotli')
-        common_stock_list = read_stock(get_large_dir(self.live) / 'permno_common.csv')
+        crsp_ticker = pd.read_parquet(get_parquet(self.live) / 'data_crsp_ticker.parquet.brotli')
+        common_stock_list = read_stock(get_large(self.live) / 'permno_common.csv')
         crsp_ticker = get_stocks_data(crsp_ticker, common_stock_list)
         # This date should be the end of the annual CRSP dataset (i.e., 2022-12-31)
         last_date = crsp_ticker.index.get_level_values('date').max()
@@ -441,7 +441,7 @@ class LiveData:
 
         # Read in CRSP price
         print("Read in CRSP price...")
-        crsp_price = pd.read_parquet(get_parquet_dir(self.live) / 'data_crsp_price.parquet.brotli')
+        crsp_price = pd.read_parquet(get_parquet(self.live) / 'data_crsp_price.parquet.brotli')
         crsp_price = get_stocks_data(crsp_price, common_stock_list)
 
         # Change adj close to close
@@ -483,29 +483,29 @@ class LiveData:
 
         # Export ohclv
         print('Export Price...')
-        combined_price.to_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli', compression='brotli')
+        combined_price.to_parquet(get_parquet(self.live) / 'data_price.parquet.brotli', compression='brotli')
 
         # Export date
         print('Export Date...')
         date = combined_price.drop(columns=combined_price.columns)
-        date.to_parquet(get_parquet_dir(self.live) / 'data_date.parquet.brotli', compression='brotli')
+        date.to_parquet(get_parquet(self.live) / 'data_date.parquet.brotli', compression='brotli')
 
         # Export ticker
         print('Export Tickers...')
-        combined_ticker.to_parquet(get_parquet_dir(self.live) / 'data_ticker.parquet.brotli', compression='brotli')
+        combined_ticker.to_parquet(get_parquet(self.live) / 'data_ticker.parquet.brotli', compression='brotli')
 
         # Export permno list for live_trade trading
         print("Export permno list for live_trade trading...")
         print(f'Number of stocks: {len(get_stock_idx(combined_price))}')
-        export_stock(combined_price, get_large_dir(self.live) / 'permno_live.csv')
+        export_stock(combined_price, get_large(self.live) / 'permno_live.csv')
 
     # Create Misc
     def create_misc(self):
         print("-" * 60)
         print("Read in Misc...")
-        quarterly = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', columns=['cshoq'])
+        quarterly = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_q.parquet.brotli', columns=['cshoq'])
         quarterly.columns = ['outstanding']
-        misc = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
+        misc = pd.read_parquet(get_parquet(self.live) / 'data_price.parquet.brotli')
         misc = misc.merge(quarterly, left_index=True, right_index=True, how='left')
 
         # Add outstanding and market cap
@@ -518,7 +518,7 @@ class LiveData:
 
         # Get Dividend Data from FMP
         print("Get dividend data from FMP...")
-        ticker = pd.read_parquet(get_parquet_dir(self.live) / 'data_ticker.parquet.brotli')
+        ticker = pd.read_parquet(get_parquet(self.live) / 'data_ticker.parquet.brotli')
         tickers = ticker.ticker.unique().tolist()
         dividends = get_dividend_fmp(tickers, self.start_date, self.current_date)
         tic_reset = ticker.reset_index()
@@ -534,7 +534,7 @@ class LiveData:
 
         # Export data
         print("Export data...")
-        misc.to_parquet(get_parquet_dir(self.live) / 'data_misc.parquet.brotli', compression='brotli')
+        misc.to_parquet(get_parquet(self.live) / 'data_misc.parquet.brotli', compression='brotli')
 
     # Create Compustat Pension
     def create_compustat_pension(self):
@@ -569,7 +569,7 @@ class LiveData:
 
         # Export data
         print("Export data...")
-        pension.to_parquet(get_parquet_dir(self.live) / 'data_pension.parquet.brotli', compression='brotli')
+        pension.to_parquet(get_parquet(self.live) / 'data_pension.parquet.brotli', compression='brotli')
 
     # Create Industry
     def create_industry(self):
@@ -587,7 +587,7 @@ class LiveData:
 
         # Read in link table
         print("Read in link table...")
-        link_table = pd.read_parquet(get_parquet_dir(self.live) / 'data_link.parquet.brotli')
+        link_table = pd.read_parquet(get_parquet(self.live) / 'data_link.parquet.brotli')
         link_table = link_table.drop(['conm', 'sic'], axis=1)
 
         # Merge link table and Compustat Annual
@@ -606,8 +606,8 @@ class LiveData:
 
         # Read in Compustat Annual
         print("Read in Compustat Annual")
-        annual = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=['sich'])
-        stock = read_stock(get_large_dir(self.live) / 'permno_live.csv')
+        annual = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_a.parquet.brotli', columns=['sich'])
+        stock = read_stock(get_large(self.live) / 'permno_live.csv')
         annual = get_stocks_data(annual, stock)
         annual.columns = ['sic_comp']
 
@@ -716,12 +716,12 @@ class LiveData:
 
         # Retrieve live_trade trade stock list
         print("Retrieve live_trade trade stock list...")
-        stock = read_stock(get_large_dir(self.live) / 'permno_live.csv')
+        stock = read_stock(get_large(self.live) / 'permno_live.csv')
         industry = industry[industry['permno'].isin(stock)]
 
         # Merge ind data with price dataset
         print("Merge ind data with price dataset...")
-        date = pd.read_parquet(get_parquet_dir(self.live) / 'data_date.parquet.brotli')
+        date = pd.read_parquet(get_parquet(self.live) / 'data_date.parquet.brotli')
         date = date.reset_index()
         industry = pd.merge(date, industry, on=['permno'], how='left')
         annual = annual.reset_index()
@@ -736,13 +736,13 @@ class LiveData:
 
         # Export data
         print("Export data...")
-        industry[['Industry']].to_parquet(get_parquet_dir(self.live) / 'data_ind.parquet.brotli', compression='brotli')
-        industry[['Subindustry']].to_parquet(get_parquet_dir(self.live) / 'data_ind_sub.parquet.brotli', compression='brotli')
-        industry[['IndustryFama']].to_parquet(get_parquet_dir(self.live) / 'data_ind_fama.parquet.brotli', compression='brotli')
+        industry[['Industry']].to_parquet(get_parquet(self.live) / 'data_ind.parquet.brotli', compression='brotli')
+        industry[['Subindustry']].to_parquet(get_parquet(self.live) / 'data_ind_sub.parquet.brotli', compression='brotli')
+        industry[['IndustryFama']].to_parquet(get_parquet(self.live) / 'data_ind_fama.parquet.brotli', compression='brotli')
 
     def create_ibes(self):
         print("-" * 60)
-        tickers = pd.read_parquet(get_parquet_dir(self.live) / 'data_ticker.parquet.brotli')
+        tickers = pd.read_parquet(get_parquet(self.live) / 'data_ticker.parquet.brotli')
         tickers = tickers.ticker.unique().tolist()
         ticker_string = ', '.join(f"'{ticker}'" for ticker in tickers)
 
@@ -772,8 +772,8 @@ class LiveData:
         db.close()
 
         print("Export Data...")
-        actual_adj.to_csv(get_large_dir(self.live) / 'summary_actual_adj_ibes.csv', index=False)
-        statistic_adj.to_csv(get_large_dir(self.live) / 'summary_statistic_adj_ibes.csv', index=False)
+        actual_adj.to_csv(get_large(self.live) / 'summary_actual_adj_ibes.csv', index=False)
+        statistic_adj.to_csv(get_large(self.live) / 'summary_statistic_adj_ibes.csv', index=False)
 
     # Create Macro
     def create_macro(self):
@@ -819,12 +819,12 @@ class LiveData:
 
         # Export data
         print("Export data...")
-        median_cpi.to_csv(get_large_dir(self.live) / 'macro' / 'medianCPI.csv', index=False)
-        ppi.to_csv(get_large_dir(self.live) / 'macro' / 'PPI.csv', index=False)
-        ind_prod.to_csv(get_large_dir(self.live) / 'macro' / 'indProdIndex.csv', index=False)
-        ir_rate.to_csv(get_large_dir(self.live) / 'macro' / 'realInterestRate.csv', index=False)
-        if_rate.to_csv(get_large_dir(self.live) / 'macro' / 'fiveYearIR.csv', index=False)
-        u_rate.to_csv(get_large_dir(self.live) / 'macro' / 'unemploymentRate.csv', index=False)
+        median_cpi.to_csv(get_large(self.live) / 'macro' / 'medianCPI.csv', index=False)
+        ppi.to_csv(get_large(self.live) / 'macro' / 'PPI.csv', index=False)
+        ind_prod.to_csv(get_large(self.live) / 'macro' / 'indProdIndex.csv', index=False)
+        ir_rate.to_csv(get_large(self.live) / 'macro' / 'realInterestRate.csv', index=False)
+        if_rate.to_csv(get_large(self.live) / 'macro' / 'fiveYearIR.csv', index=False)
+        u_rate.to_csv(get_large(self.live) / 'macro' / 'unemploymentRate.csv', index=False)
 
     # Create Risk Free Rate
     def create_risk_rate(self):
@@ -844,7 +844,7 @@ class LiveData:
 
         # Export Data
         print("Export Data...")
-        rates.to_parquet(get_parquet_dir(self.live) / 'data_rf.parquet.brotli', compression='brotli')
+        rates.to_parquet(get_parquet(self.live) / 'data_rf.parquet.brotli', compression='brotli')
 
     # Get ETF Data for Mean Reversion Strategy
     def create_etf(self):
@@ -857,4 +857,4 @@ class LiveData:
 
         # Export Data
         print("Export Data...")
-        etf_data.to_parquet(get_parquet_dir(self.live) / 'data_etf.parquet.brotli', compression='brotli')
+        etf_data.to_parquet(get_parquet(self.live) / 'data_etf.parquet.brotli', compression='brotli')

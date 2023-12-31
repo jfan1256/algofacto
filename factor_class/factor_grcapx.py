@@ -22,7 +22,7 @@ class FactorGrcapx(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['ppent', 'capx']
-        grcapx = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        grcapx = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns)
         grcapx = get_stocks_data(grcapx, self.stock)
 
         grcapx['FirmAge'] = grcapx.groupby('permno').cumcount() + 1

@@ -22,7 +22,7 @@ class FactorXFIN(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['sstky', 'dvy', 'atq', 'prstkcy', 'dltisy', 'dltry', 'dlcchy']
-        finance = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
+        finance = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
         finance = get_stocks_data(finance, self.stock)
         finance['xfin'] = (finance['sstky'] - finance['dvy'] - finance['prstkcy'] + finance['dltisy'] - finance['dltry'] + finance['dlcchy']) / finance['atq']
         self.factor_data = finance[['xfin']]

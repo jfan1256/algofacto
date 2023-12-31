@@ -21,7 +21,7 @@ class FactorRankSBBond(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        sb_lag = pd.read_parquet(get_factor_dir(self.live) / 'factor_sb_bond.parquet.brotli')
+        sb_lag = pd.read_parquet(get_factor(self.live) / 'factor_sb_bond.parquet.brotli')
         sb_lag = get_stocks_data(sb_lag, self.stock)
 
         filtered_columns = [col for col in sb_lag.columns if not col.startswith(('ALPHA', 'PRED', 'EPSIL', 'RESID', 'IDIO', 'Open', 'Close', 'High', 'Low', 'Volume'))]

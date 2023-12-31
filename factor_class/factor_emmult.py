@@ -22,9 +22,9 @@ class FactorEmmult(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['dlttq', 'dlcq', 'cheq', 'oibdpq', 'drcq']
-        finance = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
+        finance = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
         outstanding = ['outstanding']
-        price_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_misc.parquet.brotli', columns=outstanding)
+        price_data = pd.read_parquet(get_parquet(self.live) / 'data_misc.parquet.brotli', columns=outstanding)
         finance = finance.sort_index()
         price_data = price_data.sort_index()
         price_data_reindexed = price_data.reindex(finance.index, method='ffill')

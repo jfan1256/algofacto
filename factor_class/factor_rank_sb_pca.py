@@ -21,7 +21,7 @@ class FactorRankSBPCA(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        sb_pca = pd.read_parquet(get_factor_dir(self.live) / 'factor_sb_pca.parquet.brotli')
+        sb_pca = pd.read_parquet(get_factor(self.live) / 'factor_sb_pca.parquet.brotli')
         sb_pca = get_stocks_data(sb_pca, self.stock)
 
         filtered_columns = [col for col in sb_pca.columns if not col.startswith(('ALPHA', 'PRED', 'EPSIL', 'RESID', 'IDIO', 'Open', 'Close', 'High', 'Low', 'Volume'))]

@@ -24,7 +24,7 @@ class FactorAbnormalAccrual(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['fopt', 'oancf', 'act', 'che', 'dlc', 'lct', 'ib', 'sale', 'at', 'ppegt', 'sich', 'fyear', 'ni']
-        accrual = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        accrual = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns)
         accrual = get_stocks_data(accrual, stock)
 
         # Define a function to compute temp columns based on permno grouping

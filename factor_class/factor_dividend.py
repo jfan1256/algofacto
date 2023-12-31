@@ -24,7 +24,7 @@ class FactorDividend(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        dividend = pd.read_parquet(get_parquet_dir(self.live) / 'data_misc.parquet.brotli', columns=['paydt'])
+        dividend = pd.read_parquet(get_parquet(self.live) / 'data_misc.parquet.brotli', columns=['paydt'])
         dividend = get_stocks_data(dividend, self.stock)
         dividend['paydt'] = pd.to_datetime(dividend['paydt'])
         self.factor_data = dividend

@@ -10,7 +10,7 @@ from model_class.alpha_model import AlphaModel
 
 from functions.utils.func import *
 
-class StrategyMLRet:
+class StratMLRet:
     def __init__(self,
                  allocate=None,
                  current_date=None,
@@ -48,7 +48,7 @@ class StrategyMLRet:
         live = True
         total_time = time.time()
 
-        stock = read_stock(get_large_dir(live) / 'permno_live.csv')
+        stock = read_stock(get_large(live) / 'permno_live.csv')
 
         start_time = time.time()
 
@@ -403,8 +403,8 @@ class StrategyMLRet:
         print("----------------------------------------------------------------------CALCULATE SHARPE PER TRIAL--------------------------------------------------------------------------")
         # Dictionary to keep track of SHARPE
         keep = {}
-        ticker = pd.read_parquet(get_parquet_dir(live) / 'data_ticker.parquet.brotli')
-        misc = pd.read_parquet(get_parquet_dir(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
+        ticker = pd.read_parquet(get_parquet(live) / 'data_ticker.parquet.brotli')
+        misc = pd.read_parquet(get_parquet(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
 
         # Iterate through each trial
         for i, row in files.iterrows():
@@ -466,7 +466,7 @@ class StrategyMLRet:
         tic = merged.merge(ticker, left_index=True, right_index=True, how='left')
         tic = tic.merge(misc, left_index=True, right_index=True, how='left')
         tic = tic.reset_index().set_index(['window', 'ticker', 'date'])
-        exchange = pd.read_parquet(get_parquet_dir(live) / 'data_exchange.parquet.brotli')
+        exchange = pd.read_parquet(get_parquet(live) / 'data_exchange.parquet.brotli')
         tic_reset = tic.reset_index()
         exchange_df_reset = exchange.reset_index()
         combined = pd.merge(tic_reset, exchange_df_reset, on=['ticker', 'permno'], how='left')
@@ -516,7 +516,7 @@ class StrategyMLRet:
 
         # Combine long and short dataframes
         combined_df = pd.concat([long_df, short_df], axis=0)
-        combined_df = combined_df.set_index(['date', 'ticker'])
+        combined_df = combined_df.set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
         filename = get_live_stock() / 'trade_stock_ml_ret.parquet.brotli'
 
         # Check if file exists

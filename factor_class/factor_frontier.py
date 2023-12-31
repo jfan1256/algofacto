@@ -22,10 +22,10 @@ class FactorFrontier(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['dlttq', 'xsgaq', 'atq', 'ceqq', 'saleq', 'capxy', 'xrdq', 'ppentq', 'niq', 'xintq', 'txtq', 'dpq']
-        frontier = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
+        frontier = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
         outstanding = ['outstanding']
-        price_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_misc.parquet.brotli', columns=outstanding)
-        ind_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_ind_fama.parquet.brotli')
+        price_data = pd.read_parquet(get_parquet(self.live) / 'data_misc.parquet.brotli', columns=outstanding)
+        ind_data = pd.read_parquet(get_parquet(self.live) / 'data_ind_fama.parquet.brotli')
         frontier = frontier.sort_index()
         price_data = price_data.sort_index()
         price_data_reindexed = price_data.reindex(frontier.index, method='ffill')

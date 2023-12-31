@@ -5,7 +5,7 @@ from model_class.prep_factor import PrepFactor
 
 from functions.utils.func import *
 
-class StratPortIVMD:
+class StratPortIV:
     def __init__(self,
                  allocate=None,
                  current_date=None,
@@ -30,8 +30,8 @@ class StratPortIVMD:
         self.num_stocks = num_stocks
         self.window = window
 
-    def backtest_port_ivmd(self):
-        print("-----------------------------------------------------------------BACKTEST PORT IVMD-------------------------------------------------------------------------------------")
+    def backtest_port_iv(self):
+        print("-----------------------------------------------------------------BACKTEST PORT IV---------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
         live = True
@@ -81,25 +81,11 @@ class StratPortIVMD:
         fund_q = fund_q.replace([np.inf, -np.inf], np.nan)
         fund_factor = fund_q[['ev_to_ebitda']]
 
-        # Momentum
-        mom_season = PrepFactor(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
-        mom_season6 = PrepFactor(live=live, factor_name='factor_mom_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
-        load_ret = PrepFactor(live=live, factor_name='factor_load_ret', group='permno', interval='D', kind='loading', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
-        mom_season_short = PrepFactor(live=live, factor_name='factor_mom_season_short', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
-
-        # Defensive
-        sb_sector = PrepFactor(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
-        sb_pca = PrepFactor(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
-
         # Merge into one dataframe
-        factor_data = (pd.merge(ret_price, sb_sector, left_index=True, right_index=True, how='left')
-                       .merge(sb_pca, left_index=True, right_index=True, how='left')
-                       .merge(accrual, left_index=True, right_index=True, how='left')
+        factor_data = (pd.merge(ret_price, accrual, left_index=True, right_index=True, how='left')
                        .merge(comp_debt, left_index=True, right_index=True, how='left')
                        .merge(inv_growth, left_index=True, right_index=True, how='left')
                        .merge(pcttoacc, left_index=True, right_index=True, how='left')
-                       .merge(mom_season, left_index=True, right_index=True, how='left')
-                       .merge(mom_season6, left_index=True, right_index=True, how='left')
                        .merge(chtax, left_index=True, right_index=True, how='left')
                        .merge(net_debt_finance, left_index=True, right_index=True, how='left')
                        .merge(noa, left_index=True, right_index=True, how='left')
@@ -108,8 +94,6 @@ class StratPortIVMD:
                        .merge(xfin, left_index=True, right_index=True, how='left')
                        .merge(emmult, left_index=True, right_index=True, how='left')
                        .merge(grcapx, left_index=True, right_index=True, how='left')
-                       .merge(mom_season_short, left_index=True, right_index=True, how='left')
-                       .merge(load_ret, left_index=True, right_index=True, how='left')
                        .merge(fund_factor, left_index=True, right_index=True, how='left')
                        .merge(market, left_index=True, right_index=True, how='left'))
 
@@ -130,20 +114,6 @@ class StratPortIVMD:
         # ----------------------------------------------------------------------------GET RANKINGS-------------------------------------------------------------------------------------
         print("-----------------------------------------------------------------------GET RANKINGS-------------------------------------------------------------------------------------")
         factors = [
-            "XLB_RET_01_sector_01_126",
-            "XLE_RET_01_sector_01_126",
-            "XLF_RET_01_sector_01_126",
-            "XLI_RET_01_sector_01_126",
-            "XLK_RET_01_sector_01_126",
-            "XLP_RET_01_sector_01_126",
-            "XLU_RET_01_sector_01_126",
-            "XLV_RET_01_sector_01_126",
-            "XLY_RET_01_sector_01_126",
-            'PCA_Return_1_ret_pca_01_126',
-            'PCA_Return_2_ret_pca_01_126',
-            'PCA_Return_3_ret_pca_01_126',
-            'PCA_Return_4_ret_pca_01_126',
-            'PCA_Return_5_ret_pca_01_126',
             "accruals",
             "inv_growth",
             "comp_debt_iss",
@@ -156,25 +126,17 @@ class StratPortIVMD:
             'xfin',
             'emmult',
             'grcapx',
-            'ev_to_ebitda',
-            'load_ret_1',
-            'load_ret_2',
-            'load_ret_3',
-            'load_ret_4',
-            'load_ret_5',
-            "mom_season",
-            "mom_season_short",
-            "mom_season_6"
+            'ev_to_ebitda'
         ]
 
-        filname = f"port_ivmd_{date.today().strftime('%Y%m%d')}"
-        dir_path = get_strat_port_ivmd() / 'report' / filname
+        filname = f"port_iv_{date.today().strftime('%Y%m%d')}"
+        dir_path = get_strat_port_iv() / 'report' / filname
 
         long_short_stocks = PortFactor(data=factor_data, window=self.window, num_stocks=self.num_stocks, factors=factors,
                                        threshold=self.threshold, backtest=True, dir_path=dir_path).create_factor_port()
 
-    def exec_port_ivmd(self):
-        print("-------------------------------------------------------------------EXEC PORT IVMD--------------------------------------------------------------------------------------")
+    def exec_port_iv(self):
+        print("-------------------------------------------------------------------EXEC PORT IV----------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
         live = True
@@ -219,37 +181,21 @@ class StratPortIVMD:
         fund_q = fund_q.replace([np.inf, -np.inf], np.nan)
         fund_factor = fund_q[['ev_to_ebitda']]
 
-        # Momentum
-        mom_season = PrepFactor(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-        mom_season6 = PrepFactor(live=live, factor_name='factor_mom_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-        load_ret = PrepFactor(live=live, factor_name='factor_load_ret', group='permno', interval='D', kind='loading', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-        mom_season_short = PrepFactor(live=live, factor_name='factor_mom_season_short', group='permno', interval='D', kind='mom', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-
-        # Defensive
-        sb_sector = PrepFactor(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-        sb_pca = PrepFactor(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-
         # Merge into one dataframe
-        factor_data = (pd.merge(ret_price, sb_sector, left_index=True, right_index=True, how='left')
-                          .merge(sb_pca, left_index=True, right_index=True, how='left')
-                          .merge(accrual, left_index=True, right_index=True, how='left')
-                          .merge(comp_debt, left_index=True, right_index=True, how='left')
-                          .merge(inv_growth, left_index=True, right_index=True, how='left')
-                          .merge(pcttoacc, left_index=True, right_index=True, how='left')
-                          .merge(mom_season, left_index=True, right_index=True, how='left')
-                          .merge(mom_season6, left_index=True, right_index=True, how='left')
-                          .merge(chtax, left_index=True, right_index=True, how='left')
-                          .merge(net_debt_finance, left_index=True, right_index=True, how='left')
-                          .merge(noa, left_index=True, right_index=True, how='left')
-                          .merge(invest_ppe, left_index=True, right_index=True, how='left')
-                          .merge(cheq, left_index=True, right_index=True, how='left')
-                          .merge(xfin, left_index=True, right_index=True, how='left')
-                          .merge(emmult, left_index=True, right_index=True, how='left')
-                          .merge(grcapx, left_index=True, right_index=True, how='left')
-                          .merge(mom_season_short, left_index=True, right_index=True, how='left')
-                          .merge(load_ret, left_index=True, right_index=True, how='left')
-                          .merge(fund_factor, left_index=True, right_index=True, how='left')
-                          .merge(market, left_index=True, right_index=True, how='left'))
+        factor_data = (pd.merge(ret_price, accrual, left_index=True, right_index=True, how='left')
+                       .merge(comp_debt, left_index=True, right_index=True, how='left')
+                       .merge(inv_growth, left_index=True, right_index=True, how='left')
+                       .merge(pcttoacc, left_index=True, right_index=True, how='left')
+                       .merge(chtax, left_index=True, right_index=True, how='left')
+                       .merge(net_debt_finance, left_index=True, right_index=True, how='left')
+                       .merge(noa, left_index=True, right_index=True, how='left')
+                       .merge(invest_ppe, left_index=True, right_index=True, how='left')
+                       .merge(cheq, left_index=True, right_index=True, how='left')
+                       .merge(xfin, left_index=True, right_index=True, how='left')
+                       .merge(emmult, left_index=True, right_index=True, how='left')
+                       .merge(grcapx, left_index=True, right_index=True, how='left')
+                       .merge(fund_factor, left_index=True, right_index=True, how='left')
+                       .merge(market, left_index=True, right_index=True, how='left'))
 
         factor_data['accruals'] = factor_data.groupby('permno')['accruals'].ffill()
         factor_data['comp_debt_iss'] = factor_data.groupby('permno')['comp_debt_iss'].ffill()
@@ -268,20 +214,6 @@ class StratPortIVMD:
         # ----------------------------------------------------------------------------GET RANKINGS-------------------------------------------------------------------------------------
         print("-----------------------------------------------------------------------GET RANKINGS-------------------------------------------------------------------------------------")
         factors = [
-            "XLB_RET_01_sector_01_126",
-            "XLE_RET_01_sector_01_126",
-            "XLF_RET_01_sector_01_126",
-            "XLI_RET_01_sector_01_126",
-            "XLK_RET_01_sector_01_126",
-            "XLP_RET_01_sector_01_126",
-            "XLU_RET_01_sector_01_126",
-            "XLV_RET_01_sector_01_126",
-            "XLY_RET_01_sector_01_126",
-            'PCA_Return_1_ret_pca_01_126',
-            'PCA_Return_2_ret_pca_01_126',
-            'PCA_Return_3_ret_pca_01_126',
-            'PCA_Return_4_ret_pca_01_126',
-            'PCA_Return_5_ret_pca_01_126',
             "accruals",
             "inv_growth",
             "comp_debt_iss",
@@ -294,19 +226,11 @@ class StratPortIVMD:
             'xfin',
             'emmult',
             'grcapx',
-            'ev_to_ebitda',
-            'load_ret_1',
-            'load_ret_2',
-            'load_ret_3',
-            'load_ret_4',
-            'load_ret_5',
-            "mom_season",
-            "mom_season_short",
-            "mom_season_6"
+            'ev_to_ebitda'
         ]
 
-        filname = f"port_ivmd_{date.today().strftime('%Y%m%d')}"
-        dir_path = get_strat_port_ivmd() / 'report' / filname
+        filname = f"port_iv_{date.today().strftime('%Y%m%d')}"
+        dir_path = get_strat_port_iv() / 'report' / filname
 
         latest_window_data = window_data(data=factor_data, date=self.current_date, window=self.window)
         long_short_stocks = PortFactor(data=latest_window_data, window=self.window, num_stocks=self.num_stocks, factors=factors,
@@ -339,7 +263,7 @@ class StratPortIVMD:
         # Combine long and short dataframes
         combined_df = pd.concat([long_df, short_df], axis=0)
         combined_df = combined_df.set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
-        filename = get_live_stock() / 'trade_stock_port_ivmd.parquet.brotli'
+        filename = get_live_stock() / 'trade_stock_port_iv.parquet.brotli'
 
         # Check if file exists
         if os.path.exists(filename):

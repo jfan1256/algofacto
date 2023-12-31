@@ -22,7 +22,7 @@ class FactorPctTotAcc(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['sstk', 'ni', 'prstkc', 'dvt', 'oancf', 'fincf', 'ivncf']
-        finance = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        finance = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns)
         finance = get_stocks_data(finance, self.stock)
         finance['pct_tot_acc'] = (finance['ni'] - (finance['prstkc'] - finance['sstk'] + finance['dvt'] + finance['oancf'] + finance['fincf'] + finance['ivncf'])) / finance['ni'].abs()
         self.factor_data = finance[['pct_tot_acc']]

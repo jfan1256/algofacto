@@ -24,7 +24,7 @@ class FactorDivSeason(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        dividend = pd.read_parquet(get_parquet_dir(self.live) / 'data_misc.parquet.brotli', columns=['distcd', 'divamt'])
+        dividend = pd.read_parquet(get_parquet(self.live) / 'data_misc.parquet.brotli', columns=['distcd', 'divamt'])
         dividend = get_stocks_data(dividend, self.stock)
         # Convert to string and pad to 4 characters
         dividend['distcd_str'] = dividend['distcd'].astype(str).str.pad(4, fillchar=' ')

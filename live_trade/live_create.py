@@ -132,7 +132,7 @@ class LiveCreate:
         # --------------------------------------------------------------------------CREATE FACTORS---------------------------------------------------------------------------------------
         live = True
 
-        stock = read_stock(get_large_dir(live) / 'permno_live.csv')
+        stock = read_stock(get_large(live) / 'permno_live.csv')
 
         ray.init(num_cpus=16, ignore_reinit_error=True)
         start_time = time.time()

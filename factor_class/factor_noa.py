@@ -22,7 +22,7 @@ class FactorNOA(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['atq', 'ceqq', 'cheq', 'dcomq', 'dlttq', 'mibtq']
-        noa = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
+        noa = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
         noa = get_stocks_data(noa, self.stock)
         noa['OA'] = noa['atq'] - noa['cheq']
         noa['OL'] = noa['atq'] - noa['dlttq'] - noa['mibtq'] - noa['dcomq'] - noa['ceqq']

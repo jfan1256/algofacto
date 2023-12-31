@@ -22,7 +22,7 @@ class FactorClustVolume(Factor):
                  window: int = None,
                  cluster: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.factor_data = pd.read_parquet(get_factor_dir(self.live) / 'factor_volume.parquet.brotli')
+        self.factor_data = pd.read_parquet(get_factor(self.live) / 'factor_volume.parquet.brotli')
         self.cluster = cluster
         self.factor_data = self.factor_data.drop(['Open', 'Close', 'Low', 'Volume', 'High'], axis=1)
         start_date = datetime.strptime(self.start, '%Y-%m-%d')

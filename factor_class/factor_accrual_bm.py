@@ -22,9 +22,9 @@ class FactorAccrualBM(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['ceq', 'act', 'dlc', 'che', 'lct', 'at', 'txp']
-        accrual_bm = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        accrual_bm = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns)
         outstanding = ['market_cap']
-        price_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_misc.parquet.brotli', columns=outstanding)
+        price_data = pd.read_parquet(get_parquet(self.live) / 'data_misc.parquet.brotli', columns=outstanding)
         accrual_bm = accrual_bm.sort_index()
         price_data = price_data.sort_index()
         price_data_reindexed = price_data.reindex(accrual_bm.index, method='ffill')

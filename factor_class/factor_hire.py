@@ -22,7 +22,7 @@ class FactorHire(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['emp']
-        hire = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns)
+        hire = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns)
         hire = get_stocks_data(hire, self.stock)
         def compute_hire(group):
             group['hire'] = (group['emp'] - group['emp'].shift(12)) / (0.5 * (group['emp'] + group['emp'].shift(12)))

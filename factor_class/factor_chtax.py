@@ -22,7 +22,7 @@ class FactorCHTax(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns = ['txtq', 'atq']
-        tax = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
+        tax = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_q.parquet.brotli', columns=columns)
         tax = get_stocks_data(tax, self.stock)
         tax['chtax'] = (tax['txtq'] - tax.groupby('permno')['txtq'].shift(6)) / tax.groupby('permno')['atq'].shift(6)
         tax = tax[['chtax']]

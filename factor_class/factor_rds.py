@@ -22,13 +22,13 @@ class FactorRDS(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         columns_compustat = ['gvkey', 'ceq', 'ni', 'dvp', 'recta', 'csho', 'prcc_f', 'msa', 'cdvc']
-        rds = pd.read_parquet(get_parquet_dir(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns_compustat)
+        rds = pd.read_parquet(get_parquet(self.live) / 'data_fund_raw_a.parquet.brotli', columns=columns_compustat)
         rds = get_stocks_data(rds, self.stock)
         rds['year'] = rds.index.get_level_values('date').year
         rds = rds.reset_index()
 
         columns_pension = ['gvkey', 'pcupsu', 'paddml']
-        pension = pd.read_parquet(get_parquet_dir(self.live) / 'data_pension.parquet.brotli', columns=columns_pension)
+        pension = pd.read_parquet(get_parquet(self.live) / 'data_pension.parquet.brotli', columns=columns_pension)
         pension['year'] = pension.index.get_level_values('date').year
 
         rds = rds.merge(pension[['gvkey', 'year', 'pcupsu', 'paddml']], on=['gvkey', 'year'], how='left')

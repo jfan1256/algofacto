@@ -22,7 +22,7 @@ class FactorClustIndMom(Factor):
                  window: int = None,
                  cluster: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.factor_data = pd.read_parquet(get_factor_dir(self.live) / 'factor_ind_mom.parquet.brotli')
+        self.factor_data = pd.read_parquet(get_factor(self.live) / 'factor_ind_mom.parquet.brotli')
         self.cluster = cluster
         start_date = datetime.strptime(self.start, '%Y-%m-%d')
         new_start_date = start_date + timedelta(days=0)

@@ -182,7 +182,7 @@ class Factor:
 
         # Export factor data
         print(f"Exporting {self.file_name}...")
-        factor_data.to_parquet(get_factor_dir(self.live) / f'{self.file_name}.parquet.brotli', compression='brotli')
+        factor_data.to_parquet(get_factor(self.live) / f'{self.file_name}.parquet.brotli', compression='brotli')
         elapsed_time = time.time() - start_time
         print(f"Time to create {self.file_name}: {round(elapsed_time)} seconds")
         print("-" * 60)
@@ -205,7 +205,7 @@ class Factor:
             # Get dataframe with list of stocks or not
             if self.stock != 'all':
                 self.factor_data = get_stocks_data(self.factor_data, self.stock)
-            self.factor_data.to_parquet(get_factor_dir(self.live) / f'{self.file_name}.parquet.brotli', compression='brotli')
+            self.factor_data.to_parquet(get_factor(self.live) / f'{self.file_name}.parquet.brotli', compression='brotli')
             print("-" * 60)
         else:
             # Get dataframe with list of stocks or not

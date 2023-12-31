@@ -21,7 +21,7 @@ class FactorRankSBFama(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        sb_fama = pd.read_parquet(get_factor_dir(self.live) / 'factor_sb_fama.parquet.brotli')
+        sb_fama = pd.read_parquet(get_factor(self.live) / 'factor_sb_fama.parquet.brotli')
         sb_fama = get_stocks_data(sb_fama, self.stock)
 
         filtered_columns = [col for col in sb_fama.columns if not col.startswith(('ALPHA', 'PRED', 'EPSIL', 'RESID', 'IDIO', 'Open', 'Close', 'High', 'Low', 'Volume'))]

@@ -22,9 +22,9 @@ class FactorRankIndVWRFama(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
 
-        ohclv = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
-        ind = pd.read_parquet(get_parquet_dir(self.live) / 'data_ind_fama.parquet.brotli')
-        out = pd.read_parquet(get_parquet_dir(self.live) / 'data_misc.parquet.brotli', columns=['outstanding'])
+        ohclv = pd.read_parquet(get_parquet(self.live) / 'data_price.parquet.brotli')
+        ind = pd.read_parquet(get_parquet(self.live) / 'data_ind_fama.parquet.brotli')
+        out = pd.read_parquet(get_parquet(self.live) / 'data_misc.parquet.brotli', columns=['outstanding'])
 
         ohclv = get_stocks_data(ohclv, self.stock)
         ind = get_stocks_data(ind, self.stock)

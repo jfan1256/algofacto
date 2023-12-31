@@ -4,23 +4,29 @@ import quantstats as qs
 class PortFactor:
     def __init__(self,
                  data=None,
+                 window=None,
                  num_stocks=None,
                  factors=None,
                  threshold=None,
+                 backtest=None,
                  dir_path=None):
 
         '''
         data (pd.DataFrame): A multiindex dataframe (permno, date) with columns of factors and 'RET_01'
+        window (int): Rolling window size to calculate inverse volatility
         num_stocks (int): Number of stocks to long/short
         factors (list): A list of strings that are references to the factor columns to be used for ranking
         threshold (int): Market cap threshold to determine if a stock is buyable/shortable
+        backtest (bool): Plot quantstat plot or not
         dir_path (Path): Directory path to export quantstats report
         '''
 
         self.data = data
+        self.window = window
         self.num_stocks = num_stocks
         self.factors = factors
         self.threshold = threshold
+        self.backtest = backtest
         self.dir_path = dir_path
 
     # Select top and bottom stocks
@@ -47,7 +53,7 @@ class PortFactor:
         # Calculating rank weights
         df['rank_weight'] = (1 / len(self.factors)) * df['avg_rank']
         # Calculating inverse volatility
-        df['vol'] = df.groupby('permno')['RET_01'].transform(lambda x: x.rolling(21).std())
+        df['vol'] = df.groupby('permno')['RET_01'].transform(lambda x: x.rolling(self.window).std())
         df['inv_vol_weight'] = 1 / df['vol']
         # Find adjusted weight that accounts for rank and inverse volatility
         df['adj_weight'] = df['rank_weight'] * df['inv_vol_weight']
@@ -59,5 +65,6 @@ class PortFactor:
         top_bottom_stocks['final_weight'] /= top_bottom_stocks.groupby('date')['final_weight'].transform(lambda x: x.abs().sum())
         top_bottom_stocks['total_ret'] = top_bottom_stocks['RET_01'] * top_bottom_stocks['final_weight']
         total_ret = top_bottom_stocks.groupby('date').total_ret.sum()
-        qs.reports.html(total_ret, 'SPY', output=self.dir_path)
+        if self.backtest:
+            qs.reports.html(total_ret, 'SPY', output=self.dir_path)
         return top_bottom_stocks

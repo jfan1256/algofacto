@@ -21,7 +21,7 @@ class FactorRankSBInverse(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        sb_inverse = pd.read_parquet(get_factor_dir(self.live) / 'factor_sb_inverse.parquet.brotli')
+        sb_inverse = pd.read_parquet(get_factor(self.live) / 'factor_sb_inverse.parquet.brotli')
         sb_inverse = get_stocks_data(sb_inverse, self.stock)
 
         filtered_columns = [col for col in sb_inverse.columns if not col.startswith(('Open', 'Close', 'High', 'Low', 'Volume'))]

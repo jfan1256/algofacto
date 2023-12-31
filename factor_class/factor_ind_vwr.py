@@ -22,9 +22,9 @@ class FactorIndVWR(Factor):
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
 
-        ohclv = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
-        ind = pd.read_parquet(get_parquet_dir(self.live) / 'data_ind.parquet.brotli')
-        out = pd.read_parquet(get_parquet_dir(self.live) / 'data_misc.parquet.brotli', columns=['outstanding'])
+        ohclv = pd.read_parquet(get_parquet(self.live) / 'data_price.parquet.brotli')
+        ind = pd.read_parquet(get_parquet(self.live) / 'data_ind.parquet.brotli')
+        out = pd.read_parquet(get_parquet(self.live) / 'data_misc.parquet.brotli', columns=['outstanding'])
 
         T = [1, 5, 21, 126, 252]
         ind_data = pd.merge(ohclv, ind, left_index=True, right_index=True, how='left').merge(out, left_index=True, right_index=True, how='left')

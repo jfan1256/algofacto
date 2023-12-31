@@ -21,8 +21,8 @@ class FactorSBBond(Factor):
                  general: bool = False,
                  window: int = None):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
-        self.factor_data = pd.read_parquet(get_parquet_dir(self.live) / 'data_price.parquet.brotli')
-        self.risk_free = pd.read_parquet(get_parquet_dir(self.live) / 'data_rf.parquet.brotli')
+        self.factor_data = pd.read_parquet(get_parquet(self.live) / 'data_price.parquet.brotli')
+        self.risk_free = pd.read_parquet(get_parquet(self.live) / 'data_rf.parquet.brotli')
         bond_df = get_data_fmp(ticker_list=['TLT', 'TIP', 'SHY'], start=self.start, current_date=self.end)
         T = [1, 21, 126]
         bond_df = bond_df[['Open', 'High', 'Low', 'Volume', 'Adj Close']]

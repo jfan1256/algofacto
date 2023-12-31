@@ -31,7 +31,6 @@ import yfinance as yf
 warnings.filterwarnings('ignore')
 
 
-
 # Gets dataframe for a specified stock
 def get_stock_data(data, stock):
     idx = pd.IndexSlice
@@ -139,7 +138,7 @@ def common_stocks(stocks, data):
 
 # Get SP500 candidates and set keys to the given year
 def get_candidate(live):
-    with open(get_large_dir(live) / 'sp500_candidates.pkl', 'rb') as f:
+    with open(get_large(live) / 'sp500_candidates.pkl', 'rb') as f:
         candidates = pickle.load(f)
     beginning_year = [date for date in candidates.keys() if date.month == 1]
     candidates = {date.year: candidates[date] for date in beginning_year if date in candidates}
@@ -312,7 +311,7 @@ def rolling_ols_parallel(data, ret, factor_data, factor_cols, window, name):
 # Calculate Alpha and Plot
 def rolling_alpha(strat_ret, windows, live, path):
     # Read in risk-free rate
-    risk_free = pd.read_parquet(get_parquet_dir(live) / 'data_rf.parquet.brotli')
+    risk_free = pd.read_parquet(get_parquet(live) / 'data_rf.parquet.brotli')
     # Add risk-free rate to strategy return's
     strat_ret.columns = ['strat_ret']
     strat_ret = strat_ret.merge(risk_free, left_index=True, right_index=True, how='left')
@@ -621,12 +620,12 @@ def get_sp500_fmp():
         print("Failed to retrieve data:", response.status_code, response.text)
         return None
 
-# Retrieves 'permno' groups that have data up from current_date-window to current date
-def current_data(data, current_date, window):
-    def retrieve_group(group, current_date, window):
-        recent_dates = group.index.get_level_values('date')
-        target_date = pd.to_datetime(current_date) - BDay(window)
-        return recent_dates.max() >= target_date and (recent_dates >= target_date).sum() >= window
-    return [(name, group) for name, group in data.groupby(level='permno') if retrieve_group(group, current_date, window)]
+# Outputs window data from a specified date
+def window_data(data, date, window):
+    target_date = pd.to_datetime(date) - BDay(window)
+    filtered_data = data[data.index.get_level_values('date') >= target_date]
+    valid_groups = [group.tail(window) for name, group in filtered_data.groupby(level='permno')
+                    if group.index.get_level_values('date').max() >= target_date and len(group) >= window]
+    return pd.concat(valid_groups, axis=0)
 
 

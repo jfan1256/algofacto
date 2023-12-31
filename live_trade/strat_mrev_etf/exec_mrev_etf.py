@@ -218,8 +218,8 @@ async def exec_price(ib, current_date):
 
     # Get stocks
     live = True
-    past_data = pd.read_parquet(get_parquet_dir(live) / 'data_price.parquet.brotli', columns=['Close'])
-    ticker = pd.read_parquet(get_parquet_dir(live) / 'data_ticker.parquet.brotli')
+    past_data = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli', columns=['Close'])
+    ticker = pd.read_parquet(get_parquet(live) / 'data_ticker.parquet.brotli')
     # Most up to "date" piece of data
     etf_ticker = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
     past_date = past_data.index.get_level_values('date').max().strftime('%Y-%m-%d')
@@ -261,7 +261,7 @@ async def exec_price(ib, current_date):
     live_data = live_data.drop(['Close'], axis=1)
 
     # Add live_trade etf price to the end of the historical_trade price dataset
-    past_etf = pd.read_parquet(get_parquet_dir(live) / 'data_etf.parquet.brotli', columns=['Close'])
+    past_etf = pd.read_parquet(get_parquet(live) / 'data_etf.parquet.brotli', columns=['Close'])
 
     # Get Adjustment Factor and adjust live_trade price data
     adj_factor_etf = get_adj_factor_fmp(etf_ticker, past_date)
@@ -311,7 +311,7 @@ def exec_mrev_etf_data(window, threshold):
     # Read in price data and set up params for Rolling LR
     T = [1]
     ret = f'RET_01'
-    past_data = pd.read_parquet(get_parquet_dir(live) / 'data_price.parquet.brotli')
+    past_data = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli')
     factor_col_past = sector_ret_past.columns
     past_data = create_return(past_data, T)
     past_data = past_data.fillna(0)
@@ -333,7 +333,7 @@ def exec_mrev_etf_data(window, threshold):
     beta_data_past.to_parquet(get_strat_mrev_etf() / 'data' / 'data_beta_etf.parquet.brotli', compression='brotli')
 
     # Convert ETF Dataframe to multi-index
-    stock = read_stock(get_large_dir(live) / 'permno_live.csv')
+    stock = read_stock(get_large(live) / 'permno_live.csv')
     sector_multi_past = create_multi_index(sector_ret_past, stock)
     # Merge the necessary columns together into one dataframe
     combined_past = beta_data_past.merge(sector_multi_past, left_index=True, right_index=True, how='left')
@@ -346,7 +346,7 @@ def exec_mrev_etf_data(window, threshold):
 
     # Create signals
     copy = combined_past.copy(deep=True)
-    misc = pd.read_parquet(get_parquet_dir(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
+    misc = pd.read_parquet(get_parquet(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
     copy = copy.merge(misc, left_index=True, right_index=True, how='left')
     result_past = create_signal_past(copy, sbo, sso, sbc, ssc, threshold)
 
@@ -399,7 +399,7 @@ def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, thre
 
     # Function to execute the parallelization for last window of data
     def rolling_ols_last(data, ret, factor_data, factor_cols, window, name):
-        valid_groups = current_data(data, current_date, window)
+        valid_groups = window_data(data, current_date, window)
         print(len(valid_groups))
         tasks = [(group, ret, factor_data, factor_cols, window, permno, data.index.names[0]) for permno, group in valid_groups]
         results = Parallel(n_jobs=-1)(delayed(per_stock_ols_last)(*task) for task in tasks)
@@ -493,7 +493,7 @@ def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, thre
 
     # Create signals
     combined_live_copy = combined_live.copy(deep=True)
-    misc = pd.read_parquet(get_parquet_dir(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
+    misc = pd.read_parquet(get_parquet(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
     combined_live_copy = combined_live_copy.merge(misc, left_index=True, right_index=True, how='left')
     result_live = create_signal_live(combined_live_copy, sbo, sso, sbc, ssc, threshold)
     result_live['RET_01'] = result_live.groupby('permno')['RET_01'].shift(-1)
@@ -511,7 +511,7 @@ def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, thre
     beta_weight.columns = [(col.split('_')[0]) for col in beta_columns]
 
     # Read in ticker dataframe
-    ticker = pd.read_parquet(get_parquet_dir(live) / 'data_ticker.parquet.brotli')
+    ticker = pd.read_parquet(get_parquet(live) / 'data_ticker.parquet.brotli')
 
     # Get long positions
     long = trade.loc[trade['position'].str.contains('long', na=False)]
@@ -688,7 +688,7 @@ def exec_mrev_etf_trade(window, threshold, settlement, capital):
 
     # Params
     live = True
-    stock = read_stock(get_large_dir(live) / 'permno_live.csv')
+    stock = read_stock(get_large(live) / 'permno_live.csv')
     current_date = date.today().strftime('%Y-%m-%d')
     sbo = 0.85
     sso = 0.85

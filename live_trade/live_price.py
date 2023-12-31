@@ -7,11 +7,16 @@ class LivePrice:
     def __init__(self,
                  ibkr_server,
                  current_date):
-        
+
+        '''
+        ibkr_server (ib_sync server): IBKR IB Sync server
+        current_date (str: YYYY-MM-DD): Current date (this will be used as the end date for model training)
+        '''
+
         self.ibkr_server = ibkr_server
         self.current_date = current_date
-    
-    
+
+
     # Get first valid contract
     async def _get_contract(self, symbol):
         contract = Stock(symbol, 'SMART', 'USD')
@@ -72,8 +77,8 @@ class LivePrice:
     async def exec_live_price(self):
         # All Permno Ticker
         live = True
-        historical_data = pd.read_parquet(get_parquet_dir(live) / 'data_price.parquet.brotli', columns=['Close'])
-        all_ticker = pd.read_parquet(get_parquet_dir(live) / 'data_ticker.parquet.brotli')
+        historical_data = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli', columns=['Close'])
+        all_ticker = pd.read_parquet(get_parquet(live) / 'data_ticker.parquet.brotli')
         latest_date = historical_data.index.get_level_values('date').max().strftime('%Y-%m-%d')
         latest_data = historical_data.loc[historical_data.index.get_level_values('date') == latest_date]
         latest_data = latest_data.merge(all_ticker, left_index=True, right_index=True, how='left')

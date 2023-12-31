@@ -8,9 +8,9 @@ from functions.utils.func import *
 live = False
 
 if live:
-    stock = read_stock(get_large_dir(live) / 'permno_live.csv')
+    stock = read_stock(get_large(live) / 'permno_live.csv')
 else:
-    stock = read_stock(get_large_dir(live) / 'permno_to_train_fund.csv')
+    stock = read_stock(get_large(live) / 'permno_to_train_fund.csv')
 
 start = '2008-01-01'
 end = '2023-01-01'
