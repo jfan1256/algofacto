@@ -138,6 +138,7 @@ class LiveTrade:
         order_counter = OrderCounter()
         self.ibkr_server.newOrderEvent += order_counter.new_order_event_handler
 
+        # Execute Trade Orders
         for order_num, row in enumerate(stock_data.itertuples(), start=1):
             ticker = row.index.get_level_values('ticker')
             type = row.index.get_level_values('type')

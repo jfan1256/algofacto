@@ -18,14 +18,6 @@ from live_trade.strat_trend_mls.strat_trend_mls import StratTrendMLS
 from live_trade.strat_mrev_etf.strat_mrev_etf import StratMrevETF
 from live_trade.strat_mrev_mkt.strat_mrev_mkt import StratMrevMkt
 
-from live_trade.exec_trade_ml import exec_ml_ret_trade
-from live_trade.exec_close_ml import exec_ml_ret_close
-from live_trade.strat_port_ims.exec_port_ims import exec_port_ims_data, exec_port_ims_trade
-from live_trade.exec_close_ims import exec_port_ims_close
-from outdated.exec_mrev_etf import exec_mrev_etf_trade, exec_mrev_etf_data
-from live_trade.exec_close_mrev import exec_mrev_etf_close
-
-
 def daily_train():
     # Get current date
     current_date = date.today().strftime('%Y-%m-%d')
@@ -67,16 +59,6 @@ def daily_train():
     strat_mrev_etf.backtest_mrev_etf()
     # Backtest StratMrevMkt
     strat_mrev_mkt.backtest_mrev_mkt()
-
-
-
-
-
-    # Get data for Invport Strategy
-    exec_port_ims_data(window=3, scale=10, start_date='2005-01-01')
-    # Get data for Mrev ETF Strategy
-    exec_mrev_etf_data(window=168, threshold=2_000_000_000)
-
 
 def daily_trade():
     # Get current date
@@ -124,23 +106,5 @@ def daily_trade():
     # Execute Trades
     live_close.exec_close()
     live_trade.exec_trade()
-
-
-
-
-
-    # Execute trades for ML Strategy
-    exec_ml_ret_close()
-    asyncio.run(exec_ml_ret_trade(num_stocks=50, settlement=3, capital=0.25))
-
-    # Execute trades for Invport Strategy
-    exec_port_ims_close()
-    exec_port_ims_trade(scale=10, window=3, settlement=3, capital=0.50)
-    # Execute Mrev ETF Strategy
-    exec_mrev_etf_close()
-    exec_mrev_etf_trade(window=168, threshold=2_000_000_000, settlement=3, capital=0.25)
-
-
-
 
 
