@@ -196,7 +196,7 @@ class StratTrendMLS:
         total_daily_ret = total_ret['total_ret']
 
         # Export backtest result
-        filname = f"trend_mls_{date_index.today().strftime('%Y%m%d')}"
+        filname = f"trend_mls_{date.today().strftime('%Y%m%d')}"
         dir_path = get_strat_trend_mls() / 'report' / filname
         qs.reports.html(total_daily_ret, 'SPY', output=dir_path)
 
@@ -336,7 +336,7 @@ class StratTrendMLS:
         })
 
         # Combine long and short dataframes
-        long_df = long_df.set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
+        long_df = long_df.set_index(['date', 'ticker', 'type']).sort_index(level=['date', 'ticker', 'type'])
         filename = get_live_stock() / 'trade_stock_trend_mls.parquet.brotli'
 
         # Check if file exists

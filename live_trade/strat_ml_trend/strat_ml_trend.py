@@ -521,7 +521,7 @@ class StratMLTrend:
 
         # Combine long and short dataframes
         combined_df = pd.concat([long_df, short_df], axis=0)
-        combined_df = combined_df.set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
+        combined_df = combined_df.set_index(['date', 'ticker', 'type']).sort_index(level=['date', 'ticker', 'type'])
         filename = get_live_stock() / 'trade_stock_ml_trend.parquet.brotli'
 
         # Check if file exists

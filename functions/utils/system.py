@@ -88,6 +88,9 @@ def get_strat_port_id():
 def get_strat_trend_mls():
     return get_live_trade() / 'strat_trend_mls'
 
+def get_strat_mrev_mkt():
+    return get_live_trade() / 'strat_mrev_mkt'
+
 def print_data_shape(self, *args, **kwargs):
     print('Shape: ' + str(self.data.shape))
 

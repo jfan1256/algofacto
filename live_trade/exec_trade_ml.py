@@ -166,6 +166,5 @@ async def exec_ml_ret_trade(num_stocks, settlement, capital):
     print(f"----------------------------------------------------Total number of new orders placed: {order_counter.new_order_count}---------------------------------------------------")
     ib.disconnect()
 
-
 # asyncio.run(exec_trade(num_stocks=50, settlement=3))
 

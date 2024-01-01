@@ -149,7 +149,7 @@ class LivePrice:
         # Export Data
         permno_data.to_parquet(get_live_price() / 'data_permno_live.parquet.brotli', compression='brotli')
         etf_data.to_parquet(get_live_price() / 'data_etf_live.parquet.brotli', compression='brotli')
-        market_data.to_parquet(get_live_price() / 'data_market_live.parquet.brotli', compression='brotli')
+        market_data.to_parquet(get_live_price() / 'data_mkt_live.parquet.brotli', compression='brotli')
         bond_data.to_parquet(get_live_price() / 'data_bond_live.parquet.brotli', compression='brotli')
         com_data.to_parquet(get_live_price() / 'data_com_live.parquet.brotli', compression='brotli')
         
