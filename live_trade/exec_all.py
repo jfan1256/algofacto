@@ -8,10 +8,11 @@ from live_trade.live_price import LivePrice
 
 from live_trade.strat_ml_trend.strat_ml_trend import StratMLTrend
 from live_trade.strat_ml_ret.strat_ml_ret import StratMLRet
-from live_trade.strat_port_ivmd.strat_port_ivmd import StratPortIVMD
 from live_trade.strat_port_iv.strat_port_iv import StratPortIV
 from live_trade.strat_port_im.strat_port_im import StratPortIM
 from live_trade.strat_port_id.strat_port_id import StratPortID
+from live_trade.strat_port_ivmd.strat_port_ivmd import StratPortIVMD
+from live_trade.strat_trend_mls.strat_trend_mls import StratTrendMLS
 
 from live_trade.exec_trade_ml import exec_ml_ret_trade
 from live_trade.exec_close_ml import exec_ml_ret_close
@@ -25,13 +26,14 @@ def daily_train():
     # Get current date
     current_date = date.today().strftime('%Y-%m-%d')
 
-    # Load Strategies
+    # Create Strategies
     strat_ml_ret = StratMLRet(allocate=0.5, current_date=current_date, start_model='2008-01-01', threshold=2_000_000_000, num_stocks=50, leverage=0.5, port_opt='equal_weight', use_top=6)
     start_ml_trend = StratMLTrend(allocate=0.5, current_date=current_date, start_model='2008-01-01', threshold=2_000_000_000, num_stocks=50, leverage=0.5, port_opt='equal_weight', use_top=1)
-    strat_port_ivmd = StratPortIVMD(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window=21)
     strat_port_iv = StratPortIV(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window=21)
     strat_port_im = StratPortIM(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window=21)
     strat_port_id = StratPortID(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window=21)
+    strat_port_ivmd = StratPortIVMD(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window=21)
+    strat_trend_mls = StratTrendMLS(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window_hedge=60, window_port=252)
 
     # Retrieve live data and create factor data
     live_retrieve = LiveCreate(current_date=current_date, threshold=6_000_000_000, set_length=3, update_crsp_price=False, start_data='2004-01-01', start_factor='2004-01-01')
@@ -44,11 +46,18 @@ def daily_train():
     # Execute model training and predicting for StratMLTrend
     start_ml_trend.exec_ml_trend_model()
     start_ml_trend.exec_ml_trend_model()
-    # Backtest Factor Strategies
-    strat_port_ivmd.backtest_port_ivmd()
+
+    # Backtest StratPortIV
     strat_port_iv.backtest_port_iv()
+    # Backtest StratPortIM
     strat_port_im.backtest_port_im()
+    # Backtest StratPortID
     strat_port_id.backtest_port_id()
+    # Backtest StratPortIVMD
+    strat_port_ivmd.backtest_port_ivmd()
+    # Backtest StratTrendMLS
+    strat_trend_mls.backtest_trend_mls()
+
 
 
 
@@ -74,17 +83,24 @@ def daily_trade():
     live_price = LivePrice(ibkr_server=ibkr_server, current_date=current_date)
     loop.run_until_complete(live_price.exec_live_price())
 
-    # Load Strategies
-    strat_port_ivmd = StratPortIVMD(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window=21)
+    # Create Strategies
     strat_port_iv = StratPortIV(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window=21)
     strat_port_im = StratPortIM(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window=21)
     strat_port_id = StratPortID(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window=21)
+    strat_port_ivmd = StratPortIVMD(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window=21)
+    strat_trend_mls = StratTrendMLS(allocate=0.5, current_date=current_date, start_date='2008-01-01', threshold=2_000_000_000, num_stocks=50, window_hedge=60, window_port=252)
 
-    # Execute Factor Strategies
-    strat_port_ivmd.exec_port_ivmd()
+    # Execute StratPortIV
     strat_port_iv.exec_port_iv()
+    # Execute StratPortIM
     strat_port_im.exec_port_im()
+    # Execute StratPortID
     strat_port_id.exec_port_id()
+    # Execute StratPortIVMD
+    strat_port_ivmd.exec_port_ivmd()
+    # Execute StratTrendMLS
+    strat_trend_mls.exec_trend_mls()
+
 
 
 

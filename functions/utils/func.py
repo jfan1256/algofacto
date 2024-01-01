@@ -622,10 +622,12 @@ def get_sp500_fmp():
 
 # Outputs window data from a specified date
 def window_data(data, date, window):
-    target_date = pd.to_datetime(date) - BDay(window)
-    filtered_data = data[data.index.get_level_values('date') >= target_date]
-    valid_groups = [group.tail(window) for name, group in filtered_data.groupby(level='permno')
-                    if group.index.get_level_values('date').max() >= target_date and len(group) >= window]
-    return pd.concat(valid_groups, axis=0)
+    target_date = pd.to_datetime(date)
+    def process_group(group):
+        group_filtered = group.tail(window)
+        if group_filtered.index.get_level_values('date').max() >= target_date and len(group_filtered) >= window:
+            return group_filtered
+        return None
+    return pd.concat([process_group(group) for _, group in data.groupby(level='permno') if process_group(group) is not None])
 
 
