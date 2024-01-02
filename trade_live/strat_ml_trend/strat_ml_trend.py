@@ -534,7 +534,3 @@ class StratMLTrend:
             updated_df.to_parquet(filename, compression='brotli')
         else:
             combined_df.to_parquet(filename, compression='brotli')
-
-        # Compute Alpha
-        strat_ret_df = strat_ret.to_frame()
-        rolling_alpha(strat_ret=strat_ret_df, windows=[60, 252], live=live, path=dir_path)

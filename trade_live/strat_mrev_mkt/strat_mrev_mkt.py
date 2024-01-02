@@ -1,6 +1,8 @@
 import os
 import quantstats as qs
 
+from class_mrev.mrev_sd_epsil import MrevSDEpsil
+
 from core.operation import *
 
 class StratMrevMkt:
@@ -9,9 +11,7 @@ class StratMrevMkt:
                  current_date=None,
                  start_date=None,
                  threshold=None,
-                 num_stocks=None,
                  window_epsil=None,
-                 window_port=None,
                  sbo=None,
                  sso=None,
                  sbc=None,
@@ -21,7 +21,6 @@ class StratMrevMkt:
         allocate (float): Percentage of capital to allocate for this strategy
         current_date (str: YYYY-MM-DD): Current date (this will be used as the end date for backtest period)
         start_date (str: YYYY-MM-DD): Start date for backtest period
-        num_stocks (int): Number of stocks to long/short
         threshold (int): Market cap threshold to determine if a stock is buyable/shortable
         window_epsil (int): Rolling window size to calculate standardized s-score
         window_port (int): Rolling window size to calculate inverse volatility for main portfolio
@@ -35,133 +34,19 @@ class StratMrevMkt:
         self.current_date = current_date
         self.start_date = start_date
         self.threshold = threshold
-        self.num_stocks = num_stocks
         self.window_epsil = window_epsil
-        self.window_port = window_port
         self.sbo = sbo
         self.sso = sso
         self.sbc = sbc
         self.ssc = ssc
 
-
-    # Retrieves the top self.num_stocks stocks with the greatest inverse volatility weight
-    def _top_inv_vol(self, df):
-        long_df = df[df['position'] == 'long']
-        short_df = df[df['position'] == 'short']
-        top_long = long_df.nlargest(self.num_stocks, 'inv_vol')
-        top_short = short_df.nlargest(self.num_stocks, 'inv_vol')
-        comb = pd.concat([top_long, top_short], axis=0)
-        return comb
-
-    # Creates a multiindex of (permno, date) for a dataframe with only a date index
-    @staticmethod
-    def _create_multi_index(factor_data, stock):
-        factor_values = pd.concat([factor_data] * len(stock), ignore_index=True).values
-        multi_index = pd.MultiIndex.from_product([stock, factor_data.index])
-        multi_index_factor = pd.DataFrame(factor_values, columns=factor_data.columns, index=multi_index)
-        multi_index_factor.index = multi_index_factor.index.set_names(['permno', 'date'])
-        return multi_index_factor
-
-    # Create signals
-    def _create_signal(self, data):
-        def apply_rules(group):
-            # Initialize signals and positions
-            signals = [None] * len(group)
-            positions = [None] * len(group)
-            # Create masks for conditions
-            open_long_condition = (group['s_score'] < -self.sbo) & (group['market_cap'] > self.threshold)
-            open_short_condition = (group['s_score'] > self.sso) & (group['market_cap'] > self.threshold)
-            close_long_condition = group['s_score'] > -self.ssc
-            close_short_condition = group['s_score'] < self.sbc
-            # Flag to check if any position is open
-            position_open = False
-            current_position = None
-
-            for i in range(len(group)):
-                if position_open:
-                    if positions[i - 1] == 'long' and close_long_condition.iloc[i]:
-                        signals[i] = 'close long'
-                        positions[i] = None
-                        position_open = False
-                        current_position = None
-                    elif positions[i - 1] == 'short' and close_short_condition.iloc[i]:
-                        signals[i] = 'close short'
-                        positions[i] = None
-                        position_open = False
-                        current_position = None
-                    else:
-                        signals[i] = 'hold'
-                        positions[i] = current_position
-                else:
-                    if open_long_condition.iloc[i]:
-                        positions[i] = 'long'
-                        signals[i] = 'buy to open'
-                        current_position = 'long'
-                        position_open = True
-                    elif open_short_condition.iloc[i]:
-                        positions[i] = 'short'
-                        signals[i] = 'sell to open'
-                        position_open = True
-                        current_position = 'short'
-
-            return pd.DataFrame({'signal': signals, 'position': positions}, index=group.index)
-
-        # Sort data
-        data = data.sort_index(level=['permno', 'date'])
-        # Group by permno and apply the rules for each group
-        results = data.groupby('permno').apply(apply_rules).reset_index(level=0, drop=True)
-        # Flatten the results and assign back to the data
-        data = data.join(results)
-        return data
-
-    # Calculate weights and total portfolio return
-    @staticmethod
-    def calc_total_ret(df, etf_returns):
-        print("Get hedge weights...")
-        mask_long = df['position'] == 'long'
-        mask_short = df['position'] == 'short'
-        df['hedge_weight'] = np.where(mask_long, -1, np.where(mask_short, 1, 0))
-
-        # Get net hedge betas
-        print("Get net hedge betas...")
-        beta_columns = [col for col in df.columns if '_sector_' in col]
-        weighted_betas = df[beta_columns].multiply(df['hedge_weight'], axis=0)
-        net_hedge_betas = weighted_betas.groupby('date').sum()
-
-        # Combine and normalize weights
-        print("Normalize weights...")
-        df['stock_weight'] = np.where(mask_long, 1, np.where(mask_short, -1, 0))
-
-        # Normalize net hedge betas and stock weights combined
-        df['abs_stock_weight'] = df['stock_weight'].abs()
-        combined_weights = df.groupby('date')['abs_stock_weight'].sum() + net_hedge_betas.abs().sum(axis=1)
-        df['normalized_weight'] = df['stock_weight'].div(combined_weights, axis=0)
-        normalized_net_hedge_betas = net_hedge_betas.div(combined_weights, axis=0)
-
-        # Get net hedge return
-        print("Get net hedge returns...")
-        net_hedge_returns = pd.DataFrame(index=normalized_net_hedge_betas.index)
-        for beta in beta_columns:
-            etf_return_column = beta.split('_sector_')[0]
-            if etf_return_column in etf_returns.columns:
-                net_hedge_returns[beta] = normalized_net_hedge_betas[beta] * etf_returns[etf_return_column]
-
-        # Get total hedge return
-        print("Get total hedge return...")
-        net_hedge_return_total = net_hedge_returns.sum(axis=1)
-
-        print("Get daily returns...")
-        daily_returns = (df['RET_01'] * df['normalized_weight']).groupby('date').sum()
-
-        print("Get total returns...")
-        total_returns = daily_returns + net_hedge_return_total
-
-        return total_returns, normalized_net_hedge_betas, df[['normalized_weight']]
-
     def backtest_mrev_mkt(self):
         print("-----------------------------------------------------------------BACKTEST MREV MKT--------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
+        # Create MrevSDEpsil Class
+        mrev_sd_epsil = MrevSDEpsil(name='mkt', threshold=self.threshold, sbo=self.sbo, sso=self.sso, sbc=self.sbc, ssc=self.ssc)
+
         # Params
         live = True
         hedge_ticker = ['SPY', 'MDY', 'VEA', 'EEM', 'VNQ', 'DBC']
@@ -211,7 +96,7 @@ class StratMrevMkt:
         beta_data['s_score'] = (beta_data[f'epsil_{name}_{self.window_epsil:02}'] - rolling_mean) / rolling_std
 
         # Convert Hedge Dataframe to multi-index
-        hedge_data = self._create_multi_index(hedge_ret, stock)
+        hedge_data = mrev_sd_epsil._create_multi_index(hedge_ret, stock)
 
         # Merge beta_data and hedge_multi
         comb_data = beta_data.merge(hedge_data, left_index=True, right_index=True, how='left')
@@ -230,24 +115,17 @@ class StratMrevMkt:
         comb_data = comb_data.merge(market, left_index=True, right_index=True, how='left')
 
         # Create Signals
-        signal_data = self._create_signal(comb_data)
+        signal_data = mrev_sd_epsil._create_signal(comb_data)
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------BACKTEST STRATEGY-----------------------------------------------------------------------------------
         print("--------------------------------------------------------------------BACKTEST STRATEGY-----------------------------------------------------------------------------------")
-        # Calculate Inverse Volatility
-        signal_data['vol'] = signal_data.groupby('ticker')['RET_01'].rolling(self.window_port).std().reset_index(level=0, drop=True)
-        signal_data['inv_vol'] = 1 / signal_data['vol']
-
-        # Retrieve top self.num_stocks based off inverse volatility
-        signal_data = signal_data.groupby('date').apply(self._top_inv_vol).reset_index(level=0, drop=True)
-
         # Shift returns for backtest results
         signal_data['RET_01'] = signal_data.groupby('permno')['RET_01'].shift(-1)
         hedge_ret = hedge_ret.shift(-1)
 
         # Calculate total returns and weights
-        total_ret, beta_weight, stock_weight = self.calc_total_ret(signal_data, hedge_ret)
+        total_ret, beta_weight, stock_weight = mrev_sd_epsil.calc_total_ret(signal_data, hedge_ret)
 
         # Export backtest result
         filname = f"mrev_mkt_{date.today().strftime('%Y%m%d')}"
@@ -258,6 +136,9 @@ class StratMrevMkt:
         print("-------------------------------------------------------------------EXEC MREV MKT----------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
+        # Create MrevSDEpsil Class
+        mrev_sd_epsil = MrevSDEpsil(name='mkt', threshold=self.threshold, sbo=self.sbo, sso=self.sso, sbc=self.sbc, ssc=self.ssc)
+
         # Params
         live = True
 
@@ -305,7 +186,7 @@ class StratMrevMkt:
         beta_data['s_score'] = (beta_data[f'epsil_{name}_{self.window_epsil:02}'] - rolling_mean) / rolling_std
 
         # Convert Hedge Dataframe to multi-index
-        hedge_data = self._create_multi_index(hedge_ret, stock)
+        hedge_data = mrev_sd_epsil._create_multi_index(hedge_ret, stock)
 
         # Merge beta_data and hedge_multi
         comb_data = beta_data.merge(hedge_data, left_index=True, right_index=True, how='left')
@@ -324,21 +205,14 @@ class StratMrevMkt:
         comb_data = comb_data.merge(market, left_index=True, right_index=True, how='left')
 
         # Create Signals
-        window_comb = window_data(data=comb_data, date=self.current_date, window=self.window_port*2)
-        signal_data = self._create_signal(window_comb)
+        window_comb = window_data(data=comb_data, date=self.current_date, window=21*2)
+        signal_data = mrev_sd_epsil._create_signal(window_comb)
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ---------------------------------------------------------------------------GET STOCKS----------------------------------------------------------------------------------------
         print("----------------------------------------------------------------------GET STOCKS----------------------------------------------------------------------------------------")
-        # Calculate Inverse Volatility
-        signal_data['vol'] = signal_data.groupby('ticker')['RET_01'].rolling(self.window_port).std().reset_index(level=0, drop=True)
-        signal_data['inv_vol'] = 1 / signal_data['vol']
-
-        # Retrieve top self.num_stocks based off inverse volatility
-        signal_data = signal_data.groupby('date').apply(self._top_inv_vol).reset_index(level=0, drop=True)
-
         # Calculate total returns and weights
-        total_ret, beta_weight, stock_weight = self.calc_total_ret(signal_data, hedge_ret)
+        total_ret, beta_weight, stock_weight = mrev_sd_epsil.calc_total_ret(signal_data, hedge_ret)
 
         # Separate into long/short from current_date data
         latest_long_short = stock_weight.loc[stock_weight.index.get_level_values('date') == self.current_date]

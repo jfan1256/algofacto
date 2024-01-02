@@ -35,6 +35,12 @@ class StratTrendMLS:
         self.window_hedge = window_hedge
         self.window_port = window_port
 
+        with open(get_config() / 'api_key.json') as f:
+            config = json.load(f)
+            fred_key = config['fred_key']
+
+        self.fred_key = fred_key
+
     def backtest_trend_mls(self):
         print("-----------------------------------------------------------------BACKTEST TREND MLS-------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -85,7 +91,7 @@ class StratTrendMLS:
         date_index = date_index.to_frame().drop('date', axis=1).reset_index()
 
         # 5-Year Inflation Rate
-        fred = Fred(api_key='00e07a5c98e913ea393c3b1f089e21d1')
+        fred = Fred(api_key=self.fred_key)
         inflation = fred.get_series("T5YIE").to_frame()
         inflation.columns = ['5YIF']
         inflation = inflation.shift(1)
@@ -95,7 +101,7 @@ class StratTrendMLS:
         inflation = inflation.ffill()
 
         # Unemployment Rate
-        fred = Fred(api_key='00e07a5c98e913ea393c3b1f089e21d1')
+        fred = Fred(api_key=self.fred_key)
         unemploy = fred.get_series("UNRATE").to_frame()
         unemploy.columns = ['UR']
         unemploy = unemploy.shift(1)
@@ -105,7 +111,7 @@ class StratTrendMLS:
         unemploy = unemploy.ffill()
 
         # 10-year vs. 2-year Yield Curve
-        fred = Fred(api_key='00e07a5c98e913ea393c3b1f089e21d1')
+        fred = Fred(api_key=self.fred_key)
         yield_curve = fred.get_series("T10Y2Y").to_frame()
         yield_curve.columns = ['YIELD']
         yield_curve = yield_curve.shift(1)

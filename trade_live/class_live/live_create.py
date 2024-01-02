@@ -87,7 +87,7 @@ class LiveCreate:
         '''
         threshold (int): Market cap threshold for preprocessing stocks
         set_length (int): Number of years required for stock to be considered for trading
-        update_crsp_price (bool): Used to determine whether to update CRSP Price Dataset (should only be done at the start of every new year)
+        update_crsp_price (str): Used to determine whether to update CRSP Price Dataset (should only be done at the start of every new year)
         current_date (str: YYYY-MM-DD): Current date of today (the end date for data retrieval)
         start_data (str: YYYY-MM-DD): Start date for data retrieval
         start_facdtor (str: YYYY-MM-DD): Start data fore factor creation
@@ -104,11 +104,15 @@ class LiveCreate:
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------GET LIVE DATA----------------------------------------------------------------------------------
         print("---------------------------------------------------------------------------GET LIVE DATA----------------------------------------------------------------------------------")
+        # Params
         live = True
         start_time = time.time()
+
+        # Create Live Data
         live_data = LiveData(live=live, start_date=self.start_data, current_date=self.current_date)
 
-        if self.update_crsp_price:
+        # Get Data
+        if self.update_crsp_price == "True":
             live_data.create_crsp_price(self.threshold, self.set_length)
         live_data.create_compustat_quarterly()
         live_data.create_compustat_annual()

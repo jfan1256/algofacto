@@ -5,7 +5,6 @@ from core.operation import *
 from callback import OrderCounter
 from class_order.order_ibkr import OrderIBKR
 
-
 class LiveTrade:
     def __init__(self,
                  ibkr_server,

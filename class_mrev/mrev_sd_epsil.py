@@ -1,15 +1,15 @@
 from core.operation import *
 class MrevSDEpsil:
     def __init__(self,
-                 num_stocks,
-                 threshold,
-                 sbo,
-                 sso,
-                 sbc,
-                 ssc):
+                 name=None,
+                 threshold=None,
+                 sbo=None,
+                 sso=None,
+                 sbc=None,
+                 ssc=None):
 
         '''
-        num_stocks (int): Number of stocks to long/short
+        name (str): Name of beta columns
         threshold (int): Market cap threshold to determine if a stock is buyable/shortable
         sbo (float): Threshold to determine buy signal
         sso (float): Threshold to determine sell signal
@@ -17,21 +17,12 @@ class MrevSDEpsil:
         ssc (float): Threshold to determine close sell signal
         '''
 
-        self.num_stocks = num_stocks
+        self.name = name
         self.threshold = threshold
         self.sbo = sbo
         self.sso = sso
         self.sbc = sbc
         self.ssc = ssc
-
-    # Retrieves the top self.num_stocks stocks with the greatest inverse volatility weight
-    def _top_inv_vol(self, df):
-        long_df = df[df['position'] == 'long']
-        short_df = df[df['position'] == 'short']
-        top_long = long_df.nlargest(self.num_stocks, 'inv_vol')
-        top_short = short_df.nlargest(self.num_stocks, 'inv_vol')
-        comb = pd.concat([top_long, top_short], axis=0)
-        return comb
 
     # Creates a multiindex of (permno, date) for a dataframe with only a date index
     @staticmethod
@@ -95,8 +86,7 @@ class MrevSDEpsil:
         return data
 
     # Calculate weights and total portfolio return
-    @staticmethod
-    def calc_total_ret(df, etf_returns):
+    def calc_total_ret(self, df, etf_returns):
         print("Get hedge weights...")
         mask_long = df['position'] == 'long'
         mask_short = df['position'] == 'short'
@@ -104,7 +94,7 @@ class MrevSDEpsil:
 
         # Get net hedge betas
         print("Get net hedge betas...")
-        beta_columns = [col for col in df.columns if '_sector_' in col]
+        beta_columns = [col for col in df.columns if self.name in col]
         weighted_betas = df[beta_columns].multiply(df['hedge_weight'], axis=0)
         net_hedge_betas = weighted_betas.groupby('date').sum()
 

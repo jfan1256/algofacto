@@ -11,6 +11,7 @@ from core.system import *
 import warnings
 
 warnings.filterwarnings('ignore')
+
 class PredTest:
     def __init__(self,
                  live: bool = None,

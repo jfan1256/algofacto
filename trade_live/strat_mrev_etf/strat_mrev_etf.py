@@ -10,9 +10,7 @@ class StratMrevETF:
                  current_date=None,
                  start_date=None,
                  threshold=None,
-                 num_stocks=None,
                  window_epsil=None,
-                 window_port=None,
                  sbo=None,
                  sso=None,
                  sbc=None,
@@ -22,10 +20,8 @@ class StratMrevETF:
         allocate (float): Percentage of capital to allocate for this strategy
         current_date (str: YYYY-MM-DD): Current date (this will be used as the end date for backtest period)
         start_date (str: YYYY-MM-DD): Start date for backtest period
-        num_stocks (int): Number of stocks to long/short
         threshold (int): Market cap threshold to determine if a stock is buyable/shortable
         window_epsil (int): Rolling window size to calculate standardized s-score
-        window_port (int): Rolling window size to calculate inverse volatility for main portfolio
         sbo (float): Threshold to determine buy signal
         sso (float): Threshold to determine sell signal
         sbc (float): Threshold to determine close buy signal
@@ -36,9 +32,7 @@ class StratMrevETF:
         self.current_date = current_date
         self.start_date = start_date
         self.threshold = threshold
-        self.num_stocks = num_stocks
         self.window_epsil = window_epsil
-        self.window_port = window_port
         self.sbo = sbo
         self.sso = sso
         self.sbc = sbc
@@ -49,7 +43,7 @@ class StratMrevETF:
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
         # Create MrevSDEpsil Class
-        mrev_sd_epsil = MrevSDEpsil(num_stocks=self.num_stocks, threshold=self.threshold, sbo=self.sbo, sso=self.sso, sbc=self.sbc, ssc=self.ssc)
+        mrev_sd_epsil = MrevSDEpsil(name='sector', threshold=self.threshold, sbo=self.sbo, sso=self.sso, sbc=self.sbc, ssc=self.ssc)
 
         # Params
         live = True
@@ -85,7 +79,7 @@ class StratMrevETF:
         # Params
         ret = 'RET_01'
         factor_col = hedge_ret.columns.tolist()
-        name = 'mkt_01'
+        name = 'sector_01'
 
         # Execute Rolling LR
         beta_data = rolling_ols_parallel(data=price, ret=ret, factor_data=hedge_ret, factor_cols=factor_col, window=self.window_epsil, name=name)
@@ -124,13 +118,6 @@ class StratMrevETF:
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------BACKTEST STRATEGY-----------------------------------------------------------------------------------
         print("--------------------------------------------------------------------BACKTEST STRATEGY-----------------------------------------------------------------------------------")
-        # Calculate Inverse Volatility
-        signal_data['vol'] = signal_data.groupby('ticker')['RET_01'].rolling(self.window_port).std().reset_index(level=0, drop=True)
-        signal_data['inv_vol'] = 1 / signal_data['vol']
-
-        # Retrieve top self.num_stocks based off inverse volatility
-        signal_data = signal_data.groupby('date').apply(mrev_sd_epsil._top_inv_vol).reset_index(level=0, drop=True)
-
         # Shift returns for backtest results
         signal_data['RET_01'] = signal_data.groupby('permno')['RET_01'].shift(-1)
         hedge_ret = hedge_ret.shift(-1)
@@ -148,7 +135,7 @@ class StratMrevETF:
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
         # Create MrevSDEpsil Class
-        mrev_sd_epsil = MrevSDEpsil(num_stocks=self.num_stocks, threshold=self.threshold, sbo=self.sbo, sso=self.sso, sbc=self.sbc, ssc=self.ssc)
+        mrev_sd_epsil = MrevSDEpsil(name='sector', threshold=self.threshold, sbo=self.sbo, sso=self.sso, sbc=self.sbc, ssc=self.ssc)
 
         # Params
         live = True
@@ -181,7 +168,7 @@ class StratMrevETF:
         # Params
         ret = 'RET_01'
         factor_col = hedge_ret.columns.tolist()
-        name = 'mkt_01'
+        name = 'sector_01'
 
         # Execute Rolling LR
         window_price = window_data(data=price, date=self.current_date, window=self.window_epsil*3)
@@ -216,19 +203,12 @@ class StratMrevETF:
         comb_data = comb_data.merge(market, left_index=True, right_index=True, how='left')
 
         # Create Signals
-        window_comb = window_data(data=comb_data, date=self.current_date, window=self.window_port*2)
+        window_comb = window_data(data=comb_data, date=self.current_date, window=21*2)
         signal_data = mrev_sd_epsil._create_signal(window_comb)
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ---------------------------------------------------------------------------GET STOCKS----------------------------------------------------------------------------------------
         print("----------------------------------------------------------------------GET STOCKS----------------------------------------------------------------------------------------")
-        # Calculate Inverse Volatility
-        signal_data['vol'] = signal_data.groupby('ticker')['RET_01'].rolling(self.window_port).std().reset_index(level=0, drop=True)
-        signal_data['inv_vol'] = 1 / signal_data['vol']
-
-        # Retrieve top self.num_stocks based off inverse volatility
-        signal_data = signal_data.groupby('date').apply(mrev_sd_epsil._top_inv_vol).reset_index(level=0, drop=True)
-
         # Calculate total returns and weights
         total_ret, beta_weight, stock_weight = mrev_sd_epsil.calc_total_ret(signal_data, hedge_ret)
 

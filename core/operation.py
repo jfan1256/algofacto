@@ -13,6 +13,7 @@ from pandas.tseries.offsets import BDay
 import time
 import plotly.offline as py
 import plotly.graph_objs as go
+import json
 import pandas as pd
 import requests
 import matplotlib.pyplot as plt
@@ -27,6 +28,9 @@ import yfinance as yf
 
 warnings.filterwarnings('ignore')
 
+with open(get_config() / 'api_key.json') as f:
+  config = json.load(f)
+  api_key = config['fmp_key']
 
 # Gets dataframe for a specified stock
 def get_stock_data(data, stock):
@@ -305,56 +309,6 @@ def rolling_ols_parallel(data, ret, factor_data, factor_cols, window, name):
 
     return pd.concat(results).rename(columns=lambda x: f'{x}_{name}_{window:02}')
 
-# Calculate Alpha and Plot
-def rolling_alpha(strat_ret, windows, live, path):
-    # Read in risk-free rate
-    risk_free = pd.read_parquet(get_parquet(live) / 'data_rf.parquet.brotli')
-    # Add risk-free rate to strategy return's
-    strat_ret.columns = ['strat_ret']
-    strat_ret = strat_ret.merge(risk_free, left_index=True, right_index=True, how='left')
-    # Get risk-premium
-    strat_ret['strat_ret'] -= strat_ret['RF']
-    # Read in SPY return
-    spy = get_spy(start_date=strat_ret.index.min().strftime('%Y-%m-%d'), end_date=strat_ret.index.max().strftime('%Y-%m-%d'))
-    spy.columns = ['spy_ret']
-    # Add market return to strategy return
-    strat_ret = strat_ret.merge(spy, left_index=True, right_index=True, how='left')
-    strat_ret['spy_ret'] -= strat_ret['RF']
-    # Perform rolling OLS
-    strat_ret['const'] = 1  # add a constant for the OLS
-
-    for window in windows:
-        rolling_results = RollingOLS(endog=strat_ret['strat_ret'], exog=strat_ret[['const', 'spy_ret']], window=window).fit()
-        # Get rolling estimates of alpha and beta
-        strat_ret[f'alpha_{window}'] = rolling_results.params['const']
-        strat_ret[f'beta_{window}'] = rolling_results.params['spy_ret']
-        # Get p-values for alpha
-        strat_ret[f'p_value_alpha_{window}'] = rolling_results.pvalues[:, 0]
-
-    # Determine the total number of rows needed for all windows
-    total_rows = 3 * len(windows)
-
-    # Create a single figure with subplots for each window
-    fig = make_subplots(rows=total_rows, cols=1, subplot_titles=[f"{metric} (Window: {window})" for window in windows for metric in ['Alpha', 'Beta', 'P-Value of Alpha']])
-    current_row = 1
-    for window in windows:
-        # Add traces for alpha, beta, and p_value_alpha for the current window
-        fig.add_trace(go.Scatter(x=strat_ret.index, y=strat_ret[f'alpha_{window}'], name=f'Alpha (Window: {window})'), row=current_row, col=1)
-        current_row += 1
-        fig.add_trace(go.Scatter(x=strat_ret.index, y=strat_ret[f'beta_{window}'], name=f'Beta (Window: {window})'), row=current_row, col=1)
-        current_row += 1
-        fig.add_trace(go.Scatter(x=strat_ret.index, y=strat_ret[f'p_value_alpha_{window}'], name=f'P-Value of Alpha (Window: {window})'), row=current_row, col=1)
-        current_row += 1
-
-    for i in range(3, total_rows + 1, 3):
-        fig.update_xaxes(title_text="Date", row=i, col=1)
-    # Update layout to accommodate all subplots
-    fig.update_layout(height=300 * total_rows, width=1200, title_text="Rolling Alpha, Beta, and P-Value for Multiple Windows", showlegend=True)
-
-    # Save the figure
-    filename = path / 'alpha.html'
-    py.plot(fig, filename=str(filename), auto_open=False)
-
 # Rolling PCA
 def rolling_pca(data, window_size, num_components, name):
     principal_components = []
@@ -477,7 +431,6 @@ def remove_nan_before_end(data, column):
 
 # Get stock price data from FMP from start to current_date
 def get_data_fmp(ticker_list, start, current_date):
-    api_key = "f913bbd3dad0c411c864c0d960a711e7"
     frames = []
 
     for ticker in tqdm(ticker_list, desc="Fetching data", unit="ticker"):
@@ -485,9 +438,9 @@ def get_data_fmp(ticker_list, start, current_date):
         response = requests.get(url)
         data = response.json()
 
-        # Check if there's trade_historical data in the response
-        if 'trade_historical' in data:
-            df = pd.DataFrame(data['trade_historical'])
+        # Check if there's historical data in the response
+        if 'historical' in data:
+            df = pd.DataFrame(data['historical'])
             df['ticker'] = ticker
             frames.append(df)
         else:
@@ -514,7 +467,6 @@ def get_data_fmp(ticker_list, start, current_date):
 
 # Get all stock news per ticker from fmp
 def get_news_fmp(tickers):
-    api_key = "f913bbd3dad0c411c864c0d960a711e7"
     base_url = "https://financialmodelingprep.com/api/v3/stock_news"
     limit = 1000
     all_data = []
@@ -537,7 +489,6 @@ def get_news_fmp(tickers):
 
 # Get adjustment factor for close price for date from FMP
 def get_adj_factor_fmp(ticker_list, date):
-    api_key = "f913bbd3dad0c411c864c0d960a711e7"
     frames = []
 
     for ticker in tqdm(ticker_list, desc="Fetching data", unit="ticker"):
@@ -545,9 +496,9 @@ def get_adj_factor_fmp(ticker_list, date):
         response = requests.get(url)
         data = response.json()
 
-        # Check if there's trade_historical data in the response
-        if 'trade_historical' in data:
-            df = pd.DataFrame(data['trade_historical'])
+        # Check if there's historical data in the response
+        if 'historical' in data:
+            df = pd.DataFrame(data['historical'])
             df['ticker'] = ticker
             frames.append(df)
         else:
@@ -576,7 +527,6 @@ def get_adj_factor_fmp(ticker_list, date):
 
 # Get dividend data per ticker from start to current_date
 def get_dividend_fmp(ticker_list, start, current_date):
-    api_key = "f913bbd3dad0c411c864c0d960a711e7"
     frames = []
 
     for ticker in tqdm(ticker_list, desc="Fetching data", unit="ticker"):
@@ -585,8 +535,8 @@ def get_dividend_fmp(ticker_list, start, current_date):
         data = response.json()
 
         # Check if there's dividend data in the response
-        if 'trade_historical' in data:
-            df = pd.DataFrame(data['trade_historical'])
+        if 'historical' in data:
+            df = pd.DataFrame(data['historical'])
             df['ticker'] = ticker
             frames.append(df)
         else:
@@ -605,7 +555,6 @@ def get_dividend_fmp(ticker_list, start, current_date):
 
 # Get sp500 constituents from FMP
 def get_sp500_fmp():
-    api_key = "f913bbd3dad0c411c864c0d960a711e7"
     url = f"https://financialmodelingprep.com/api/v3/historical/sp500_constituent?apikey={api_key}"
     response = requests.get(url)
     if response.status_code == 200:

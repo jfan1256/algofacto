@@ -1,7 +1,10 @@
 from pathlib import Path
 
 def get_root_dir() -> Path:
-    return Path(__file__).resolve().parent.parent.parent
+    return Path(__file__).resolve().parent.parent
+
+def get_config():
+    return get_root_dir() / 'data_config'
 
 def get_historical_trade():
     return get_root_dir() / 'trade_historical'
@@ -11,27 +14,30 @@ def get_live_trade():
 
 def get_parquet(live) -> Path:
     if live:
-        return get_live_trade() / 'parquet'
+        return get_live_trade() / 'data_parquet'
     else:
-        return get_historical_trade() / 'parquet'
+        return get_historical_trade() / 'data_parquet'
 
 def get_factor(live) -> Path:
     if live:
-        return get_live_trade() / 'factor'
+        return get_live_trade() / 'data_factor'
     else:
-        return get_historical_trade() / 'factor'
+        return get_historical_trade() / 'data_factor'
 
 def get_prep(live) -> Path:
     if live:
-        return get_live_trade() / 'prep'
+        return get_live_trade() / 'data_prep'
     else:
-        return get_historical_trade() / 'prep'
+        return get_historical_trade() / 'data_prep'
 
 def get_large(live) -> Path:
     if live:
-        return get_live_trade() / 'large'
+        return get_live_trade() / 'data_large'
     else:
-        return get_historical_trade() / 'large'
+        return get_historical_trade() / 'data_large'
+
+def get_live():
+    return get_live_trade() / 'data_live'
 
 def get_ml_result(live, model_name) -> Path:
     if live and ('lightgbm' in model_name or 'catboost' in model_name):
@@ -56,7 +62,10 @@ def get_live_price():
     return get_live_trade() / 'live_price'
 
 def get_live_stock():
-    return get_live_trade() / 'stock'
+    return get_live_trade() / 'live_stock'
+
+def get_live_monitor():
+    return get_live_trade() / 'live_monitor'
 
 def get_strat_ml_ret():
     return get_live_trade() / 'strat_ml_ret'

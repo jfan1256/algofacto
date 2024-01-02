@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 from ib_insync import *
 from core.operation import *
@@ -109,16 +110,16 @@ class LivePrice:
 
         # Separate all price data into respective ticker datasets
         permno_data = all_price_data[all_price_data['ticker'].isin(permno_ticker)]
-        etf_data = all_price_data[all_price_data['ticker'].isin(etf_ticker)].set_index(['ticker', 'date'])
-        market_data = all_price_data[all_price_data['ticker'].isin(market_ticker)].set_index(['ticker', 'date'])
-        com_data = all_price_data[all_price_data['ticker'].isin(com_ticker)].set_index(['ticker', 'date'])
-        bond_data = all_price_data[all_price_data['ticker'].isin(bond_ticker)].set_index(['ticker', 'date'])
+        etf_data = all_price_data[all_price_data['ticker'].isin(etf_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+        market_data = all_price_data[all_price_data['ticker'].isin(market_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+        com_data = all_price_data[all_price_data['ticker'].isin(com_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+        bond_data = all_price_data[all_price_data['ticker'].isin(bond_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
 
         # Add permnos to permno_data and keep 'ticker' column (this will be used for easy conversion when identifying stocks to long/short for different strategies)
         permno_to_ticker_dict = latest_data.reset_index(level='date')['ticker'].to_dict()
         ticker_to_permno_dict = {v: k for k, v in permno_to_ticker_dict.items()}
         permno_data['permno'] = permno_data['ticker'].map(ticker_to_permno_dict)
-        permno_data = permno_data.set_index(['permno', 'date'])
+        permno_data = permno_data.set_index(['permno', 'date']).sort_index(level=['permno', 'date'])
 
         # Adjust close price using previous day's dividend adjustment factor
         adj_factor_trade = get_adj_factor_fmp(permno_ticker, latest_date)
@@ -152,4 +153,35 @@ class LivePrice:
         market_data.to_parquet(get_live_price() / 'data_mkt_live.parquet.brotli', compression='brotli')
         bond_data.to_parquet(get_live_price() / 'data_bond_live.parquet.brotli', compression='brotli')
         com_data.to_parquet(get_live_price() / 'data_com_live.parquet.brotli', compression='brotli')
-        
+
+    # Store live price data in a recurring dataset
+    def exec_live_store(self):
+        def add_store(data, filename):
+            # Check if file exists
+            if os.path.exists(filename):
+                existing_df = pd.read_parquet(filename)
+                # Check if the current_date already exists in the existing_df
+                if self.current_date in existing_df.index.get_level_values('date').values:
+                    existing_df = existing_df[existing_df.index.get_level_values('date') != self.current_date]
+                updated_df = pd.concat([existing_df, data], axis=0)
+                updated_df.to_parquet(filename, compression='brotli')
+            else:
+                data.to_parquet(filename, compression='brotli')
+
+        # Load Data
+        permno_data = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
+        etf_data = pd.read_parquet(get_live_price() / 'data_etf_live.parquet.brotli')
+        market_data = pd.read_parquet(get_live_price() / 'data_mkt_live.parquet.brotli')
+        bond_data = pd.read_parquet(get_live_price() / 'data_bond_live.parquet.brotli')
+        com_data = pd.read_parquet(get_live_price() / 'data_com_live.parquet.brotli')
+
+        # Store Data
+        add_store(data=permno_data, filename=get_live() / 'data_permno_store.parquet.brotli')
+        add_store(data=etf_data, filename=get_live() / 'data_etf_store.parquet.brotli')
+        add_store(data=market_data, filename=get_live() / 'data_mkt_store.parquet.brotli')
+        add_store(data=bond_data, filename=get_live() / 'data_bond_store.parquet.brotli')
+        add_store(data=com_data, filename=get_live() / 'data_com_store.parquet.brotli')
+
+
+
+

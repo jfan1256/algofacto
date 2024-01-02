@@ -45,7 +45,7 @@ class PrepFactor:
         self.stock = stock
         self.start = start
         self.end = end
-        self.path = Path(get_prep(live) / f'prep_{self.factor_name}.parquet.brotli')
+        self.path = Path(get_prep(self.live) / f'prep_{self.factor_name}.parquet.brotli')
         self.save = save
 
     # Get factor data

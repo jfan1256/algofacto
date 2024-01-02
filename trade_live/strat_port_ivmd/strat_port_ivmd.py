@@ -12,7 +12,7 @@ class StratPortIVMD:
                  start_date=None,
                  threshold=None,
                  num_stocks=None,
-                 window=None):
+                 window_port=None):
 
         '''
         allocate (float): Percentage of capital to allocate for this strategy
@@ -20,7 +20,7 @@ class StratPortIVMD:
         start_date (str: YYYY-MM-DD): Start date for backtest period
         num_stocks (int): Number of stocks to long/short
         threshold (int): Market cap threshold to determine if a stock is buyable/shortable
-        window (int): Rolling window size to calculate inverse volatility
+        window_port (int): Rolling window size to calculate inverse volatility
         '''
 
         self.allocate = allocate
@@ -28,7 +28,7 @@ class StratPortIVMD:
         self.start_date = start_date
         self.threshold = threshold
         self.num_stocks = num_stocks
-        self.window = window
+        self.window_port = window_port
 
     def backtest_port_ivmd(self):
         print("-----------------------------------------------------------------BACKTEST PORT IVMD-------------------------------------------------------------------------------------")
@@ -170,7 +170,7 @@ class StratPortIVMD:
         filname = f"port_ivmd_{date.today().strftime('%Y%m%d')}"
         dir_path = get_strat_port_ivmd() / 'report' / filname
 
-        long_short_stocks = PortFactor(data=factor_data, window=self.window, num_stocks=self.num_stocks, factors=factors,
+        long_short_stocks = PortFactor(data=factor_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,
                                        threshold=self.threshold, backtest=True, dir_path=dir_path).create_factor_port()
 
     def exec_port_ivmd(self):
@@ -192,12 +192,12 @@ class StratPortIVMD:
 
         # Create returns crop into window data
         ret_price = create_return(price, [1])
-        ret_price = window_data(data=ret_price, date=self.current_date, window=self.window*2)
+        ret_price = window_data(data=ret_price, date=self.current_date, window=self.window_port * 2)
 
         # Resample fund_q date index to daily and crop into window data
         date_index = price.drop(price.columns, axis=1)
         fund_q = date_index.merge(fund_q, left_index=True, right_index=True, how='left').groupby('permno').ffill()
-        fund_q = window_data(data=fund_q, date=self.current_date, window=self.window*2)
+        fund_q = window_data(data=fund_q, date=self.current_date, window=self.window_port * 2)
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------LOAD FACTOR DATA-------------------------------------------------------------------------------------
@@ -308,8 +308,8 @@ class StratPortIVMD:
         filname = f"port_ivmd_{date.today().strftime('%Y%m%d')}"
         dir_path = get_strat_port_ivmd() / 'report' / filname
 
-        latest_window_data = window_data(data=factor_data, date=self.current_date, window=self.window)
-        long_short_stocks = PortFactor(data=latest_window_data, window=self.window, num_stocks=self.num_stocks, factors=factors,
+        latest_window_data = window_data(data=factor_data, date=self.current_date, window=self.window_port)
+        long_short_stocks = PortFactor(data=latest_window_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,
                                        threshold=self.threshold, backtest=False, dir_path=dir_path).create_factor_port()
 
         # Separate into long/short from current_date data

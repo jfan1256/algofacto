@@ -1,16 +1,14 @@
 from datetime import datetime
+from fredapi import Fred
 
 from core.operation import *
 from core.system import *
 
 import wrds
-
-from fredapi import Fred
-
+import json
 import warnings
 
 warnings.filterwarnings('ignore')
-
 
 class LiveData:
     def __init__(self,
@@ -27,6 +25,14 @@ class LiveData:
         self.live = live
         self.start_date = start_date
         self.current_date = current_date
+
+        with open(get_config() / 'api_key.json') as f:
+            config = json.load(f)
+            wrd_key = config['wrd_key']
+            fred_key = config['fred_key']
+            
+        self.wrd_key = wrd_key
+        self.fred_key = fred_key
 
 
     # Create Link Table
@@ -45,7 +51,7 @@ class LiveData:
 
         # Read in linking table
         print("Read in linking table...")
-        db = wrds.Connection(wrds_username='jofan23')
+        db = wrds.Connection(wrds_username=self.wrd_key)
         link_table = db.raw_sql(sql_link)
         db.close()
 
@@ -188,7 +194,7 @@ class LiveData:
 
         # Read in Compustat Quarterly
         print("Read In Compustat Quarterly...")
-        db = wrds.Connection(wrds_username='jofan23')
+        db = wrds.Connection(wrds_username=self.wrd_key)
         compustat_quarterly = db.raw_sql(sql_compustat_quarterly)
         db.close()
 
@@ -306,7 +312,7 @@ class LiveData:
 
         # Read in Compustat Annual
         print("Read in Compustat Annual...")
-        db = wrds.Connection(wrds_username='jofan23')
+        db = wrds.Connection(wrds_username=self.wrd_key)
         compustat_annual = db.raw_sql(sql_compustat_annual)
         db.close()
 
@@ -555,7 +561,7 @@ class LiveData:
 
         # Read in Pension Annual
         print("Read in Pension Annual...")
-        db = wrds.Connection(wrds_username='jofan23')
+        db = wrds.Connection(wrds_username=self.wrd_key)
         pension = db.raw_sql(sql_compustat_pension)
         db.close()
 
@@ -584,7 +590,7 @@ class LiveData:
 
         # Read in Compustat Industry
         print("Read in Compustat Industry...")
-        db = wrds.Connection(wrds_username='jofan23')
+        db = wrds.Connection(wrds_username=self.wrd_key)
         industry_compustat = db.raw_sql(sql_compustat_industry)
         db.close()
 
@@ -764,13 +770,13 @@ class LiveData:
 
         # Read in IBES Actual Adj
         print("Read in IBES Actual Adj...")
-        db = wrds.Connection(wrds_username='jofan23')
+        db = wrds.Connection(wrds_username=self.wrd_key)
         actual_adj = db.raw_sql(sql_actual_adj)
         db.close()
 
         # Read in IBES Statistic Adj
         print("Read in IBES Statistic Adj...")
-        db = wrds.Connection(wrds_username='jofan23')
+        db = wrds.Connection(wrds_username=self.wrd_key)
         statistic_adj = db.raw_sql(sql_statistic_adj)
         db.close()
 
@@ -782,7 +788,7 @@ class LiveData:
     def create_macro(self):
         print("-" * 60)
         # API key
-        fred = Fred(api_key='00e07a5c98e913ea393c3b1f089e21d1')
+        fred = Fred(api_key=self.fred_key)
 
         # Read in Median CPI
         print("Read in Median CPI Index...")
@@ -834,7 +840,7 @@ class LiveData:
         print("-" * 60)
 
         # API key
-        fred = Fred(api_key='00e07a5c98e913ea393c3b1f089e21d1')
+        fred = Fred(api_key=self.fred_key)
 
         # Read in Median CPI
         print("Read in 1 Month Treasury Yield...")
