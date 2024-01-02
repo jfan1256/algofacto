@@ -17,6 +17,13 @@ class LiveData:
                  live: bool = None,
                  start_date: str = None,
                  current_date: str = None):
+
+        '''
+        live (bool): Get live data or historical data
+        start_date (str: YYYY-MM-DD): Start date for data retrieval
+        current_date (str: YYYY-MM-DD): Current date (this will be the last date for data retrieval)
+        '''
+
         self.live = live
         self.start_date = start_date
         self.current_date = current_date

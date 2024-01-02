@@ -10,6 +10,11 @@ class LiveClose:
                  ibkr_server,
                  current_date):
 
+        '''
+        ibkr_server (ib_sync server): IBKR IB Sync server
+        current_date (str: YYYY-MM-DD): Current date (this will be used as the end date for model training)
+        '''
+
         self.ibkr_server = ibkr_server
         self.current_date = current_date
 

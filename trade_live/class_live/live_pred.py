@@ -20,6 +20,17 @@ class LivePred:
                  port_opt: str = None,
                  current_date: str = None,
                  dir_path: Path = None):
+
+        '''
+        live (bool): Get live data or historical data
+        model_name (str): Model name
+        num_stocks (int): Number of stocks to long/short
+        leverage (int): Leverage value for long/short (i.e., 0.5 means 0.5 * long + 0.5 short)
+        port_opt (str): Type of portfolio optimization to use
+        current_date (str: YYYY-MM-DD): Current date (this will be used as the end date for backtest)
+        dir_path (Path): Directory path to export backtest result
+        '''
+
         self.live = live
         self.model_name = model_name
         self.num_stocks = num_stocks
