@@ -130,16 +130,21 @@ def monitor():
     # Params
     alpha_windows = None
 
+    # Get strategy criteria
+    strat_crit = json.load(open(get_config() / 'strat_crit.json'))
+    # Get monitor criteria
+    mont_crit = json.load(open(get_config() / 'mont_crit.json'))
+    
     # Create Monitors
-    mont_ml_ret = MonitorStrat(strat_name='StratMLRet', strat_csv='trade_stock_ml_ret.csv', allocate=0.5, alpha_windows=alpha_windows, output_path=get_live_monitor() / 'strat_ml_ret')
-    mont_ml_trend = MonitorStrat(strat_name='StratMLTrend', strat_csv='trade_stock_ml_trend.csv', allocate=0.5, alpha_windows=alpha_windows, output_path=get_live_monitor() / 'strat_ml_trend')
-    mont_port_iv = MonitorStrat(strat_name='StratPortIV', strat_csv='trade_stock_port_iv.csv', allocate=0.5, alpha_windows=alpha_windows, output_path=get_live_monitor() / 'strat_port_iv')
-    mont_port_im = MonitorStrat(strat_name='StratPortIM', strat_csv='trade_stock_port_im.csv', allocate=0.5, alpha_windows=alpha_windows, output_path=get_live_monitor() / 'strat_port_im')
-    mont_port_id = MonitorStrat(strat_name='StratPortID', strat_csv='trade_stock_port_id.csv', allocate=0.5, alpha_windows=alpha_windows, output_path=get_live_monitor() / 'strat_port_id')
-    mont_port_ivmd = MonitorStrat(strat_name='StratPortIVMD', strat_csv='trade_stock_port_ivmd.csv', allocate=0.5, alpha_windows=alpha_windows, output_path=get_live_monitor() / 'strat_port_ivmd')
-    mont_trend_mls = MonitorStrat(strat_name='StratTrendMLS', strat_csv='trade_stock_ml_ret.csv', allocate=0.5, alpha_windows=alpha_windows, output_path=get_live_monitor() / 'strat_trend_mls')
-    mont_mrev_etf = MonitorStrat(strat_name='StratMrevETF', strat_csv='trade_stock_mrev_etf.csv', allocate=0.5, alpha_windows=alpha_windows, output_path=get_live_monitor() / 'strat_mrev_etf')
-    mont_mrev_mkt = MonitorStrat(strat_name='StratMrevMkt', strat_csv='trade_stock_mrev_mkt.csv', allocate=0.5, alpha_windows=alpha_windows, output_path=get_live_monitor() / 'strat_mrev_mkt')
+    mont_ml_ret = MonitorStrat(strat_name='StratMLRet', strat_csv='trade_stock_ml_ret.csv', allocate=strat_crit['ml_ret']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_ret')
+    mont_ml_trend = MonitorStrat(strat_name='StratMLTrend', strat_csv='trade_stock_ml_trend.csv', allocate=strat_crit['ml_trend']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_trend')
+    mont_port_iv = MonitorStrat(strat_name='StratPortIV', strat_csv='trade_stock_port_iv.csv', allocate=strat_crit['port_iv']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_iv')
+    mont_port_im = MonitorStrat(strat_name='StratPortIM', strat_csv='trade_stock_port_im.csv', allocate=strat_crit['port_im']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_im')
+    mont_port_id = MonitorStrat(strat_name='StratPortID', strat_csv='trade_stock_port_id.csv', allocate=strat_crit['port_id']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_id')
+    mont_port_ivmd = MonitorStrat(strat_name='StratPortIVMD', strat_csv='trade_stock_port_ivmd.csv', allocate=strat_crit['port_ivmd']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_ivmd')
+    mont_trend_mls = MonitorStrat(strat_name='StratTrendMLS', strat_csv='trade_stock_ml_ret.csv', allocate=strat_crit['trend_mls']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_trend_mls')
+    mont_mrev_etf = MonitorStrat(strat_name='StratMrevETF', strat_csv='trade_stock_mrev_etf.csv', allocate=strat_crit['mrev_etf']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_etf')
+    mont_mrev_mkt = MonitorStrat(strat_name='StratMrevMkt', strat_csv='trade_stock_mrev_mkt.csv', allocate=strat_crit['mrev_mkt']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_mkt')
     mont_all = MonitorStrat(output_path=get_live_monitor() / 'strat_all')
 
     # Monitor Strategies
