@@ -47,6 +47,30 @@ class AlphaModel:
                  test_len: int = None,
                  **kwargs):
 
+        '''
+        live (bool): Get historical data or live data
+        model_name (str): Model name (lightgbm, randomforest, or catboost)
+        end (str: YYYY-MM-DD): Final date for model training
+        tuning (str): Type of parameter to use (i.e., default, optuna, etc.)
+        shap (bool): Save shap plot or not
+        plot_loss (bool): Plot training and validation curve after each window training or not
+        plot_hist (bool): Plot actual returns and predicted returns after each window training or not
+        pred (str): Predict for price returns or price movement
+        stock (str): Name of index for stocks ('permno' or 'ticker')
+        lookahead (int): Lookahead period to predict for
+        trend (int): Size of rolling window to calculate trend (for price movement predictions)
+        incr (bool): Perform incremental training or not (only for lightgbm model)
+        opt (str): Type of training optimization ('ewo' or 'wfo')
+        weight (float): Weight for sample weight training (only for lightgbm)
+        outlier (bool): Handle outlier data in label data or not
+        early (bool): Train with early stopping or not
+        pretrain_len (int): Pretrain length for model training
+        train_len (int): Train length for model training
+        valid_len (int): Validation length for model training
+        test_len (int): Prediction length for model training
+        kwargs (dict): Model parameters to feed into model
+        '''
+
         self.data = None
         self.live = live
         self.model_name = model_name

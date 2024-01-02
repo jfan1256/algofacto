@@ -3,7 +3,6 @@ from core.system import *
 from core.animation import *
 
 from itertools import chain
-
 from typing import Union, Optional, List
 
 import warnings
@@ -25,6 +24,21 @@ class Factor:
                  join: str = None,
                  general: bool = False,
                  window: int = None):
+
+        '''
+        factor_data (pd.DataFrame): Factor Data
+        live (bool): Name of factor to prep
+        start (str: YYYY-MM-DD): Start date for factor creation
+        end (str: YYYY-MM-DD): End date for factor creation
+        group (str): Name of index to perform pd.groupby() (date or stock)
+        batch_size (int): Batch size (number of splices within each batch)
+        splice_size (int): Splice size (number of stocks within each splice)
+        stock (list): List of stocks to process
+        join (str): Name of index for stocks ('permno' or 'ticker')
+        general (bool): General factor or not (the data only has a 'date' index
+        window (int): Rolling window size
+        '''
+
         self.factor_data = None
         self.live = live
         self.file_name = file_name

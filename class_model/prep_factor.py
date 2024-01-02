@@ -21,6 +21,20 @@ class PrepFactor:
                  start: str = '2006-01-01',
                  end: str = '2022-01-01',
                  save: bool = False):
+
+        '''
+        live (bool): Get historical data or live data
+        factor_name (str): Name of factor to prep
+        group (str): Name of index for stocks ('permno' or 'ticker')
+        interval (str): Date interval of the date index (i.e., 'D' for daily, 'M' for monthly, 'Q' for quarterly, etc.)
+        kind (str): Type of factor to process
+        div (bool): Divide by closing price for normalization or not
+        stock (list): List of stocks to process
+        start (str: YYYY-MM-DD): Start date for prepping
+        end (str: YYYY-MM-DD): End date for prepping
+        save (bool): Save the prepped data or not
+        '''
+
         self.data = None
         self.live = live
         self.group = group

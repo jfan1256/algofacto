@@ -1,6 +1,5 @@
 from class_model.prep_factor import PrepFactor
 from class_model.alpha_model import AlphaModel
-
 from core.operation import *
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

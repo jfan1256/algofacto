@@ -10,6 +10,7 @@ from plotly.subplots import make_subplots
 from datetime import date
 from pandas.tseries.offsets import BDay
 
+import time
 import plotly.offline as py
 import plotly.graph_objs as go
 import pandas as pd
