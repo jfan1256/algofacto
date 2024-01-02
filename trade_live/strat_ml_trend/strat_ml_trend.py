@@ -3,7 +3,7 @@ import quantstats as qs
 import os
 
 from scipy.stats import spearmanr
-from trade_live.class_live.live_pred import LivePred
+from class_model.pred_test import PredTest
 
 from class_model.prep_factor import PrepFactor
 from class_model.alpha_model import AlphaModel
@@ -395,7 +395,7 @@ class StratMLTrend:
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------------INITIATE LIVE TEST------------------------------------------------------------------------------
         print("--------------------------------------------------------------------------INITIATE LIVE TEST------------------------------------------------------------------------------")
-        live_test = LivePred(live=live, num_stocks=self.num_stocks, leverage=self.leverage, port_opt=self.port_opt, model_name=model_name, current_date=self.current_date, dir_path=dir_path)
+        live_test = PredTest(live=live, num_stocks=self.num_stocks, leverage=self.leverage, port_opt=self.port_opt, model_name=model_name, current_date=self.current_date, dir_path=dir_path)
         files = live_test.read_result('metrics')
 
         # Create directory for backtest report
@@ -493,9 +493,9 @@ class StratMLTrend:
         spy = get_spy(start_date='2005-01-01', end_date=self.current_date)
         qs.reports.html(strat_ret, spy, output=dir_path / 'report.html')
 
-        # Retrieve stocks to long/short tomorrow
-        long = pred_return.iloc[-1]['longStocks']
-        short = pred_return.iloc[-1]['shortStocks']
+        # Retrieve stocks to long/short tomorrow (only get 'ticker')
+        long = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['longStocks']]
+        short = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['shortStocks']]
         # Retrieve weights for long/short and multiply by self.allocate for strategic asset allocation
         long_weight = long_weights[-1] * self.allocate
         short_weight = short_weight[-1] * self.allocate

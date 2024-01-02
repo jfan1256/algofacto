@@ -3,7 +3,7 @@ import quantstats as qs
 import os
 
 from scipy.stats import spearmanr
-from trade_live.class_live.live_pred import LivePred
+from class_model.pred_test import PredTest
 
 from class_model.prep_factor import PrepFactor
 from class_model.alpha_model import AlphaModel
@@ -94,8 +94,7 @@ class StratMLRet:
         alpha.add_factor(ret)
         del ret
 
-        ret_comp = PrepFactor(live=live, factor_name='factor_ret_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                              save=True).prep()
+        ret_comp = PrepFactor(live=live, factor_name='factor_ret_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(ret_comp)
         del ret_comp
 
@@ -111,37 +110,31 @@ class StratMLRet:
         alpha.add_factor(volume)
         del volume
 
-        volatility = PrepFactor(live=live, factor_name='factor_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                save=True).prep()
+        volatility = PrepFactor(live=live, factor_name='factor_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(volatility)
         del volatility
 
-        sign_ret = PrepFactor(live=live, factor_name='factor_sign_ret', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                              save=True).prep()
+        sign_ret = PrepFactor(live=live, factor_name='factor_sign_ret', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(sign_ret, categorical=True)
         del sign_ret
 
-        vol_comp = PrepFactor(live=live, factor_name='factor_vol_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                              save=True).prep()
+        vol_comp = PrepFactor(live=live, factor_name='factor_vol_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(vol_comp)
         del vol_comp
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------PCA-----------------------------------------------------------------------------------------------
-        load_ret = PrepFactor(live=live, factor_name='factor_load_ret', group='permno', interval='D', kind='loading', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                              save=True).prep()
+        load_ret = PrepFactor(live=live, factor_name='factor_load_ret', group='permno', interval='D', kind='loading', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(load_ret)
         del load_ret
 
-        load_volume = PrepFactor(live=live, factor_name='factor_load_volume', group='permno', interval='D', kind='loading', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                 save=True).prep()
+        load_volume = PrepFactor(live=live, factor_name='factor_load_volume', group='permno', interval='D', kind='loading', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(load_volume)
         del load_volume
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------CONDITION-----------------------------------------------------------------------------------------
-        cond_ret = PrepFactor(live=live, factor_name='factor_cond_ret', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                              save=True).prep()
+        cond_ret = PrepFactor(live=live, factor_name='factor_cond_ret', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(cond_ret, categorical=True)
         del cond_ret
 
@@ -151,8 +144,7 @@ class StratMLRet:
         alpha.add_factor(ind, categorical=True)
         del ind
 
-        ind_fama = PrepFactor(live=live, factor_name='factor_ind_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                              save=True).prep()
+        ind_fama = PrepFactor(live=live, factor_name='factor_ind_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(ind_fama, categorical=True)
         del ind_fama
 
@@ -164,13 +156,11 @@ class StratMLRet:
         alpha.add_factor(ind_mom)
         del ind_mom
 
-        ind_mom_fama = PrepFactor(live=live, factor_name='factor_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                  save=True).prep()
+        ind_mom_fama = PrepFactor(live=live, factor_name='factor_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(ind_mom_fama)
         del ind_mom_fama
 
-        ind_mom_sub = PrepFactor(live=live, factor_name='factor_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                 save=True).prep()
+        ind_mom_sub = PrepFactor(live=live, factor_name='factor_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(ind_mom_sub)
         del ind_mom_sub
 
@@ -180,28 +170,23 @@ class StratMLRet:
         alpha.add_factor(age_mom)
         del age_mom
 
-        net_debt_finance = PrepFactor(live=live, factor_name='factor_net_debt_finance', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model,
-                                      end=self.current_date, save=True).prep()
+        net_debt_finance = PrepFactor(live=live, factor_name='factor_net_debt_finance', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(net_debt_finance)
         del net_debt_finance
 
-        chtax = PrepFactor(live=live, factor_name='factor_chtax', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                           save=True).prep()
+        chtax = PrepFactor(live=live, factor_name='factor_chtax', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(chtax)
         del chtax
 
-        asset_growth = PrepFactor(live=live, factor_name='factor_asset_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                  save=True).prep()
+        asset_growth = PrepFactor(live=live, factor_name='factor_asset_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(asset_growth)
         del asset_growth
 
-        mom_season_short = PrepFactor(live=live, factor_name='factor_mom_season_short', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                      save=True).prep()
+        mom_season_short = PrepFactor(live=live, factor_name='factor_mom_season_short', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(mom_season_short)
         del mom_season_short
 
-        mom_season = PrepFactor(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                save=True).prep()
+        mom_season = PrepFactor(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(mom_season)
         del mom_season
 
@@ -209,38 +194,31 @@ class StratMLRet:
         alpha.add_factor(noa)
         del noa
 
-        invest_ppe = PrepFactor(live=live, factor_name='factor_invest_ppe_inv', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                save=True).prep()
+        invest_ppe = PrepFactor(live=live, factor_name='factor_invest_ppe_inv', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(invest_ppe)
         del invest_ppe
 
-        inv_growth = PrepFactor(live=live, factor_name='factor_inv_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                save=True).prep()
+        inv_growth = PrepFactor(live=live, factor_name='factor_inv_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(inv_growth)
         del inv_growth
 
-        trend_factor = PrepFactor(live=live, factor_name='factor_trend_factor', group='permno', interval='D', kind='trend', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                  save=True).prep()
+        trend_factor = PrepFactor(live=live, factor_name='factor_trend_factor', group='permno', interval='D', kind='trend', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(trend_factor)
         del trend_factor
 
-        mom_season6 = PrepFactor(live=live, factor_name='factor_mom_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                 save=True).prep()
+        mom_season6 = PrepFactor(live=live, factor_name='factor_mom_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(mom_season6)
         del mom_season6
 
-        mom_season11 = PrepFactor(live=live, factor_name='factor_mom_season11', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                  save=True).prep()
+        mom_season11 = PrepFactor(live=live, factor_name='factor_mom_season11', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(mom_season11)
         del mom_season11
 
-        mom_season16 = PrepFactor(live=live, factor_name='factor_mom_season16', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                  save=True).prep()
+        mom_season16 = PrepFactor(live=live, factor_name='factor_mom_season16', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(mom_season16)
         del mom_season16
 
-        comp_debt = PrepFactor(live=live, factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                               save=True).prep()
+        comp_debt = PrepFactor(live=live, factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(comp_debt)
         del comp_debt
 
@@ -252,28 +230,23 @@ class StratMLRet:
         alpha.add_factor(int_mom)
         del int_mom
 
-        cheq = PrepFactor(live=live, factor_name='factor_cheq', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                          save=True).prep()
+        cheq = PrepFactor(live=live, factor_name='factor_cheq', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(cheq)
         del cheq
 
-        xfin = PrepFactor(live=live, factor_name='factor_xfin', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                          save=True).prep()
+        xfin = PrepFactor(live=live, factor_name='factor_xfin', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(xfin)
         del xfin
 
-        emmult = PrepFactor(live=live, factor_name='factor_emmult', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                            save=True).prep()
+        emmult = PrepFactor(live=live, factor_name='factor_emmult', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(emmult)
         del emmult
 
-        accrual = PrepFactor(live=live, factor_name='factor_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                             save=True).prep()
+        accrual = PrepFactor(live=live, factor_name='factor_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(accrual)
         del accrual
 
-        frontier = PrepFactor(live=live, factor_name='factor_frontier', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                              save=True).prep()
+        frontier = PrepFactor(live=live, factor_name='factor_frontier', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(frontier)
         del frontier
 
@@ -281,8 +254,7 @@ class StratMLRet:
         alpha.add_factor(mom_rev, categorical=True)
         del mom_rev
 
-        hire = PrepFactor(live=live, factor_name='factor_hire', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                          save=True).prep()
+        hire = PrepFactor(live=live, factor_name='factor_hire', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(hire)
         del hire
 
@@ -290,38 +262,31 @@ class StratMLRet:
         alpha.add_factor(rds)
         del rds
 
-        pcttoacc = PrepFactor(live=live, factor_name='factor_pcttotacc', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                              save=True).prep()
+        pcttoacc = PrepFactor(live=live, factor_name='factor_pcttotacc', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(pcttoacc)
         del pcttoacc
 
-        accrual_bm = PrepFactor(live=live, factor_name='factor_accrual_bm', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                save=True).prep()
+        accrual_bm = PrepFactor(live=live, factor_name='factor_accrual_bm', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(accrual_bm)
         del accrual_bm
 
-        mom_off_season = PrepFactor(live=live, factor_name='factor_mom_off_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                    save=True).prep()
+        mom_off_season = PrepFactor(live=live, factor_name='factor_mom_off_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(mom_off_season)
         del mom_off_season
 
-        grcapx = PrepFactor(live=live, factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                            save=True).prep()
+        grcapx = PrepFactor(live=live, factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(grcapx)
         del grcapx
 
-        earning_streak = PrepFactor(live=live, factor_name='factor_earning_streak', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                    save=True).prep()
+        earning_streak = PrepFactor(live=live, factor_name='factor_earning_streak', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(earning_streak)
         del earning_streak
 
-        ret_skew = PrepFactor(live=live, factor_name='factor_ret_skew', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                              save=True).prep()
+        ret_skew = PrepFactor(live=live, factor_name='factor_ret_skew', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(ret_skew)
         del ret_skew
 
-        dividend = PrepFactor(live=live, factor_name='factor_dividend', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                              save=True).prep()
+        dividend = PrepFactor(live=live, factor_name='factor_dividend', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(dividend, categorical=True)
         del dividend
 
@@ -331,8 +296,7 @@ class StratMLRet:
         alpha.add_factor(sb_pca)
         del sb_pca
 
-        sb_sector = PrepFactor(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                               save=True).prep()
+        sb_sector = PrepFactor(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(sb_sector)
         del sb_sector
 
@@ -343,23 +307,19 @@ class StratMLRet:
         alpha.add_factor(clust_ret, categorical=True)
         del clust_ret
 
-        clust_load_ret = PrepFactor(live=live, factor_name='factor_clust_load_ret', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                    save=True).prep()
+        clust_load_ret = PrepFactor(live=live, factor_name='factor_clust_load_ret', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(clust_load_ret, categorical=True)
         del clust_load_ret
 
-        clust_ind_mom = PrepFactor(live=live, factor_name='factor_clust_ind_mom', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                   save=True).prep()
+        clust_ind_mom = PrepFactor(live=live, factor_name='factor_clust_ind_mom', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(clust_ind_mom, categorical=True)
         del clust_ind_mom
 
-        clust_ind_mom_fama = PrepFactor(live=live, factor_name='factor_clust_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                        save=True).prep()
+        clust_ind_mom_fama = PrepFactor(live=live, factor_name='factor_clust_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(clust_ind_mom_fama, categorical=True)
         del clust_ind_mom_fama
 
-        clust_ind_mom_sub = PrepFactor(live=live, factor_name='factor_clust_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                                       save=True).prep()
+        clust_ind_mom_sub = PrepFactor(live=live, factor_name='factor_clust_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(clust_ind_mom_sub, categorical=True)
         del clust_ind_mom_sub
 
@@ -390,7 +350,7 @@ class StratMLRet:
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------------INITIATE LIVE TEST------------------------------------------------------------------------------
         print("--------------------------------------------------------------------------INITIATE LIVE TEST------------------------------------------------------------------------------")
-        live_test = LivePred(live=live, num_stocks=self.num_stocks, leverage=self.leverage, port_opt=self.port_opt, model_name=model_name, current_date=self.current_date, dir_path=dir_path)
+        live_test = PredTest(live=live, num_stocks=self.num_stocks, leverage=self.leverage, port_opt=self.port_opt, model_name=model_name, current_date=self.current_date, dir_path=dir_path)
         files = live_test.read_result('metrics')
 
         # Create directory for backtest report
@@ -488,9 +448,9 @@ class StratMLRet:
         spy = get_spy(start_date='2005-01-01', end_date=self.current_date)
         qs.reports.html(strat_ret, spy, output=dir_path / 'report.html')
 
-        # Retrieve stocks to long/short tomorrow
-        long = pred_return.iloc[-1]['longStocks']
-        short = pred_return.iloc[-1]['shortStocks']
+        # Retrieve stocks to long/short tomorrow (only get 'ticker')
+        long = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['longStocks']]
+        short = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['shortStocks']]
         # Retrieve weights for long/short and multiply by self.allocate for strategic asset allocation
         long_weight = long_weights[-1] * self.allocate
         short_weight = short_weight[-1] * self.allocate

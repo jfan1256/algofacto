@@ -11,7 +11,7 @@ from core.system import *
 import warnings
 
 warnings.filterwarnings('ignore')
-class LivePred:
+class PredTest:
     def __init__(self,
                  live: bool = None,
                  model_name: str = None,
