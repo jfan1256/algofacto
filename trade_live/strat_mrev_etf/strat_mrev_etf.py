@@ -1,7 +1,7 @@
 import os
 import quantstats as qs
 
-from functions.utils.func import *
+from core.operation import *
 from class_mrev.mrev_sd_epsil import MrevSDEpsil
 
 class StratMrevETF:

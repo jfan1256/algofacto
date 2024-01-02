@@ -2,7 +2,7 @@ import asyncio
 import quantstats as qs
 
 from ib_insync import *
-from functions.utils.func import *
+from core.operation import *
 from fredapi import Fred
 from trade_live.live_class.callback import OrderCounter
 

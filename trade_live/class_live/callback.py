@@ -1,7 +1,3 @@
-import asyncio
-from ib_insync import *
-from functions.utils.func import *
-import math
 class OrderCounter:
     def __init__(self):
         self.new_order_count = 0

@@ -1,9 +1,9 @@
 import os
 
 from class_port.port_factor import PortFactor
-from model_class.prep_factor import PrepFactor
+from class_model.prep_factor import PrepFactor
 
-from functions.utils.func import *
+from core.operation import *
 
 class StratPortIV:
     def __init__(self,

@@ -1,7 +1,7 @@
-from model_class.prep_factor import PrepFactor
-from model_class.alpha_model import AlphaModel
+from class_model.prep_factor import PrepFactor
+from class_model.alpha_model import AlphaModel
 
-from functions.utils.func import *
+from core.operation import *
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------PARAMS--------------------------------------------------------------------------------------------

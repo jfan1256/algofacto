@@ -5,7 +5,7 @@ import os
 
 from trade_live.live_class.callback import OrderCounter
 from ib_insync import *
-from functions.utils.func import *
+from core.operation import *
 
 # Create multi index for dataframe with only date index
 def create_multi_index(factor_data, stock):

@@ -1,4 +1,4 @@
-from functions.utils.func import *
+from core.operation import *
 class MrevSDEpsil:
     def __init__(self,
                  num_stocks,

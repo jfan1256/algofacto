@@ -1,7 +1,5 @@
-from typing import List
-
-from functions.utils.func import *
-from functions.utils.system import *
+from core.operation import *
+from core.system import *
 from itertools import chain
 
 from typing import Union, Optional, List

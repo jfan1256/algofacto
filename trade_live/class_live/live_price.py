@@ -1,7 +1,7 @@
 import asyncio
 
 from ib_insync import *
-from functions.utils.func import *
+from core.operation import *
 
 class LivePrice:
     def __init__(self,

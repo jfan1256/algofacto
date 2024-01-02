@@ -1,8 +1,5 @@
-from typing import Optional
+from core.operation import *
 
-import pandas as pd
-
-from functions.utils.func import *
 from itertools import product
 from scipy.stats import spearmanr
 from datetime import timedelta
@@ -12,7 +9,6 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from catboost import Pool
 from sklearn.metrics import accuracy_score
 from typing import Optional
-
 
 import os
 import time

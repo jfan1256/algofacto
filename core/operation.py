@@ -1,18 +1,15 @@
-from functions.utils.system import *
+from core.system import *
+
 from sklearn.cluster import KMeans
 from statsmodels.regression.rolling import RollingOLS
 from sklearn.decomposition import PCA
-from datetime import date
-from datetime import datetime, timedelta
-from sklearn.linear_model import Ridge
 from timebudget import timebudget
 from joblib import Parallel, delayed
-from pandas.tseries.offsets import BDay
-from statsmodels.regression.linear_model import OLS
 from tqdm import tqdm
 from plotly.subplots import make_subplots
+from datetime import date
+from pandas.tseries.offsets import BDay
 
-import plotly.tools as tls
 import plotly.offline as py
 import plotly.graph_objs as go
 import pandas as pd
@@ -21,7 +18,6 @@ import matplotlib.pyplot as plt
 import re
 import csv
 import pickle
-import ast
 import statsmodels.api as sm
 import numpy as np
 import ray

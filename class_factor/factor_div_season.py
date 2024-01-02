@@ -1,9 +1,6 @@
 from typing import Optional, Union, List
 
-import pandas as pd
-import ray
-
-from functions.utils.func import *
+from core.operation import *
 from class_factor.factor import Factor
 
 

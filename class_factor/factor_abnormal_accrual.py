@@ -1,6 +1,6 @@
 from typing import Optional, Union, List
 
-from functions.utils.func import *
+from core.operation import *
 from class_factor.factor import Factor
 from scipy.stats.mstats import winsorize
 

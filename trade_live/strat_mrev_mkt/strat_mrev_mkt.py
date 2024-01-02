@@ -1,7 +1,7 @@
 import os
 import quantstats as qs
 
-from functions.utils.func import *
+from core.operation import *
 
 class StratMrevMkt:
     def __init__(self,

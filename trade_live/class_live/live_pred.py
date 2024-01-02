@@ -5,8 +5,8 @@ import math
 from io import BytesIO
 from IPython.display import Image
 
-from functions.utils.func import *
-from functions.utils.system import *
+from core.operation import *
+from core.system import *
 
 import warnings
 

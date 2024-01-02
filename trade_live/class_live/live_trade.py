@@ -1,6 +1,6 @@
 import asyncio
 
-from functions.utils.func import *
+from core.operation import *
 
 from callback import OrderCounter
 from class_order.order_ibkr import OrderIBKR

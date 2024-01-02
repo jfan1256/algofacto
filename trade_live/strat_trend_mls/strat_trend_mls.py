@@ -4,7 +4,7 @@ import quantstats as qs
 
 from fredapi import Fred
 
-from functions.utils.func import *
+from core.operation import *
 from class_trend.trend_helper import TrendHelper
 
 class StratTrendMLS:
