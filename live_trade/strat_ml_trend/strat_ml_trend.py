@@ -3,7 +3,7 @@ import quantstats as qs
 import os
 
 from scipy.stats import spearmanr
-from live_trade.live_pred import LivePred
+from live_trade.live_class.live_pred import LivePred
 
 from model_class.prep_factor import PrepFactor
 from model_class.alpha_model import AlphaModel

@@ -1,8 +1,6 @@
-import pandas as pd
-
 from functions.utils.func import *
 from ib_insync import *
-from live_trade.callback import OrderCounter
+from live_trade.live_class.callback import OrderCounter
 
 def exec_port_ims_close():
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

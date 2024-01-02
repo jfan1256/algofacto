@@ -3,20 +3,20 @@ import asyncio
 from ib_insync import *
 from functions.utils.func import *
 
-from live_trade.live_create import LiveCreate
-from live_trade.live_price import LivePrice
-from live_trade.live_close import LiveClose
-from live_trade.live_trade import LiveTrade
+from live_trade.live_class.live_create import LiveCreate
+from live_trade.live_class.live_price import LivePrice
+from live_trade.live_class.live_close import LiveClose
+from live_trade.live_class.live_trade import LiveTrade
 
-from live_trade.strat_ml_trend.strat_ml_trend import StratMLTrend
-from live_trade.strat_ml_ret.strat_ml_ret import StratMLRet
-from live_trade.strat_port_iv.strat_port_iv import StratPortIV
-from live_trade.strat_port_im.strat_port_im import StratPortIM
-from live_trade.strat_port_id.strat_port_id import StratPortID
-from live_trade.strat_port_ivmd.strat_port_ivmd import StratPortIVMD
-from live_trade.strat_trend_mls.strat_trend_mls import StratTrendMLS
-from live_trade.strat_mrev_etf.strat_mrev_etf import StratMrevETF
-from live_trade.strat_mrev_mkt.strat_mrev_mkt import StratMrevMkt
+from live_trade.live_class.live_trade import StratMLTrend
+from live_trade.live_class.live_trade import StratMLRet
+from live_trade.live_class.live_trade import StratPortIV
+from live_trade.live_class.live_trade import StratPortIM
+from live_trade.live_class.live_trade import StratPortID
+from live_trade.live_class.live_trade import StratPortIVMD
+from live_trade.live_class.live_trade import StratTrendMLS
+from live_trade.live_class.live_trade import StratMrevETF
+from live_trade.live_class.live_trade import StratMrevMkt
 
 def daily_train():
     # Get current date

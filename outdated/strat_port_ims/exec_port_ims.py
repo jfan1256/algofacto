@@ -1,16 +1,11 @@
 import asyncio
-import certifi
-import json
-import requests
-import pandas as pd
-import matplotlib.pyplot as plt
 import quantstats as qs
 
 from ib_insync import *
 from functions.utils.func import *
 from fredapi import Fred
-from live_trade.callback import OrderCounter
-from urllib.request import urlopen
+from live_trade.live_class.callback import OrderCounter
+
 
 # Get return data
 def get_ret(ticker_list, start_date, current_date):
