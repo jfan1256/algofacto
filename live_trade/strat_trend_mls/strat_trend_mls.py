@@ -5,6 +5,7 @@ import quantstats as qs
 from fredapi import Fred
 
 from functions.utils.func import *
+from trend_class.trend_helper import TrendHelper
 
 class StratTrendMLS:
     def __init__(self,
@@ -20,7 +21,7 @@ class StratTrendMLS:
         allocate (float): Percentage of capital to allocate for this strategy
         current_date (str: YYYY-MM-DD): Current date (this will be used as the end date for backtest period)
         start_date (str: YYYY-MM-DD): Start date for backtest period
-        num_stocks (int): Number of stocks to long/short
+        num_stocks (int): Number of stocks to long
         threshold (int): Market cap threshold to determine if a stock is buyable/shortable
         window_hedge (int): Rolling window size to calculate inverse volatility for hedge portfolio
         window_port (int): Rolling window size to calculate inverse volatility for trend portfolio
@@ -34,33 +35,14 @@ class StratTrendMLS:
         self.window_hedge = window_hedge
         self.window_port = window_port
 
-    # Get return data for a list of tickers
-    def _get_ret(self, ticker_list):
-        data = get_data_fmp(ticker_list=ticker_list, start=self.start_date, current_date=self.current_date)
-        data = data[['Open', 'High', 'Low', 'Volume', 'Adj Close']]
-        data = data.rename(columns={'Adj Close': 'Close'})
-        data = create_return(data, [1])
-        data = data.drop(['High', 'Low', 'Open', 'Volume'], axis=1)
-        data = data.loc[~data.index.duplicated(keep='first')]
-        data = data.fillna(0)
-        return data
-
-    # Calculate Trend + Bond/Commodity Portfolio
-    def _calc_total_port(row, col1, col2):
-        if row['macro_buy']:
-            return 0.50 * row[col1] + 0.50 * row[col2]
-        else:
-            return 0.25 * row[col1] + 0.75 * row[col2]
-
-    # Retrieves the top self.num_stocks stocks with the greatest inverse volatility weight
-    def _top_inv_vol(self, df):
-        filtered_df = df[df['signal'].abs() == 1]
-        return filtered_df.nlargest(self.num_stocks, 'inv_vol')
-
     def backtest_trend_mls(self):
         print("-----------------------------------------------------------------BACKTEST TREND MLS-------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
+        # Create Trend Helper Class
+        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_date, num_stocks=self.num_stocks)
+
+        # Params
         live = True
 
         # Load in datasets
@@ -77,12 +59,12 @@ class StratTrendMLS:
         print("---------------------------------------------------------------CREATE BOND+COMMODITY PORT-------------------------------------------------------------------------------")
         # Commodities
         com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
-        com = self._get_ret(com_ticker)
+        com = trend_helper._get_ret(com_ticker)
         com.to_parquet(get_strat_trend_mls() / 'data' / 'data_com.parquet.brotli', compression='brotli')
 
         # Bonds
         bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF', 'MBB', 'GOVT', 'VGSH', 'IUSB', 'TIP']
-        bond = self._get_ret(bond_ticker)
+        bond = trend_helper._get_ret(bond_ticker)
         bond.to_parquet(get_strat_trend_mls() / 'data' / 'data_bond.parquet.brotli', compression='brotli')
 
         # Create portfolio
@@ -181,7 +163,7 @@ class StratTrendMLS:
         # Create trend portfolio
         price['vol'] = price.groupby('permno')['RET_01'].rolling(self.window_port).std().reset_index(level=0, drop=True)
         price['inv_vol'] = 1 / price['vol']
-        trend_port = price.groupby('date').apply(self._top_inv_vol).reset_index(level=0, drop=True)
+        trend_port = price.groupby('date').apply(trend_helper._top_inv_vol).reset_index(level=0, drop=True)
         trend_port['norm_inv_vol'] = trend_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
         trend_port['weighted_ret'] = trend_port['RET_01'] * trend_port['norm_inv_vol'] * trend_port['signal']
         trend_ret = trend_port.groupby('date')['weighted_ret'].sum()
@@ -192,7 +174,7 @@ class StratTrendMLS:
         total_ret = pd.merge(trend_ret, bond_com_port, left_index=True, right_index=True, how='left')
         total_ret = total_ret.merge(macro_buy_df, left_index=True, right_index=True, how='left')
         col1, col2 = total_ret.columns[0], total_ret.columns[1]
-        total_ret['total_ret'] = total_ret.apply(self._calc_total_port, args=(col1, col2), axis=1)
+        total_ret['total_ret'] = total_ret.apply(trend_helper._calc_total_port, args=(col1, col2), axis=1)
         total_daily_ret = total_ret['total_ret']
 
         # Export backtest result
@@ -204,6 +186,10 @@ class StratTrendMLS:
         print("-------------------------------------------------------------------EXEC TREND MLS---------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
+        # Create Trend Helper Class
+        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_date, num_stocks=self.num_stocks)
+
+        # Params
         live = True
 
         # Load in datasets
@@ -305,7 +291,7 @@ class StratTrendMLS:
         # Create trend portfolio
         window_price['vol'] = window_price.groupby('permno')['RET_01'].rolling(self.window_port).std().reset_index(level=0, drop=True)
         window_price['inv_vol'] = 1 / window_price['vol']
-        trend_port = window_price.groupby('date').apply(self._top_inv_vol).reset_index(level=0, drop=True)
+        trend_port = window_price.groupby('date').apply(trend_helper._top_inv_vol).reset_index(level=0, drop=True)
         trend_port['weight'] = trend_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
 
         # Total portfolio allocation weights
