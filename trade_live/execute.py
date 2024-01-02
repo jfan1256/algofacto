@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 
 from ib_insync import *
 
@@ -104,20 +105,30 @@ def trade():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(live_price.exec_live_price())
 
-    # Execute StratPortIV
+    # Strategy Execution
     strat_port_iv.exec_port_iv()
-    # Execute StratPortIM
     strat_port_im.exec_port_im()
-    # Execute StratPortID
     strat_port_id.exec_port_id()
-    # Execute StratPortIVMD
     strat_port_ivmd.exec_port_ivmd()
-    # Execute StratTrendMLS
     strat_trend_mls.exec_trend_mls()
-    # Execute StratMrevETF
     strat_mrev_etf.exec_mrev_etf()
-    # Execute StratMrevMkt
     strat_mrev_mkt.exec_mrev_mkt()
+
+    # # Parallel Strategy Execution
+    # with concurrent.futures.ThreadPoolExecutor() as executor:
+    #     # Load Strategies
+    #     exec_strategies = [
+    #         executor.submit(strat_port_iv.exec_port_iv),
+    #         executor.submit(strat_port_im.exec_port_im),
+    #         executor.submit(strat_port_id.exec_port_id),
+    #         executor.submit(strat_port_ivmd.exec_port_ivmd),
+    #         executor.submit(strat_trend_mls.exec_trend_mls),
+    #         executor.submit(strat_mrev_etf.exec_mrev_etf),
+    #         executor.submit(strat_mrev_mkt.exec_mrev_mkt)
+    #     ]
+    #     # Wait for all strategies to execute
+    #     for future in concurrent.futures.as_completed(exec_strategies):
+    #         future.result()
 
     # Execute Trades
     live_close.exec_close()
@@ -127,9 +138,6 @@ def trade():
     live_price.exec_live_store()
 
 def monitor():
-    # Params
-    alpha_windows = None
-
     # Get strategy criteria
     strat_crit = json.load(open(get_config() / 'strat_crit.json'))
     # Get monitor criteria
