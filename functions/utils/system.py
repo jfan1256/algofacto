@@ -10,10 +10,10 @@ def get_root_dir() -> Path:
     return Path(__file__).resolve().parent.parent.parent
 
 def get_historical_trade():
-    return get_root_dir() / 'historical_trade'
+    return get_root_dir() / 'trade_historical'
 
 def get_live_trade():
-    return get_root_dir() / 'live_trade'
+    return get_root_dir() / 'trade_live'
 
 def get_parquet(live) -> Path:
     if live:

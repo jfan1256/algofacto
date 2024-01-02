@@ -1,6 +1,6 @@
 from functions.utils.func import *
 from ib_insync import *
-from live_trade.live_class.callback import OrderCounter
+from trade_live.live_class.callback import OrderCounter
 
 def exec_ml_ret_close():
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -29,7 +29,7 @@ def exec_ml_ret_close():
             print(f"Could not find a unique contract for {symbol}")
             return None
 
-    # Retrieve stock list from stocks to trade live_trade
+    # Retrieve stock list from stocks to trade trade_live
     def strat_ml_stocks(target_date):
         filename = Path(get_strat_ml_ret() / f'trade_stock_ml_ret.csv')
 

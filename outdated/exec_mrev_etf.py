@@ -3,7 +3,7 @@ import quantstats as qs
 import math
 import os
 
-from live_trade.live_class.callback import OrderCounter
+from trade_live.live_class.callback import OrderCounter
 from ib_insync import *
 from functions.utils.func import *
 
@@ -248,27 +248,27 @@ async def exec_price(ib, current_date):
     trade_data['permno'] = trade_data['ticker'].map(ticker_to_permno_dict)
     trade_data = trade_data.set_index(['permno', 'date']).drop('ticker', axis=1)
 
-    # Get Adjustment Factor and adjust live_trade price data
+    # Get Adjustment Factor and adjust trade_live price data
     adj_factor_trade = get_adj_factor_fmp(trade_ticker, past_date)
     trade_data['adj_factor'] = adj_factor_trade['adj_factor_trade']
     trade_data['Close'] = trade_data['Close'] / trade_data['adj_factor']
 
-    # Add live_trade trade price to the end of the historical_trade price dataset and calculate returns
+    # Add trade_live trade price to the end of the trade_historical price dataset and calculate returns
     T = [1]
     live_data = pd.concat([past_data, trade_data], axis=0).sort_index(level=['permno', 'date'])
     live_data = create_return(live_data, T)
     live_data = live_data.fillna(0)
     live_data = live_data.drop(['Close'], axis=1)
 
-    # Add live_trade etf price to the end of the historical_trade price dataset
+    # Add trade_live etf price to the end of the trade_historical price dataset
     past_etf = pd.read_parquet(get_parquet(live) / 'data_etf.parquet.brotli', columns=['Close'])
 
-    # Get Adjustment Factor and adjust live_trade price data
+    # Get Adjustment Factor and adjust trade_live price data
     adj_factor_etf = get_adj_factor_fmp(etf_ticker, past_date)
     etf_data['adj_factor'] = adj_factor_etf['adj_factor_trade']
     etf_data['Close'] = etf_data['Close'] / etf_data['adj_factor']
 
-    # Add live_trade trade price to the end of the historical_trade price dataset
+    # Add trade_live trade price to the end of the trade_historical price dataset
     live_etf = pd.concat([past_etf, etf_data], axis=0).sort_index(level=['ticker', 'date'])
     price_etf = live_etf.copy(deep=True)[['Close']]
 
@@ -368,7 +368,7 @@ def exec_mrev_etf_data(window, threshold):
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------EXECUTE GET LIVE WEIGHTS------------------------------------------------------------------------
-# Execute get live_trade weights
+# Execute get trade_live weights
 def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, threshold, stock, current_date):
     # Function that executes the RollingOLS for the last window of data (this function will be parallelized)
     def per_stock_ols_last(stock_data, ret, factor_data, factor_cols, window, stock_name, index_name):
@@ -467,7 +467,7 @@ def exec_mrev(live_data, sector_ret_live, live, window, sbo, sso, sbc, ssc, thre
     beta_data_live = rolling_ols_last(data=live_data, ret=ret, factor_data=sector_ret_live, factor_cols=factor_col_live.tolist(), window=window, name=f'sector_01')
     beta_data_live = beta_data_live[beta_data_live.columns[1:14]]
 
-    # Combine live_trade beta with historical_trade beta
+    # Combine trade_live beta with trade_historical beta
     beta_data_past = pd.read_parquet(get_strat_mrev_etf() / 'data' / 'data_beta_etf.parquet.brotli')
     beta_data_live = pd.concat([beta_data_past, beta_data_live], axis=0).sort_index(level=['permno', 'date'])
     beta_data_live = beta_data_live.fillna(0)
@@ -700,7 +700,7 @@ def exec_mrev_etf_trade(window, threshold, settlement, capital):
     print("----------------------------------------------------------------------------EXECUTE PRICES--------------------------------------------------------------------------------")
     # Create an event loop
     loop = asyncio.get_event_loop()
-    # Retrieve live_trade prices
+    # Retrieve trade_live prices
     live_data, live_etf, price_data, price_etf = loop.run_until_complete(exec_price(ib=ib, current_date=current_date))
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

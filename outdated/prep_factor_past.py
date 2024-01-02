@@ -49,7 +49,7 @@ class PrepFactor:
         if self.tickers == 'all':
             self.tickers = get_stock_idx(data_all)
 
-        # Remove historical_trade returns from factors except for factor_return
+        # Remove trade_historical returns from factors except for factor_return
         if "return" in str(directory_name).lower():
             self.data = data_all
             self.data = self.data.loc[self.tickers]

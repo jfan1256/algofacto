@@ -1,6 +1,6 @@
 from functions.utils.func import *
 from ib_insync import *
-from live_trade.live_class.callback import OrderCounter
+from trade_live.live_class.callback import OrderCounter
 
 def exec_mrev_etf_close():
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -29,7 +29,7 @@ def exec_mrev_etf_close():
             print(f"Could not find a unique contract for {symbol}")
             return None
 
-    # Retrieve stock list from stocks to trade live_trade
+    # Retrieve stock list from stocks to trade trade_live
     def strat_mrev_stocks(dir, name, target_date):
         filename = Path(dir / f'trade_stock_mrev_{name}.csv')
 

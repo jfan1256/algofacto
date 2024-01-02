@@ -488,9 +488,9 @@ def get_data_fmp(ticker_list, start, current_date):
         response = requests.get(url)
         data = response.json()
 
-        # Check if there's historical_trade data in the response
-        if 'historical_trade' in data:
-            df = pd.DataFrame(data['historical_trade'])
+        # Check if there's trade_historical data in the response
+        if 'trade_historical' in data:
+            df = pd.DataFrame(data['trade_historical'])
             df['ticker'] = ticker
             frames.append(df)
         else:
@@ -548,9 +548,9 @@ def get_adj_factor_fmp(ticker_list, date):
         response = requests.get(url)
         data = response.json()
 
-        # Check if there's historical_trade data in the response
-        if 'historical_trade' in data:
-            df = pd.DataFrame(data['historical_trade'])
+        # Check if there's trade_historical data in the response
+        if 'trade_historical' in data:
+            df = pd.DataFrame(data['trade_historical'])
             df['ticker'] = ticker
             frames.append(df)
         else:
@@ -588,8 +588,8 @@ def get_dividend_fmp(ticker_list, start, current_date):
         data = response.json()
 
         # Check if there's dividend data in the response
-        if 'historical_trade' in data:
-            df = pd.DataFrame(data['historical_trade'])
+        if 'trade_historical' in data:
+            df = pd.DataFrame(data['trade_historical'])
             df['ticker'] = ticker
             frames.append(df)
         else:
