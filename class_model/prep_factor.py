@@ -1,5 +1,6 @@
 from core.operation import *
 from core.system import *
+from core.animation import *
 
 from typing import Union, Optional, List
 

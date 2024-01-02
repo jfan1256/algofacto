@@ -1,5 +1,7 @@
 from core.operation import *
 from core.system import *
+from core.animation import *
+
 from itertools import chain
 
 from typing import Union, Optional, List
