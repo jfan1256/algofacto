@@ -29,7 +29,6 @@ def build():
     data_crit = json.load(open(get_config() / 'data_crit.json'))
         
     # Params
-    start_date = '2008-01-01'
     current_date = date.today().strftime('%Y-%m-%d')
 
     # Create Strategies
@@ -78,7 +77,6 @@ def trade():
     strat_crit = json.load(open(get_config() / 'strat_crit.json'))
 
     # Params
-    start_date = '2008-01-01'
     current_date = date.today().strftime('%Y-%m-%d')
 
     # Connect to IB
@@ -172,8 +170,10 @@ def monitor():
 
 
 
-
-
-
-
+# Get strategy criteria
+strat_crit = json.load(open(get_config() / 'strat_crit.json'))
+current_date = '2023-11-10'
+strat_mrev_mkt = StratMrevMkt(allocate=strat_crit['mrev_mkt']['allocate'], current_date=current_date, start_date=strat_crit['mrev_mkt']['start_backtest'],
+                              threshold=strat_crit['mrev_mkt']['threshold'], window_epsil=168, sbo=0.85, sso=0.85, sbc=0.25, ssc=0.25)
+strat_mrev_mkt.backtest_mrev_mkt()
 

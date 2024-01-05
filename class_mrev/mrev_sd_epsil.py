@@ -86,7 +86,7 @@ class MrevSDEpsil:
         return data
 
     # Calculate weights and total portfolio return
-    def calc_total_ret(self, df, etf_returns):
+    def calc_total_ret(self, df, hedge_ret):
         print("Get hedge weights...")
         mask_long = df['position'] == 'long'
         mask_short = df['position'] == 'short'
@@ -94,7 +94,7 @@ class MrevSDEpsil:
 
         # Get net hedge betas
         print("Get net hedge betas...")
-        beta_columns = [col for col in df.columns if self.name in col]
+        beta_columns = [col for col in df.columns if f"_{self.name}_" in col]
         weighted_betas = df[beta_columns].multiply(df['hedge_weight'], axis=0)
         net_hedge_betas = weighted_betas.groupby('date').sum()
 
@@ -112,9 +112,9 @@ class MrevSDEpsil:
         print("Get net hedge returns...")
         net_hedge_returns = pd.DataFrame(index=normalized_net_hedge_betas.index)
         for beta in beta_columns:
-            etf_return_column = beta.split('_sector_')[0]
-            if etf_return_column in etf_returns.columns:
-                net_hedge_returns[beta] = normalized_net_hedge_betas[beta] * etf_returns[etf_return_column]
+            hedge_return_column = beta.split(f"_{self.name}_")[0]
+            if hedge_return_column in hedge_ret.columns:
+                net_hedge_returns[beta] = normalized_net_hedge_betas[beta] * hedge_ret[hedge_return_column]
 
         # Get total hedge return
         print("Get total hedge return...")

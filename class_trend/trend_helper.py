@@ -27,6 +27,7 @@ class TrendHelper:
         return data
 
     # Calculate Trend + Bond/Commodity Portfolio
+    @staticmethod
     def _calc_total_port(row, col1, col2):
         if row['macro_buy']:
             return 0.50 * row[col1] + 0.50 * row[col2]

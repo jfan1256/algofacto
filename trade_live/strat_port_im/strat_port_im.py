@@ -76,7 +76,7 @@ class StratPortIM:
             "mom_season_6"
         ]
 
-        filname = f"port_im_{date.today().strftime('%Y%m%d')}"
+        filname = f"port_im_{date.today().strftime('%Y%m%d')}.html"
         dir_path = get_strat_port_im() / 'report' / filname
 
         long_short_stocks = PortFactor(data=factor_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,

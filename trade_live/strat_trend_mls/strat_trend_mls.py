@@ -57,7 +57,7 @@ class StratTrendMLS:
 
         # Create returns and resample fund_q date index to daily
         price = create_return(historical_price, [1])
-        price = price.groupby('permno').shift(-1)
+        price['RET_01'] = price.groupby('permno')['RET_01'].shift(-1)
         price = price.merge(market, left_index=True, right_index=True, how='left')
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -82,6 +82,7 @@ class StratTrendMLS:
         bond_com_port = bond_com_port.groupby('date')['weighted_ret'].sum()
         bond_com_port = bond_com_port.to_frame()
         bond_com_port.columns = ['bond_comm_ret']
+        bond_com_port['bond_comm_ret'] = bond_com_port['bond_comm_ret'].shift(-1)
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------GET MACRO DATA-------------------------------------------------------------------------------------
@@ -184,7 +185,7 @@ class StratTrendMLS:
         total_daily_ret = total_ret['total_ret']
 
         # Export backtest result
-        filname = f"trend_mls_{date.today().strftime('%Y%m%d')}"
+        filname = f"trend_mls_{date.today().strftime('%Y%m%d')}.html"
         dir_path = get_strat_trend_mls() / 'report' / filname
         qs.reports.html(total_daily_ret, 'SPY', output=dir_path)
 

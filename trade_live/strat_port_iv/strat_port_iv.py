@@ -129,7 +129,7 @@ class StratPortIV:
             'ev_to_ebitda'
         ]
 
-        filname = f"port_iv_{date.today().strftime('%Y%m%d')}"
+        filname = f"port_iv_{date.today().strftime('%Y%m%d')}.html"
         dir_path = get_strat_port_iv() / 'report' / filname
 
         long_short_stocks = PortFactor(data=factor_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,

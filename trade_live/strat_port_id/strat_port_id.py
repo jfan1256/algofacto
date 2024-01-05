@@ -50,8 +50,8 @@ class StratPortID:
         # ------------------------------------------------------------------------LOAD FACTOR DATA-------------------------------------------------------------------------------------
         print("-------------------------------------------------------------------LOAD FACTOR DATA-------------------------------------------------------------------------------------")
         # Defensive
-        sb_sector = PrepFactor(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.current_date, end=self.current_date, save=False).prep()
-        sb_pca = PrepFactor(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.current_date, end=self.current_date, save=False).prep()
+        sb_sector = PrepFactor(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
+        sb_pca = PrepFactor(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
 
         # Merge into one dataframe
         factor_data = (pd.merge(ret_price, sb_sector, left_index=True, right_index=True, how='left')
@@ -78,7 +78,7 @@ class StratPortID:
             'PCA_Return_5_ret_pca_01_126'
         ]
 
-        filname = f"port_id_{date.today().strftime('%Y%m%d')}"
+        filname = f"port_id_{date.today().strftime('%Y%m%d')}.html"
         dir_path = get_strat_port_id() / 'report' / filname
 
         long_short_stocks = PortFactor(data=factor_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,

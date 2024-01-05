@@ -1,4 +1,5 @@
 from core.system import *
+from core.animation import *
 
 from sklearn.cluster import KMeans
 from statsmodels.regression.rolling import RollingOLS
