@@ -1,13 +1,12 @@
-import os
 import talib
 import quantstats as qs
 
 from fredapi import Fred
-
 from core.operation import *
 from class_trend.trend_helper import TrendHelper
+from class_strat.strat import Strategy
 
-class StratTrendMLS:
+class StratTrendMLS(Strategy):
     def __init__(self,
                  allocate=None,
                  current_date=None,
@@ -27,6 +26,7 @@ class StratTrendMLS:
         window_port (int): Rolling window size to calculate inverse volatility for trend portfolio
         '''
 
+        super().__init__(allocate, current_date, threshold)
         self.allocate = allocate
         self.current_date = current_date
         self.start_date = start_date
@@ -41,7 +41,7 @@ class StratTrendMLS:
 
         self.fred_key = fred_key
 
-    def backtest_trend_mls(self):
+    def exec_backtest(self):
         print("-----------------------------------------------------------------BACKTEST TREND MLS-------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
@@ -189,7 +189,7 @@ class StratTrendMLS:
         dir_path = get_strat_trend_mls() / 'report' / filname
         qs.reports.html(total_daily_ret, 'SPY', output=dir_path)
 
-    def exec_trend_mls(self):
+    def exec_live(self):
         print("-------------------------------------------------------------------EXEC TREND MLS---------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------

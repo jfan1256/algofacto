@@ -1,11 +1,9 @@
-import os
-
 from class_port.port_factor import PortFactor
 from class_model.model_prep import ModelPrep
-
+from class_strat.strat import Strategy
 from core.operation import *
 
-class StratPortIM:
+class StratPortIM(Strategy):
     def __init__(self,
                  allocate=None,
                  current_date=None,
@@ -23,6 +21,7 @@ class StratPortIM:
         window_port (int): Rolling window size to calculate inverse volatility
         '''
 
+        super().__init__(allocate, current_date, threshold)
         self.allocate = allocate
         self.current_date = current_date
         self.start_date = start_date
@@ -30,7 +29,7 @@ class StratPortIM:
         self.num_stocks = num_stocks
         self.window_port = window_port
 
-    def backtest_port_im(self):
+    def exec_backtest(self):
         print("-----------------------------------------------------------------BACKTEST PORT IM---------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
@@ -81,7 +80,7 @@ class StratPortIM:
         long_short_stocks = PortFactor(data=factor_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,
                                        threshold=self.threshold, backtest=True, dir_path=dir_path).create_factor_port()
 
-    def exec_port_im(self):
+    def exec_live(self):
         print("-------------------------------------------------------------------EXEC PORT IM-----------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------

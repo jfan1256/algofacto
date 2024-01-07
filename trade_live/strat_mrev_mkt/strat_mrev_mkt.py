@@ -1,11 +1,10 @@
-import os
 import quantstats as qs
 
 from class_mrev.mrev_sd_epsil import MrevSDEpsil
-
 from core.operation import *
+from class_strat.strat import Strategy
 
-class StratMrevMkt:
+class StratMrevMkt(Strategy):
     def __init__(self,
                  allocate=None,
                  current_date=None,
@@ -30,6 +29,8 @@ class StratMrevMkt:
         ssc (float): Threshold to determine close sell signal
         '''
 
+
+        super().__init__(allocate, current_date, threshold)
         self.allocate = allocate
         self.current_date = current_date
         self.start_date = start_date

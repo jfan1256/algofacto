@@ -53,26 +53,26 @@ def build():
     live_retrieve.exec_adj_factor()
 
     # Execute model training and predicting for StratMLRet
-    strat_ml_ret.exec_ml_ret_model()
-    strat_ml_ret.exec_ml_ret_pred()
+    strat_ml_ret.exec_backtest()
+    strat_ml_ret.exec_live()
     # Execute model training and predicting for StratMLTrend
-    start_ml_trend.exec_ml_trend_model()
-    start_ml_trend.exec_ml_trend_model()
+    start_ml_trend.exec_backtest()
+    start_ml_trend.exec_live()
 
     # Backtest StratPortIV
-    strat_port_iv.backtest_port_iv()
+    strat_port_iv.exec_backtest()
     # Backtest StratPortIM
-    strat_port_im.backtest_port_im()
+    strat_port_im.exec_backtest()
     # Backtest StratPortID
-    strat_port_id.backtest_port_id()
+    strat_port_id.exec_backtest()
     # Backtest StratPortIVMD
-    strat_port_ivmd.backtest_port_ivmd()
+    strat_port_ivmd.exec_backtest()
     # Backtest StratTrendMLS
-    strat_trend_mls.backtest_trend_mls()
+    strat_trend_mls.exec_backtest()
     # Backtest StratMrevETF
-    strat_mrev_etf.backtest_mrev_etf()
+    strat_mrev_etf.exec_backtest()
     # Backtest StratMrevMkt
-    strat_mrev_mkt.backtest_mrev_mkt()
+    strat_mrev_mkt.exec_backtest()
 
 def trade():
     # Get strategy criteria
@@ -109,13 +109,13 @@ def trade():
     with concurrent.futures.ThreadPoolExecutor() as executor:
         # Load Strategies
         exec_strategies = [
-            executor.submit(strat_port_iv.exec_port_iv),
-            executor.submit(strat_port_im.exec_port_im),
-            executor.submit(strat_port_id.exec_port_id),
-            executor.submit(strat_port_ivmd.exec_port_ivmd),
-            executor.submit(strat_trend_mls.exec_trend_mls),
-            executor.submit(strat_mrev_etf.exec_mrev_etf),
-            executor.submit(strat_mrev_mkt.exec_mrev_mkt)
+            executor.submit(strat_port_iv.exec_live),
+            executor.submit(strat_port_im.exec_live),
+            executor.submit(strat_port_id.exec_live),
+            executor.submit(strat_port_ivmd.exec_live),
+            executor.submit(strat_trend_mls.exec_live),
+            executor.submit(strat_mrev_etf.exec_live),
+            executor.submit(strat_mrev_mkt.exec_live)
         ]
         # Wait for all strategies to execute
         for future in concurrent.futures.as_completed(exec_strategies):

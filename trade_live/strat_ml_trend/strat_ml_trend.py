@@ -1,16 +1,14 @@
 import shutil
 import quantstats as qs
-import os
 
 from scipy.stats import spearmanr
 from class_model.model_test import ModelTest
-
 from class_model.model_prep import ModelPrep
 from class_model.model_train import ModelTrain
-
+from class_strat.strat import Strategy
 from core.operation import *
 
-class StratMLTrend:
+class StratMLTrend(Strategy):
     def __init__(self,
                  allocate=None,
                  current_date=None,
@@ -32,6 +30,7 @@ class StratMLTrend:
         use_top (int): Number of models to use for ensemble prediction
         '''
 
+        super().__init__(allocate, current_date, threshold)
         self.allocate = allocate
         self.current_date =current_date
         self.start_model = start_model
@@ -41,7 +40,7 @@ class StratMLTrend:
         self.port_opt = port_opt
         self.use_top = use_top
 
-    def exec_ml_trend_model(self):
+    def exec_backtest(self):
         print("-------------------------------------------------------------------EXEC ML RET MODEL--------------------------------------------------------------------------------------")
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------PARAMS--------------------------------------------------------------------------------------------
@@ -384,7 +383,7 @@ class StratMLTrend:
         print(f"Total time to execute everything: {int(minutes)}:{int(seconds):02}")
         print("-" * 60)
 
-    def exec_ml_trend_pred(self):
+    def exec_live(self):
         print("--------------------------------------------------------------------------EXEC ML RET PRED--------------------------------------------------------------------------------")
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------------

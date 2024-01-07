@@ -1,10 +1,10 @@
-import os
 import quantstats as qs
 
 from core.operation import *
 from class_mrev.mrev_sd_epsil import MrevSDEpsil
+from class_strat.strat import Strategy
 
-class StratMrevETF:
+class StratMrevETF(Strategy):
     def __init__(self,
                  allocate=None,
                  current_date=None,
@@ -28,6 +28,7 @@ class StratMrevETF:
         ssc (float): Threshold to determine close sell signal
         '''
 
+        super().__init__(allocate, current_date, threshold)
         self.allocate = allocate
         self.current_date = current_date
         self.start_date = start_date
@@ -38,7 +39,7 @@ class StratMrevETF:
         self.sbc = sbc
         self.ssc = ssc
 
-    def backtest_mrev_etf(self):
+    def exec_backtest(self):
         print("-----------------------------------------------------------------BACKTEST MREV ETF--------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
@@ -130,7 +131,7 @@ class StratMrevETF:
         dir_path = get_strat_mrev_etf() / 'report' / filname
         qs.reports.html(total_ret, 'SPY', output=dir_path)
 
-    def exec_mrev_etf(self):
+    def exec_live(self):
         print("-------------------------------------------------------------------EXEC MREV ETF----------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
