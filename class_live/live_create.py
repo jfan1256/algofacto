@@ -73,7 +73,7 @@ from class_factor.factor_clust_volatility import FactorClustVolatility
 from class_factor.factor_clust_volume import FactorClustVolume
 from class_factor.factor_clust_load_volume import FactorClustLoadVolume
 
-from trade_live.class_live.live_data import LiveData
+from class_live.live_data import LiveData
 
 class LiveCreate:
     def __init__(self,

@@ -5,10 +5,10 @@ from ib_insync import *
 
 from core.operation import *
 
-from trade_live.class_live.live_create import LiveCreate
-from trade_live.class_live.live_price import LivePrice
-from trade_live.class_live.live_close import LiveClose
-from trade_live.class_live.live_trade import LiveTrade
+from class_live.live_create import LiveCreate
+from class_live.live_price import LivePrice
+from class_live.live_close import LiveClose
+from class_live.live_trade import LiveTrade
 
 from trade_live.strat_ml_trend.strat_ml_trend import StratMLTrend
 from trade_live.strat_ml_ret.strat_ml_ret import StratMLRet
@@ -20,7 +20,7 @@ from trade_live.strat_trend_mls.strat_trend_mls import StratTrendMLS
 from trade_live.strat_mrev_etf.strat_mrev_etf import StratMrevETF
 from trade_live.strat_mrev_mkt.strat_mrev_mkt import StratMrevMkt
 
-from trade_live.class_monitor.monitor_strat import MonitorStrat
+from class_monitor.monitor_strat import MonitorStrat
 
 def build():
     # Get strategy criteria

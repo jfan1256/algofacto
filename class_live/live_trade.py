@@ -2,10 +2,10 @@ import asyncio
 
 from core.operation import *
 
+from class_live.live_callback import OrderCounter
 from class_order.order_ibkr import OrderIBKR
-from trade_live.class_live.live_callback import OrderCounter
 
-class LiveClose:
+class LiveTrade:
     def __init__(self,
                  ibkr_server,
                  current_date):
@@ -19,10 +19,10 @@ class LiveClose:
         self.current_date = current_date
 
     # Execute all orders
-    async def exec_close(self):
+    async def exec_trade(self):
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # ------------------------------------------------------------------------------EXECUTE CLOSE ORDERS-----------------------------------------------------------------------------
-        print("-------------------------------------------------------------------------EXECUTE CLOSE ORDERS-----------------------------------------------------------------------------")
+        # ------------------------------------------------------------------------------EXECUTE TRADE ORDERS-----------------------------------------------------------------------------
+        print("-------------------------------------------------------------------------EXECUTE TRADE ORDERS-----------------------------------------------------------------------------")
         # Create OrderIBKR Class
         order_ibkr = OrderIBKR(ibkr_server=self.ibkr_server)
 
@@ -49,12 +49,7 @@ class LiveClose:
         # Merge data by 'date', 'ticker', 'type'
         stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_im, port_id, port_ivmd, trend_mls, mrev_etf, mrev_mkt], axis=0)
         stock_data = stock_data.groupby(level=['date', 'ticker', 'type']).sum()
-
-        # Get yesterday's date stock's
-        all_dates = stock_data.index.get_level_values('date').unique()
-        all_dates = sorted(all_dates)
-        yesterday_date = all_dates[-2]
-        stock_data = stock_data.loc[stock_data.index.get_level_values('date') == yesterday_date]
+        stock_data = stock_data.loc[stock_data.index.get_level_values('date') == self.current_date]
 
         # List to store all the tasks
         tasks = []
@@ -62,7 +57,7 @@ class LiveClose:
         order_counter = OrderCounter()
         self.ibkr_server.newOrderEvent += order_counter.new_order_event_handler
 
-        # Execute Close Orders
+        # Execute Trade Orders
         for order_num, row in enumerate(stock_data.itertuples(), start=1):
             ticker = row.index.get_level_values('ticker')
             type = row.index.get_level_values('type')
@@ -70,10 +65,10 @@ class LiveClose:
             capital_per_stock = available_capital * weight
 
             if type == 'long':
-                task = order_ibkr._execute_order(symbol=ticker, action='SELL', capital_per_stock=capital_per_stock, order_num=order_num)
+                task = order_ibkr._execute_order(symbol=ticker, action='BUY', capital_per_stock=capital_per_stock, order_num=order_num)
                 tasks.append(task)
             elif type == 'short':
-                task = order_ibkr._execute_order(symbol=ticker, action='BUY', capital_per_stock=capital_per_stock, order_num=order_num)
+                task = order_ibkr._execute_order(symbol=ticker, action='SELL', capital_per_stock=capital_per_stock, order_num=order_num)
                 tasks.append(task)
 
         # Wait for all tasks to complete
