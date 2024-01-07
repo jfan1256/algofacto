@@ -21,8 +21,6 @@ import matplotlib.pyplot as plt
 import warnings
 
 warnings.filterwarnings('ignore')
-
-
 class ModelTrain:
     def __init__(self,
                  live: bool = None,

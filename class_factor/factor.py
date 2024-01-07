@@ -9,7 +9,6 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-
 class Factor:
     def __init__(self,
                  live: bool = None,

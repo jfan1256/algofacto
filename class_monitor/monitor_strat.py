@@ -1,6 +1,7 @@
 from core.operation import *
 
 import quantstats as qs
+
 class MonitorStrat:
     def __init__(self,
                  strat_name=None,

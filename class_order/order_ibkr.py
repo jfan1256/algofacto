@@ -2,6 +2,7 @@ import math
 import asyncio
 
 from ib_insync import *
+
 class OrderIBKR:
     def __init__(self,
                  ibkr_server):

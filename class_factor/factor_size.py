@@ -3,7 +3,6 @@ from typing import Optional, Union, List
 from core.operation import *
 from class_factor.factor import Factor
 
-
 class FactorSize(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing grax', animation=spinner_animation)

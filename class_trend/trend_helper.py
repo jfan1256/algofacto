@@ -1,4 +1,5 @@
 from core.operation import *
+
 class TrendHelper:
     def __init__(self,
                  current_date,

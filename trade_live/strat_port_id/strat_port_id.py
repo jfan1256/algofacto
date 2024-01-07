@@ -5,7 +5,6 @@ from class_model.model_prep import ModelPrep
 
 from core.operation import *
 
-
 class StratPortID:
     def __init__(self,
                  allocate=None,

@@ -3,7 +3,6 @@ from typing import Optional, Union, List
 from core.operation import *
 from class_factor.factor import Factor
 
-
 class FactorLoadVolume(Factor):
     @timebudget
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Initializing data', animation=spinner_animation)

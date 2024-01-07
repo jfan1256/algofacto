@@ -8,7 +8,6 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-
 class ModelPrep:
     def __init__(self,
                  live: bool = None,
