@@ -430,8 +430,8 @@ class LiveData:
 
         # Read in trade_live market data
         print("Read in trade_live market data...")
-        start_year = datetime.strptime(self.current_date, "%Y-%m-%d")
-        start_year = start_year.replace(month=1, day=1)
+        start_year = last_date.to_pydatetime()
+        start_year = start_year.replace(year=start_year.year + 1, month=1, day=1)
         start_year = start_year.strftime("%Y-%m-%d")
         price = get_data_fmp(ticker_list=ticker_list, start=start_year, current_date=self.current_date)
 

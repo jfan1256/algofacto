@@ -39,6 +39,9 @@ def get_large(live) -> Path:
 def get_live():
     return get_live_trade() / 'data_live'
 
+def get_adj():
+    return get_live_trade() / 'data_adj'
+
 def get_ml_result(live, model_name) -> Path:
     if live and ('lightgbm' in model_name or 'catboost' in model_name):
         return get_live_trade() / 'strat_ml_ret' / 'result'

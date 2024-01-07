@@ -144,8 +144,10 @@ class StratMrevMkt:
         # Load in datasets
         stock = read_stock(get_large(live) / 'permno_live.csv')
         historical_price = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli')
+        historical_price = historical_price.loc[historical_price.index.get_level_values('date') != self.current_date]
         live_price = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
-        historical_hedge = pd.read_parquet(get_strat_mrev_mkt() / 'data_hedge.parquet.brotli', columns=['Close'])
+        historical_hedge = pd.read_parquet(get_strat_mrev_mkt() / 'data' / 'data_hedge.parquet.brotli', columns=['Close'])
+        historical_hedge = historical_hedge.loc[historical_hedge.index.get_level_values('date') != self.current_date]
         live_hedge = pd.read_parquet(get_live_price() / 'data_mkt_live.parquet.brotli')
 
         # Merge historical dataset and live dataset
@@ -160,7 +162,8 @@ class StratMrevMkt:
         hedge_ret = create_return(hedge, [1])
         hedge_ret = hedge_ret.drop(['Close'], axis=1)
         hedge_ret = hedge_ret.unstack('ticker').swaplevel(axis=1)
-        hedge_ret.columns = [col[1] for col in hedge_ret.columns.values]
+        hedge_ticker = [col[0] for col in hedge_ret.columns.values]
+        hedge_ret.columns = ['_'.join(col).strip() for col in hedge_ret.columns.values]
         hedge_ret = hedge_ret.fillna(0)
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -189,12 +192,12 @@ class StratMrevMkt:
 
         # Merge beta_data and hedge_multi
         comb_data = beta_data.merge(hedge_data, left_index=True, right_index=True, how='left')
-        comb_data = comb_data.merge(window_price[['RET_01']], left_index=True, right_index=True, how='left')
+        comb_data = comb_data.merge(window_price[['ticker', 'RET_01']], left_index=True, right_index=True, how='left')
         comb_data = comb_data.fillna(0)
 
         # Retrieve required data
         ret_columns = [col for col in comb_data.columns if "RET_01" in col]
-        comb_data = comb_data[['s_score'] + ret_columns]
+        comb_data = comb_data[['ticker', 's_score'] + ret_columns]
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------CREATE SIGNALS--------------------------------------------------------------------------------------
@@ -215,14 +218,14 @@ class StratMrevMkt:
 
         # Separate into long/short from current_date data
         latest_long_short = stock_weight.loc[stock_weight.index.get_level_values('date') == self.current_date]
-        long = latest_long_short.loc[latest_long_short['normalized_weight'] >= 0]
+        long = latest_long_short.loc[latest_long_short['normalized_weight'] > 0]
         short = latest_long_short.loc[latest_long_short['normalized_weight'] < 0]
-        long_ticker = long['ticker']
-        short_ticker = short['ticker']
-        long_weight = long['normalized_weight'] * self.allocate
-        short_weight = short['normalized_weight'] * self.allocate * -1
-        hedge_ticker = hedge_ret.columns.tolist()
-        hedge_weight = beta_weight[-1] * self.allocate
+        long_ticker = long['ticker'].tolist()
+        short_ticker = short['ticker'].tolist()
+        long_weight = (long['normalized_weight'] * self.allocate).tolist()
+        short_weight = (short['normalized_weight'] * self.allocate * -1).tolist()
+        hedge_ticker = hedge_ticker
+        hedge_weight = (beta_weight.iloc[-1] * self.allocate).tolist()
 
         # Long Stock Dataframe
         long_df = pd.DataFrame({
@@ -242,24 +245,14 @@ class StratMrevMkt:
         hedge_df = pd.DataFrame({
             'date': [self.current_date] * len(hedge_ticker),
             'ticker': hedge_ticker,
-            'weight': hedge_weight,
-            'type': 'long'
+            'weight': [abs(w) for w in hedge_weight],
+            'type': ['short' if w < 0 else 'long' for w in hedge_weight]
         })
 
         # Combine long and short dataframes
         combined_df = pd.concat([long_df, short_df, hedge_df], axis=0)
         combined_df = combined_df.set_index(['date', 'ticker', 'type']).sort_index(level=['date', 'ticker', 'type'])
         filename = get_live_stock() / 'trade_stock_mrev_mkt.parquet.brotli'
-
-        # Check if file exists
-        if os.path.exists(filename):
-            existing_df = pd.read_parquet(filename)
-            # Check if the current_date already exists in the existing_df
-            if self.current_date in existing_df.index.get_level_values('date').values:
-                existing_df = existing_df[existing_df.index.get_level_values('date') != self.current_date]
-            updated_df = pd.concat([existing_df, combined_df], axis=0)
-            updated_df.to_parquet(filename, compression='brotli')
-        else:
-            combined_df.to_parquet(filename, compression='brotli')
+        combined_df.to_parquet(filename, compression='brotli')
 
 

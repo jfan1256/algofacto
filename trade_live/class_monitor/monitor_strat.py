@@ -4,7 +4,7 @@ import quantstats as qs
 class MonitorStrat:
     def __init__(self,
                  strat_name=None,
-                 strat_csv=None,
+                 strat_file=None,
                  allocate=None,
                  alpha_windows=None,
                  output_path=None):
@@ -18,7 +18,7 @@ class MonitorStrat:
         '''
 
         self.strat_name = strat_name
-        self.strat_csv = strat_csv
+        self.strat_file = strat_file
         self.allocate = allocate
         self.alpha_windows = alpha_windows
         self.output_path = output_path
@@ -84,7 +84,7 @@ class MonitorStrat:
     # Monitor Strategy
     def monitor_strat(self):
         # Load in data
-        strat_weight = pd.read_parquet(get_live_stock() / self.strat_csv)
+        strat_weight = pd.read_parquet(get_live() / self.strat_file)
         # Reset index to just be ('date', 'ticker')
         strat_weight = strat_weight.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
 

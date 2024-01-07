@@ -12,7 +12,7 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-class PredTest:
+class ModelTest:
     def __init__(self,
                  live: bool = None,
                  model_name: str = None,

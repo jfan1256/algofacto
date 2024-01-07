@@ -26,7 +26,7 @@ class FactorClustVolatility(Factor):
         self.cluster = cluster
         self.factor_data = self.factor_data.drop(['Open', 'Close', 'Low', 'Volume', 'High'], axis=1)
         start_date = datetime.strptime(self.start, '%Y-%m-%d')
-        new_start_date = start_date + timedelta(days=126)
+        new_start_date = start_date + timedelta(days=252+252)
         new_start_str = new_start_date.strftime('%Y-%m-%d')
         self.factor_data = set_timeframe(self.factor_data, new_start_str, self.end)
         self.factor_data = self.factor_data.unstack(self.join)

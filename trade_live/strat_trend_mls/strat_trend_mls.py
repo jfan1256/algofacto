@@ -201,10 +201,13 @@ class StratTrendMLS:
 
         # Load in datasets
         historical_price = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli')
+        historical_price = historical_price.loc[historical_price.index.get_level_values('date') != self.current_date]
         live_price = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
         historical_com = pd.read_parquet(get_strat_trend_mls() / 'data' / 'data_com.parquet.brotli', columns=['Close'])
+        historical_com = historical_com.loc[historical_com.index.get_level_values('date') != self.current_date]
         live_com = pd.read_parquet(get_live_price() / 'data_com_live.parquet.brotli')
         historical_bond = pd.read_parquet(get_strat_trend_mls() / 'data' / 'data_bond.parquet.brotli', columns=['Close'])
+        historical_bond = historical_bond.loc[historical_bond.index.get_level_values('date') != self.current_date]
         live_bond = pd.read_parquet(get_live_price() / 'data_bond_live.parquet.brotli')
         market = pd.read_parquet(get_parquet(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
 
@@ -224,7 +227,7 @@ class StratTrendMLS:
         print("---------------------------------------------------------------CREATE BOND+COMMODITY PORT-------------------------------------------------------------------------------")
         # Create portfolio
         bond_com_port = pd.concat([bond, com], axis=0)
-        window_bond_com_port = window_data(data=bond_com_port, date=self.current_date, window=self.window_hedge)
+        window_bond_com_port = window_data(data=bond_com_port, date=self.current_date, window=self.window_hedge*2)
         window_bond_com_port['vol'] = window_bond_com_port.groupby('ticker')['RET_01'].rolling(self.window_hedge).std().reset_index(level=0, drop=True)
         window_bond_com_port['inv_vol'] = 1 / window_bond_com_port['vol']
         window_bond_com_port['weight'] = window_bond_com_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
@@ -233,7 +236,7 @@ class StratTrendMLS:
         # --------------------------------------------------------------------------GET MACRO DATA-------------------------------------------------------------------------------------
         print("---------------------------------------------------------------------GET MACRO DATA-------------------------------------------------------------------------------------")
         # Date Index
-        date_index = window_bond_com_port.index
+        date_index = window_bond_com_port.drop(window_bond_com_port.columns, axis=1)
 
         # 5-Year Inflation Rate
         inflation = pd.read_parquet(get_strat_trend_mls() / 'data' / 'data_if.parquet.brotli')
@@ -254,7 +257,7 @@ class StratTrendMLS:
         # --------------------------------------------------------------------------CREATE SIGNALS-------------------------------------------------------------------------------------
         print("---------------------------------------------------------------------CREATE SIGNALS-------------------------------------------------------------------------------------")
         # Window Data
-        window_price = window_data(data=price, date=self.current_date, window=252)
+        window_price = window_data(data=price, date=self.current_date, window=252*2)
 
         # Exponential Moving Averages
         for t in [60, 252]:
@@ -270,7 +273,7 @@ class StratTrendMLS:
 
         # Macro Trend
         macro = pd.concat([inflation, unemploy, yield_curve], axis=1)
-        window_macro = macro.tail(60)
+        window_macro = macro.tail(60*2)
         window_macro['5YIF_z'] = (window_macro['5YIF'] - window_macro['5YIF'].mean()) / window_macro['5YIF'].std()
         window_macro['UR_z'] = (window_macro['UR'] - window_macro['UR'].mean()) / window_macro['UR'].std()
         window_macro['YIELD_z'] = (window_macro['YIELD'] - window_macro['YIELD'].mean()) / window_macro['YIELD'].std()
@@ -303,7 +306,7 @@ class StratTrendMLS:
 
         # Total portfolio allocation weights
         macro_buy_df = macro_buy_df.loc[macro_buy_df.index.get_level_values('date') == self.current_date]
-        if macro_buy_df:
+        if macro_buy_df.values[0]:
             trend_factor = 0.5
             hedge_factor = 0.5
         else:
@@ -312,11 +315,11 @@ class StratTrendMLS:
 
         # Get long weights and tickers from trend portfolio and hedge portfolio
         latest_trend_port = trend_port.loc[trend_port.index.get_level_values('date') == self.current_date]
-        latest_bond_com_port = bond_com_port.loc[bond_com_port.index.get_level_values('date') == self.current_date]
-        trend_ticker = latest_trend_port['ticker']
-        trend_weight = latest_trend_port['weight'] * trend_factor * self.allocate
+        latest_bond_com_port = window_bond_com_port.loc[window_bond_com_port.index.get_level_values('date') == self.current_date]
+        trend_ticker = latest_trend_port['ticker'].tolist()
+        trend_weight = (latest_trend_port['weight'] * trend_factor * self.allocate).tolist()
         hedge_ticker = latest_bond_com_port.index.get_level_values('ticker').unique().tolist()
-        hedge_weight = latest_bond_com_port['weight'] * hedge_factor * self.allocate
+        hedge_weight = (latest_bond_com_port['weight'] * hedge_factor * self.allocate).tolist()
         long_ticker = trend_ticker + hedge_ticker
         long_weight = trend_weight + hedge_weight
 
@@ -331,14 +334,4 @@ class StratTrendMLS:
         # Combine long and short dataframes
         long_df = long_df.set_index(['date', 'ticker', 'type']).sort_index(level=['date', 'ticker', 'type'])
         filename = get_live_stock() / 'trade_stock_trend_mls.parquet.brotli'
-
-        # Check if file exists
-        if os.path.exists(filename):
-            existing_df = pd.read_parquet(filename)
-            # Check if the current_date already exists in the existing_df
-            if self.current_date in existing_df.index.get_level_values('date').values:
-                existing_df = existing_df[existing_df.index.get_level_values('date') != self.current_date]
-            updated_df = pd.concat([existing_df, long_df], axis=0)
-            updated_df.to_parquet(filename, compression='brotli')
-        else:
-            long_df.to_parquet(filename, compression='brotli')
+        long_df.to_parquet(filename, compression='brotli')

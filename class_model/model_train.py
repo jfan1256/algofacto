@@ -23,7 +23,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-class AlphaModel:
+class ModelTrain:
     def __init__(self,
                  live: bool = None,
                  model_name: str = None,

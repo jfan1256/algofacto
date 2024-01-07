@@ -1,7 +1,7 @@
 import os
 
 from class_port.port_factor import PortFactor
-from class_model.prep_factor import PrepFactor
+from class_model.model_prep import ModelPrep
 
 from core.operation import *
 
@@ -44,14 +44,14 @@ class StratPortID:
 
         # Create returns and resample fund_q date index to daily
         ret_price = create_return(historical_price, [1])
-        ret_price = ret_price.groupby('permno').shift(-1)
+        ret_price = ret_price.groupby('permno').shift(-2)
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------LOAD FACTOR DATA-------------------------------------------------------------------------------------
         print("-------------------------------------------------------------------LOAD FACTOR DATA-------------------------------------------------------------------------------------")
         # Defensive
-        sb_sector = PrepFactor(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
-        sb_pca = PrepFactor(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
+        sb_sector = ModelPrep(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
+        sb_pca = ModelPrep(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
 
         # Merge into one dataframe
         factor_data = (pd.merge(ret_price, sb_sector, left_index=True, right_index=True, how='left')
@@ -94,6 +94,7 @@ class StratPortID:
 
         # Load in datasets
         historical_price = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli')
+        historical_price = historical_price.loc[historical_price.index.get_level_values('date') != self.current_date]
         live_price = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
         market = pd.read_parquet(get_parquet(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
 
@@ -108,8 +109,8 @@ class StratPortID:
         # ------------------------------------------------------------------------LOAD FACTOR DATA-------------------------------------------------------------------------------------
         print("-------------------------------------------------------------------LOAD FACTOR DATA-------------------------------------------------------------------------------------")
         # Defensive
-        sb_sector = PrepFactor(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-        sb_pca = PrepFactor(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
+        sb_sector = ModelPrep(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
+        sb_pca = ModelPrep(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
 
         # Merge into one dataframe
         factor_data = (pd.merge(ret_price, sb_sector, left_index=True, right_index=True, how='left')
@@ -136,21 +137,24 @@ class StratPortID:
             'PCA_Return_5_ret_pca_01_126'
         ]
 
+        # Forward Fill Factors
+        factor_data[factors] = factor_data.groupby('permno')[factors].ffill()
+
         filname = f"port_id_{date.today().strftime('%Y%m%d')}"
         dir_path = get_strat_port_id() / 'report' / filname
 
-        latest_window_data = window_data(data=factor_data, date=self.current_date, window=self.window_port)
+        latest_window_data = window_data(data=factor_data, date=self.current_date, window=self.window_port * 2)
         long_short_stocks = PortFactor(data=latest_window_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,
                                        threshold=self.threshold, backtest=False, dir_path=dir_path).create_factor_port()
 
         # Separate into long/short from current_date data
         latest_long_short = long_short_stocks.loc[long_short_stocks.index.get_level_values('date') == self.current_date]
-        long = latest_long_short.loc[latest_long_short['final_weight'] >= 0]
+        long = latest_long_short.loc[latest_long_short['final_weight'] > 0]
         short = latest_long_short.loc[latest_long_short['final_weight'] < 0]
-        long_ticker = long['ticker']
-        short_ticker = short['ticker']
-        long_weight = long['final_weight'] * self.allocate
-        short_weight = short['final_weight'] * self.allocate * -1
+        long_ticker = long['ticker'].tolist()
+        short_ticker = short['ticker'].tolist()
+        long_weight = (long['final_weight'] * self.allocate).tolist()
+        short_weight = (short['final_weight'] * self.allocate * -1).tolist()
 
         # Long Stock Dataframe
         long_df = pd.DataFrame({
@@ -171,14 +175,4 @@ class StratPortID:
         combined_df = pd.concat([long_df, short_df], axis=0)
         combined_df = combined_df.set_index(['date', 'ticker', 'type']).sort_index(level=['date', 'ticker', 'type'])
         filename = get_live_stock() / 'trade_stock_port_id.parquet.brotli'
-
-        # Check if file exists
-        if os.path.exists(filename):
-            existing_df = pd.read_parquet(filename)
-            # Check if the current_date already exists in the existing_df
-            if self.current_date in existing_df.index.get_level_values('date').values:
-                existing_df = existing_df[existing_df.index.get_level_values('date') != self.current_date]
-            updated_df = pd.concat([existing_df, combined_df], axis=0)
-            updated_df.to_parquet(filename, compression='brotli')
-        else:
-            combined_df.to_parquet(filename, compression='brotli')
+        combined_df.to_parquet(filename, compression='brotli')

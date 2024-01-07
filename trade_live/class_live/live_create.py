@@ -233,3 +233,42 @@ class LiveCreate:
         print(f"Total time to create all factors: {int(minutes)}:{int(seconds):02}")
         print("-" * 60)
         ray.shutdown()
+
+    def exec_adj_factor(self):
+        print("--------------------------------------------------------------------EXEC ADJ FACTORS--------------------------------------------------------------------------------------")
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------CREATE ADJ FACTORS------------------------------------------------------------------------------------
+        # All Permno Ticker
+        live = True
+        historical_data = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli', columns=['Close'])
+        all_ticker = pd.read_parquet(get_parquet(live) / 'data_ticker.parquet.brotli')
+        latest_date = historical_data.index.get_level_values('date').max().strftime('%Y-%m-%d')
+        latest_data = historical_data.loc[historical_data.index.get_level_values('date') == latest_date]
+        latest_data = latest_data.merge(all_ticker, left_index=True, right_index=True, how='left')
+        permno_ticker = latest_data.ticker.tolist()
+
+        # MREV ETF Ticker
+        etf_ticker = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
+
+        # MREV Market Ticker
+        market_ticker = ['SPY', 'MDY', 'VEA', 'EEM', 'VNQ', 'DBC']
+
+        # Commodity Ticker
+        com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
+
+        # Bond Ticker
+        bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF', 'MBB', 'GOVT', 'VGSH', 'IUSB', 'TIP']
+
+        # Get Adjustment Factors
+        adj_permno = get_adj_factor_fmp(permno_ticker, latest_date)
+        adj_etf = get_adj_factor_fmp(etf_ticker, latest_date)
+        adj_mkt = get_adj_factor_fmp(market_ticker, latest_date)
+        adj_com = get_adj_factor_fmp(com_ticker, latest_date)
+        adj_bond = get_adj_factor_fmp(bond_ticker, latest_date)
+
+        # Export Data
+        adj_permno.to_parquet(get_adj() / 'data_adj_permno_live.parquet.brotli', compression='brotli')
+        adj_etf.to_parquet(get_adj() / 'data_adj_etf_live.parquet.brotli', compression='brotli')
+        adj_mkt.to_parquet(get_adj() / 'data_adj_mkt_live.parquet.brotli', compression='brotli')
+        adj_com.to_parquet(get_adj() / 'data_adj_com_live.parquet.brotli', compression='brotli')
+        adj_bond.to_parquet(get_adj() / 'data_adj_bond_live.parquet.brotli', compression='brotli')

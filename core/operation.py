@@ -10,6 +10,7 @@ from tqdm import tqdm
 from plotly.subplots import make_subplots
 from datetime import date
 from pandas.tseries.offsets import BDay
+from datetime import datetime, timedelta
 
 import time
 import plotly.offline as py
@@ -33,6 +34,9 @@ with open(get_config() / 'api_key.json') as f:
   config = json.load(f)
   api_key = config['fmp_key']
 
+
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------PROCESS TIMESERIES DATAFRAME------------------------------------------------------------------
 # Gets dataframe for a specified stock
 def get_stock_data(data, stock):
     idx = pd.IndexSlice
@@ -73,7 +77,6 @@ def ffill_max_days(df, max_days):
 def get_stock_idx(data):
     return [stock for stock, df in data.groupby(data.index.names[0], group_keys=False)]
 
-
 # Splices a large data file once
 def splice_data_once(data, splice_size):
     data_spliced = {}
@@ -92,11 +95,9 @@ def splice_data_once(data, splice_size):
             break
     return data_spliced
 
-
 # Gets the time frame length of a time-series dataframe
 def get_timeframe_length(data):
     return len(sorted(data.index.get_level_values('date').unique()))
-
 
 # Formats a time string 'HH:MM:SS' based on a numeric time() value
 def format_time(t):
@@ -104,17 +105,14 @@ def format_time(t):
     h, m = divmod(m, 60)
     return f'{h:0>2.0f}:{m:0>2.0f}:{s:0>2.0f}'
 
-
 # Extracts the number from the end of a string
 def extract_number(s):
     match = re.search(r'\d+$', s)
     return int(match.group()) if match else None
 
-
 # Extracts the name from a file ending with ".parquet.brotli"
 def extract_first_string(s):
     return s.split('.')[0]
-
 
 # Export list of stocks into a csv file
 def export_stock(data, file_name):
@@ -124,11 +122,9 @@ def export_stock(data, file_name):
         writer = csv.writer(f)
         writer.writerows(my_list)
 
-
 # Read list of stocks in
 def read_stock(file_name):
     return pd.read_csv(file_name, header=None).iloc[:, 0].tolist()
-
 
 # Find common stocks between stocks_to_train and data
 def common_stocks(stocks, data):
@@ -136,7 +132,6 @@ def common_stocks(stocks, data):
     data_stocks = set(data.index.get_level_values(data.index.names[0]))  # Adjust the level if needed
     common = sorted(list(stocks & data_stocks))
     return common
-
 
 # Get SP500 candidates and set keys to the given year
 def get_candidate(live):
@@ -146,13 +141,11 @@ def get_candidate(live):
     candidates = {date.year: candidates[date] for date in beginning_year if date in candidates}
     return candidates
 
-
 # Set timeframe
 def set_timeframe(data, start_date, end_date):
     data = data.loc[data.index.get_level_values('date') >= start_date]
     data = data.loc[data.index.get_level_values('date') <= end_date]
     return data
-
 
 # Removes all data with that have less than year(param) worth of data
 def set_length(data, year):
@@ -162,7 +155,82 @@ def set_length(data, year):
     data = data[mask]
     return data
 
+# Create returns
+def create_return(df, windows):
+    by_stock = df.groupby(level=df.index.names[0])
+    for t in windows:
+        df[f'RET_{t:02}'] = by_stock.Close.pct_change(t)
+    return df
 
+# Create percentage change for volume
+def create_volume(df, windows):
+    by_stock = df.groupby(level=df.index.names[0])
+    for t in windows:
+        df[f'VOL_{t:02}'] = by_stock.Volume.pct_change(t)
+    return df
+
+# Create percentage change for high
+def create_high(df, windows):
+    by_stock = df.groupby(level=df.index.names[0])
+    for t in windows:
+        df[f'HIGH_{t:02}'] = by_stock.High.pct_change(t)
+    return df
+
+# Create percentage change for low
+def create_low(df, windows):
+    by_stock = df.groupby(level=df.index.names[0])
+    for t in windows:
+        df[f'LOW_{t:02}'] = by_stock.Low.pct_change(t)
+    return df
+
+# Create percentage change for outstanding shares
+def create_out(df, windows):
+    by_stock = df.groupby(level=df.index.names[0])
+    for t in windows:
+        df[f'OUTSTANDING_{t:02}'] = by_stock.Low.pct_change(t)
+    return df
+
+# Create smoothed returns
+def create_smooth_return(df, windows, window_size):
+    by_stock = df.groupby(level=df.index.names[0])
+    for t in windows:
+        df[f'RET_{t:02}'] = by_stock.Close.pct_change(t).rolling(window=window_size).mean()
+    return df
+
+# Plot histogram
+def plot_histogram(df):
+    df.hist(bins='auto')
+    plt.title('Distribution of Values')
+    plt.xlabel('Value')
+    plt.ylabel('Frequency')
+    plt.show()
+
+# Gets SPY returns from yfinance
+def get_spy(start_date, end_date):
+    spy = yf.download(['SPY'], start=start_date, end=end_date)
+    spy['spyRet'] = spy['Close'].pct_change()
+    spy = spy.dropna()
+    benchmark = spy[['spyRet']]
+    benchmark.index = benchmark.index.tz_localize(None)
+    return benchmark
+
+# Remove the last date of NAN in permno groups that are delisted prior to end date
+def remove_nan_before_end(data, column):
+    mask = data.index.get_level_values('date') != data.index.get_level_values('date').unique().max()
+    data = data[~(data[column].isna() & mask)]
+    return data
+
+# Outputs window data from a specified date
+def window_data(data, date, window):
+    target_date = pd.to_datetime(date)
+    def process_group(group):
+        group_filtered = group.tail(window)
+        if group_filtered.index.get_level_values('date').max() >= target_date and len(group_filtered) >= window:
+            return group_filtered
+        return None
+    return pd.concat([process_group(group) for _, group in data.groupby(level=data.index.names[0]) if process_group(group) is not None])
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------PARALLELIZED ROLLING OPERATIONS--------------------------------------------------------------------
 # Rolling Kmean
 @timebudget
 def rolling_kmean(data, window_size, n_clusters, name):
@@ -192,7 +260,6 @@ def rolling_kmean(data, window_size, n_clusters, name):
     results_clusters_combined.sort_index(level=[data.index.names[0], 'date'], inplace=True)
     results_clusters_combined.columns = [f'kMean{name}_{i}' for i in range(1, len(results_clusters_combined.columns) + 1)]
     return results_clusters_combined
-
 
 # Rolling PCA KMean
 @timebudget
@@ -274,7 +341,6 @@ def rolling_ols_beta_res_syn(price, factor_data, factor_col, window, name, ret):
 
     return pd.concat(betas).rename(columns=lambda x: f'{x}_{name}_{window:02}')
 
-
 # Rolling Linear Regression (Parallelized)
 def rolling_ols_parallel(data, ret, factor_data, factor_cols, window, name):
     def process_stock(stock_data, ret, factor_data, factor_cols, window, stock_name, index_name):
@@ -333,7 +399,6 @@ def rolling_pca(data, window_size, num_components, name):
     pca_df = pca_df.sort_index(level=['date'])
     return pca_df
 
-
 # Rolling PCA Loadings
 def rolling_pca_loading(data, window_size, num_components, name):
     loadings_list = []
@@ -363,73 +428,8 @@ def rolling_pca_loading(data, window_size, num_components, name):
     return results_loadings_combined
 
 
-# Create returns
-def create_return(df, windows):
-    by_stock = df.groupby(level=df.index.names[0])
-    for t in windows:
-        df[f'RET_{t:02}'] = by_stock.Close.pct_change(t)
-    return df
-
-
-# Create percentage change for volume
-def create_volume(df, windows):
-    by_stock = df.groupby(level=df.index.names[0])
-    for t in windows:
-        df[f'VOL_{t:02}'] = by_stock.Volume.pct_change(t)
-    return df
-
-# Create percentage change for high
-def create_high(df, windows):
-    by_stock = df.groupby(level=df.index.names[0])
-    for t in windows:
-        df[f'HIGH_{t:02}'] = by_stock.High.pct_change(t)
-    return df
-
-
-# Create percentage change for low
-def create_low(df, windows):
-    by_stock = df.groupby(level=df.index.names[0])
-    for t in windows:
-        df[f'LOW_{t:02}'] = by_stock.Low.pct_change(t)
-    return df
-
-# Create percentage change for outstanding shares
-def create_out(df, windows):
-    by_stock = df.groupby(level=df.index.names[0])
-    for t in windows:
-        df[f'OUTSTANDING_{t:02}'] = by_stock.Low.pct_change(t)
-    return df
-
-# Create smoothed returns
-def create_smooth_return(df, windows, window_size):
-    by_stock = df.groupby(level=df.index.names[0])
-    for t in windows:
-        df[f'RET_{t:02}'] = by_stock.Close.pct_change(t).rolling(window=window_size).mean()
-    return df
-
-# Plot histogram
-def plot_histogram(df):
-    df.hist(bins='auto')
-    plt.title('Distribution of Values')
-    plt.xlabel('Value')
-    plt.ylabel('Frequency')
-    plt.show()
-
-# Gets SPY returns from yfinance
-def get_spy(start_date, end_date):
-    spy = yf.download(['SPY'], start=start_date, end=end_date)
-    spy['spyRet'] = spy['Close'].pct_change()
-    spy = spy.dropna()
-    benchmark = spy[['spyRet']]
-    benchmark.index = benchmark.index.tz_localize(None)
-    return benchmark
-
-# Remove the last date of NAN in permno groups that are delisted prior to end date
-def remove_nan_before_end(data, column):
-    mask = data.index.get_level_values('date') != data.index.get_level_values('date').unique().max()
-    data = data[~(data[column].isna() & mask)]
-    return data
-
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------FMP API---------------------------------------------------------------------------------------
 # Get stock price data from FMP from start to current_date
 def get_data_fmp(ticker_list, start, current_date):
     frames = []
@@ -566,15 +566,5 @@ def get_sp500_fmp():
     else:
         print("Failed to retrieve data:", response.status_code, response.text)
         return None
-
-# Outputs window data from a specified date
-def window_data(data, date, window):
-    target_date = pd.to_datetime(date)
-    def process_group(group):
-        group_filtered = group.tail(window)
-        if group_filtered.index.get_level_values('date').max() >= target_date and len(group_filtered) >= window:
-            return group_filtered
-        return None
-    return pd.concat([process_group(group) for _, group in data.groupby(level='permno') if process_group(group) is not None])
 
 

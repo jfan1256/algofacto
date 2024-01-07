@@ -9,7 +9,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-class PrepFactor:
+class ModelPrep:
     def __init__(self,
                  live: bool = None,
                  factor_name: str = None,

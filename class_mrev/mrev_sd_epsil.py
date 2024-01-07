@@ -126,4 +126,7 @@ class MrevSDEpsil:
         print("Get total returns...")
         total_returns = daily_returns + net_hedge_return_total
 
-        return total_returns, normalized_net_hedge_betas, df[['normalized_weight']]
+        if 'ticker' in df.columns:
+            return total_returns, normalized_net_hedge_betas, df[['normalized_weight', 'ticker']]
+        else:
+            return total_returns, normalized_net_hedge_betas, df[['normalized_weight']]
