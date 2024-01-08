@@ -453,10 +453,6 @@ class StratMLRet(Strategy):
         # Retrieve weights for long/short and multiply by self.allocate for strategic asset allocation
         long_weight = (long_weights[-1] * self.allocate).tolist()
         short_weight = (short_weight[-1] * self.allocate).tolist()
-        # Display stocks to long and short tomorrow
-        content = live_test.display_stock(long, "Stocks to Long Tomorrow:")
-        content += '\n\n' + live_test.display_stock(short, "Stocks to Short Tomorrow:")
-        print(content)
 
         # Long Stock Dataframe
         long_df = pd.DataFrame({

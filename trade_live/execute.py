@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import schedule
 
 from ib_insync import *
 
@@ -23,6 +24,25 @@ from trade_live.strat_mrev_mkt.strat_mrev_mkt import StratMrevMkt
 from class_monitor.monitor_strat import MonitorStrat
 
 def build():
+    '''
+    Note: Specify strategy criteria in strat_crit.json. Each strategy's criteria should contain "allocate", "start_backtest", "num_stocks", and "threshold":
+                - allocate (float): Percentage of capital to allocate for a strategy (allocation weights should remain static and sum up to 1 across all strategies)
+                - start_backtest (str: YYYY-MM-DD): Start date for a strategy's backtest period
+                - num_stocks (list: [int (# of long), int (# of short)]: Number of stocks to long and short for a strategy
+                - threshold (int): Market Cap Threshold that must be met in order to long/short a stock for a strategy
+
+          Specify data criteria in data_crit.json:
+                - threshold (int): Market Cap Threshold that must be met in order to retrieve the data of a stock (stock's market_cap average over entire timeline > threshold)
+                - age (int): Age of stock threshold that must be met in order to retrieve the data of a stock (stock's age > age)
+                - annual_update (str: "True" or "False"): Update crsp_price data set or not (this should be updated annually at the start of the year: manually download CRSP Daily Price Dataset from WRDS)
+                - start_date (str: YYYY-MM-DD): Start date for data retrieval
+
+          build() should be executed at 12:01 AM EST Daily on Monday to Friday
+    '''
+
+    # Log Time
+    start_time = time.time()
+
     # Get strategy criteria
     strat_crit = json.load(open(get_config() / 'strat_crit.json'))
     # Get data criteria
@@ -74,9 +94,34 @@ def build():
     # Backtest StratMrevMkt
     strat_mrev_mkt.exec_backtest()
 
+    # Log Time
+    print("-"*180)
+    elapsed_time = time.time() - start_time
+    minutes, seconds = divmod(elapsed_time, 60)
+    print(f"Total Time to Execute Build: {int(minutes)}:{int(seconds):02}")
+    print("-"*180)
+
 def trade():
+    '''
+    Note: Specify ibkr criteria in ibkr_crit.json:
+                - first_day (str: "True" or "False"): First day of trading or not
+                - settle_period (int): IBKR Cash Settlement Period
+
+          In ibkr_crit.json, set "first_day" to be "True" if this is the first trade() run and "settle_period" to IBKR's cash settlement period.
+          For the following days after, set "first_day" to be "False" and decrement "settle_period" by 1 continuously until "settle_period" is 1.
+          This is to avoid the problem of running out of capital.
+
+          trade() should be executed at 3:45 PM EST Daily on Monday to Friday
+    '''
+
+    # Log Time
+    start_time = time.time()
+
     # Get strategy criteria
     strat_crit = json.load(open(get_config() / 'strat_crit.json'))
+
+    # Get IBKR criteria
+    ibkr_crit = json.load(open(get_config() / 'ibkr_crit.json'))
 
     # Params
     current_date = date.today().strftime('%Y-%m-%d')
@@ -90,7 +135,7 @@ def trade():
     # Create Executioners
     live_price = LivePrice(ibkr_server=ibkr_server, current_date=current_date)
     live_close = LiveClose(ibkr_server=ibkr_server, current_date=current_date)
-    live_trade = LiveTrade(ibkr_server=ibkr_server, current_date=current_date)
+    live_trade = LiveTrade(ibkr_server=ibkr_server, current_date=current_date, settle_period=ibkr_crit['settle_period'])
 
     # Create Strategies
     strat_port_iv = StratPortIV(allocate=strat_crit['port_iv']['allocate'], current_date=current_date, start_date=strat_crit['port_iv']['start_backtest'], threshold=strat_crit['port_iv']['threshold'], num_stocks=strat_crit['port_iv']['per_side'][0], window_port=21)
@@ -104,6 +149,7 @@ def trade():
     # Retrieve live close prices
     loop = asyncio.get_event_loop()
     loop.run_until_complete(live_price.exec_live_price())
+    loop.close()
 
     # Parallel Strategy Execution
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -121,14 +167,36 @@ def trade():
         for future in concurrent.futures.as_completed(exec_strategies):
             future.result()
 
-    # Execute Trades
-    live_close.exec_close()
-    live_trade.exec_trade()
+    # Close trades from previous day
+    if ibkr_crit['first_day'] == "False":
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(live_close.exec_close())
+        loop.close()
+
+    # Execute new trades for today
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(live_trade.exec_trade())
+    loop.close()
+
+    # Log Time
+    print("-" * 180)
+    elapsed_time = time.time() - start_time
+    minutes, seconds = divmod(elapsed_time, 60)
+    print(f"Total Time to Execute Trade: {int(minutes)}:{int(seconds):02}")
+    print("-" * 180)
 
     # Store live price and live stock data
     live_price.exec_live_store()
 
 def monitor():
+    '''
+    Note: Specify monitor criteria in mont_crit.json:
+               - rolling_window (list[int]): List of rolling windows for Dynamic Alpha Test (rolling window)
+               - full_sample (str: "True" or "False"): Full Sample Alpha Test or not
+
+          monitor() should be executed at 4:00 PM EST Weekly on Friday
+    '''
+
     # Get strategy criteria
     strat_crit = json.load(open(get_config() / 'strat_crit.json'))
     # Get monitor criteria
@@ -159,26 +227,3 @@ def monitor():
 
     # Monitor All Strategies
     mont_all.monitor_all()
-
-
-
-current_date = '2024-01-05'
-strat_crit = json.load(open(get_config() / 'strat_crit.json'))
-
-# Create Strategies
-strat_port_iv = StratPortIV(allocate=strat_crit['port_iv']['allocate'], current_date=current_date, start_date=strat_crit['port_iv']['start_backtest'], threshold=strat_crit['port_iv']['threshold'], num_stocks=strat_crit['port_iv']['per_side'][0], window_port=21)
-strat_port_im = StratPortIM(allocate=strat_crit['port_im']['allocate'], current_date=current_date, start_date=strat_crit['port_im']['start_backtest'], threshold=strat_crit['port_im']['threshold'], num_stocks=strat_crit['port_im']['per_side'][0], window_port=21)
-strat_port_id = StratPortID(allocate=strat_crit['port_id']['allocate'], current_date=current_date, start_date=strat_crit['port_id']['start_backtest'], threshold=strat_crit['port_id']['threshold'], num_stocks=strat_crit['port_id']['per_side'][0], window_port=21)
-strat_port_ivmd = StratPortIVMD(allocate=strat_crit['port_ivmd']['allocate'], current_date=current_date, start_date=strat_crit['port_ivmd']['start_backtest'], threshold=strat_crit['port_ivmd']['threshold'], num_stocks=strat_crit['port_ivmd']['per_side'][0], window_port=21)
-strat_trend_mls = StratTrendMLS(allocate=strat_crit['trend_mls']['allocate'], current_date=current_date, start_date=strat_crit['trend_mls']['start_backtest'], threshold=strat_crit['trend_mls']['threshold'], num_stocks=strat_crit['trend_mls']['per_side'][0], window_hedge=60, window_port=252)
-strat_mrev_etf = StratMrevETF(allocate=strat_crit['mrev_etf']['allocate'], current_date=current_date, start_date=strat_crit['mrev_etf']['start_backtest'], threshold=strat_crit['mrev_etf']['threshold'], window_epsil=168, sbo=0.85, sso=0.85, sbc=0.25, ssc=0.25)
-strat_mrev_mkt = StratMrevMkt(allocate=strat_crit['mrev_mkt']['allocate'], current_date=current_date, start_date=strat_crit['mrev_mkt']['start_backtest'], threshold=strat_crit['mrev_mkt']['threshold'], window_epsil=168, sbo=0.85, sso=0.85, sbc=0.25, ssc=0.25)
-
-# Strategy Execution
-strat_port_iv.exec_port_iv()
-strat_port_im.exec_port_im()
-strat_port_id.exec_port_id()
-strat_port_ivmd.exec_port_ivmd()
-strat_trend_mls.exec_trend_mls()
-strat_mrev_etf.exec_mrev_etf()
-strat_mrev_mkt.exec_mrev_mkt()

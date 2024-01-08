@@ -41,7 +41,7 @@ class StratMLTrend(Strategy):
         self.use_top = use_top
 
     def exec_backtest(self):
-        print("-------------------------------------------------------------------EXEC ML RET MODEL--------------------------------------------------------------------------------------")
+        print("-----------------------------------------------------------------EXEC ML TREND MODEL--------------------------------------------------------------------------------------")
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------PARAMS--------------------------------------------------------------------------------------------
         live = True
@@ -65,7 +65,7 @@ class StratMLTrend(Strategy):
         tune = 'default'
 
         alpha = ModelTrain(live=live, model_name=model_name, end=self.current_date, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='sign',
-                           stock='permno', lookahead=1, trend=1, incr=True, opt='ewo', weight=False, outlier=False, early=False,
+                           stock='permno', lookahead=1, trend=1, incr=False, opt='ewo', weight=False, outlier=False, early=False,
                            pretrain_len=0, train_len=504, valid_len=21, test_len=21, **randomforest_params)
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -384,7 +384,7 @@ class StratMLTrend(Strategy):
         print("-" * 60)
 
     def exec_live(self):
-        print("--------------------------------------------------------------------------EXEC ML RET PRED--------------------------------------------------------------------------------")
+        print("--------------------------------------------------------------------------EXEC ML TREND PRED------------------------------------------------------------------------------")
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------------
         live = True
@@ -498,10 +498,6 @@ class StratMLTrend(Strategy):
         # Retrieve weights for long/short and multiply by self.allocate for strategic asset allocation
         long_weight = (long_weights[-1] * self.allocate).tolist()
         short_weight = (short_weight[-1] * self.allocate).tolist()
-        # Display stocks to long and short tomorrow
-        content = live_test.display_stock(long, "Stocks to Long Tomorrow:")
-        content += '\n\n' + live_test.display_stock(short, "Stocks to Short Tomorrow:")
-        print(content)
 
         # Long Stock Dataframe
         long_df = pd.DataFrame({

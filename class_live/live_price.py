@@ -64,9 +64,9 @@ class LivePrice:
     # Split the all_stocks list into chunks of batch_size
     async def _get_prices_in_batches(self, all_stocks, batch_size):
         batches = [all_stocks[i:i + batch_size] for i in range(0, len(all_stocks), batch_size)]
-
         symbol_price_tuples = []
-        for batch in batches:
+        for i, batch in enumerate(batches, 1):
+            print(f"----------------------------------------------------------------BATCH: {i}/{len(batches)}---------------------------------------------------------------------------")
             tasks = [self._get_last_price(stock_symbol) for stock_symbol in batch]
             batch_results = await asyncio.gather(*tasks)
             # Filter and extend the main list
@@ -77,6 +77,9 @@ class LivePrice:
 
     # Get live prices and export the data for easy access
     async def exec_live_price(self):
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # ------------------------------------------------------------------------------EXECUTE LIVE PRICES------------------------------------------------------------------------------
+        print("-------------------------------------------------------------------------EXECUTE LIVE PRICES------------------------------------------------------------------------------")
         # All Permno Ticker
         live = True
         historical_data = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli', columns=['Close'])
@@ -164,6 +167,8 @@ class LivePrice:
 
     # Store live price and live stock data in a recurring dataset
     def exec_live_store(self):
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # ------------------------------------------------------------------------------EXECUTE LIVE STORE-------------------------------------------------------------------------------
         def add_store(data, filename):
             # Check if file exists
             if os.path.exists(filename):
@@ -184,15 +189,15 @@ class LivePrice:
         com_data = pd.read_parquet(get_live_price() / 'data_com_live.parquet.brotli')
 
         # Load Live Stock
-        ml_ret = pd.read_parquet(get_live_price() / 'trade_stock_ml_ret.parquet.brotli')
-        ml_trend = pd.read_parquet(get_live_price() / 'trade_stock_ml_trend.parquet.brotli')
-        port_iv = pd.read_parquet(get_live_price() / 'trade_stock_port_iv.parquet.brotli')
-        port_im = pd.read_parquet(get_live_price() / 'trade_stock_port_im.parquet.brotli')
-        port_id = pd.read_parquet(get_live_price() / 'trade_stock_port_id.parquet.brotli')
-        port_ivmd = pd.read_parquet(get_live_price() / 'trade_stock_port_ivmd.parquet.brotli')
-        trend_mls = pd.read_parquet(get_live_price() / 'trade_stock_trend_mls.parquet.brotli')
-        mrev_mkt = pd.read_parquet(get_live_price() / 'trade_stock_mrev_mkt.parquet.brotli')
-        mrev_etf = pd.read_parquet(get_live_price() / 'trade_stock_mrev_etf.parquet.brotli')
+        ml_ret = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret.parquet.brotli')
+        ml_trend = pd.read_parquet(get_live_stock() / 'trade_stock_ml_trend.parquet.brotli')
+        port_iv = pd.read_parquet(get_live_stock() / 'trade_stock_port_iv.parquet.brotli')
+        port_im = pd.read_parquet(get_live_stock() / 'trade_stock_port_im.parquet.brotli')
+        port_id = pd.read_parquet(get_live_stock() / 'trade_stock_port_id.parquet.brotli')
+        port_ivmd = pd.read_parquet(get_live_stock() / 'trade_stock_port_ivmd.parquet.brotli')
+        trend_mls = pd.read_parquet(get_live_stock() / 'trade_stock_trend_mls.parquet.brotli')
+        mrev_mkt = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_mkt.parquet.brotli')
+        mrev_etf = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_etf.parquet.brotli')
 
         # Store Live Price
         add_store(data=permno_data, filename=get_live() / 'data_permno_store.parquet.brotli')
