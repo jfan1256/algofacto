@@ -231,4 +231,21 @@ def monitor():
     # Monitor All Strategies
     mont_all.monitor_all()
 
-trade()
+# Schedule the tasks
+schedule.every().monday.at("00:01").do(build)
+schedule.every().tuesday.at("00:01").do(build)
+schedule.every().wednesday.at("00:01").do(build)
+schedule.every().thursday.at("00:01").do(build)
+schedule.every().friday.at("00:01").do(build)
+
+schedule.every().monday.at("15:45").do(trade)
+schedule.every().tuesday.at("15:45").do(trade)
+schedule.every().wednesday.at("15:45").do(trade)
+schedule.every().thursday.at("15:45").do(trade)
+schedule.every().friday.at("15:45").do(trade)
+
+schedule.every().friday.at("16:00").do(monitor)
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
