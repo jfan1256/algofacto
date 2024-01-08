@@ -188,6 +188,9 @@ def trade():
     # Store live price and live stock data
     live_price.exec_live_store()
 
+    # Disconnect
+    ibkr_server.disconnect()
+
 def monitor():
     '''
     Note: Specify monitor criteria in mont_crit.json:
@@ -227,3 +230,5 @@ def monitor():
 
     # Monitor All Strategies
     mont_all.monitor_all()
+
+trade()

@@ -104,8 +104,8 @@ class LivePrice:
         # Combine all tickers
         all_stocks = permno_ticker + etf_ticker + market_ticker + com_ticker + bond_ticker
 
-        # Get stock prices in batches (or else it will hit ticker request rate limit)
-        batch_size = 50
+        # Get stock prices in batches (or else it will hit ticker request rate limit ~ 250 request per 5 seconds)
+        batch_size = 75
         symbol_price_tuples = await self._get_prices_in_batches(all_stocks, batch_size)
 
         # Create DataFrame
