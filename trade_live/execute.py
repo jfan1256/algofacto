@@ -231,7 +231,7 @@ def monitor():
     # Monitor All Strategies
     mont_all.monitor_all()
 
-# Schedule the tasks
+# Execute
 schedule.every().monday.at("00:01").do(build)
 schedule.every().tuesday.at("00:01").do(build)
 schedule.every().wednesday.at("00:01").do(build)
