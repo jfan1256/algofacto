@@ -111,7 +111,7 @@ def trade():
           For the following days after, set "first_day" to be "False" and decrement "settle_period" by 1 continuously until "settle_period" is 1.
           This is to avoid the problem of running out of capital.
 
-          trade() should be executed at 3:45 PM EST Daily on Monday to Friday
+          trade() should be executed at 3:40 PM EST Daily on Monday to Friday
     '''
 
     # Log Time
@@ -238,11 +238,11 @@ schedule.every().wednesday.at("00:01").do(build)
 schedule.every().thursday.at("00:01").do(build)
 schedule.every().friday.at("00:01").do(build)
 
-schedule.every().monday.at("15:45").do(trade)
-schedule.every().tuesday.at("15:45").do(trade)
-schedule.every().wednesday.at("15:45").do(trade)
-schedule.every().thursday.at("15:45").do(trade)
-schedule.every().friday.at("15:45").do(trade)
+schedule.every().monday.at("15:40").do(trade)
+schedule.every().tuesday.at("15:40").do(trade)
+schedule.every().wednesday.at("15:40").do(trade)
+schedule.every().thursday.at("15:40").do(trade)
+schedule.every().friday.at("15:40").do(trade)
 
 schedule.every().friday.at("16:00").do(monitor)
 
