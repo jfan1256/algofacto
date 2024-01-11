@@ -106,7 +106,7 @@ class StratMLTrend(Strategy):
         alpha.add_factor(sign_volume, categorical=True)
         del sign_volume
 
-        sign_volatility = ModelPrep(live=live, factor_name='factor_sign_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        sign_volatility = ModelPrep(live=live, factor_name='factor_sign_volatility', group='permno', interval='D', kind='sign', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(sign_volatility, categorical=True)
         del sign_volatility
 
@@ -207,7 +207,7 @@ class StratMLTrend(Strategy):
         alpha.add_factor(inv_growth)
         del inv_growth
 
-        trend_factor = ModelPrep(live=live, factor_name='factor_trend_factor', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        trend_factor = ModelPrep(live=live, factor_name='factor_trend_factor', group='permno', interval='D', kind='trend', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(trend_factor)
         del trend_factor
 
@@ -359,11 +359,11 @@ class StratMLTrend(Strategy):
         alpha.add_factor(clust_load_volume, categorical=True)
         del clust_load_volume
 
-        clust_volatility = ModelPrep(live=live, factor_name='factor_clust_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        clust_volatility = ModelPrep(live=live, factor_name='factor_clust_volatility', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(clust_volatility, categorical=True)
         del clust_volatility
 
-        clust_volume = ModelPrep(live=live, factor_name='factor_clust_volume', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        clust_volume = ModelPrep(live=live, factor_name='factor_clust_volume', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(clust_volume, categorical=True)
         del clust_volume
 
@@ -376,7 +376,7 @@ class StratMLTrend(Strategy):
         print("-" * 60)
         print("Run Model")
 
-        alpha.lightgbm()
+        alpha.randomforest()
 
         elapsed_time = time.time() - total_time
         minutes, seconds = divmod(elapsed_time, 60)

@@ -21,11 +21,9 @@ class FactorAgeMom(Factor):
         super().__init__(live, file_name, skip, start, end, stock, batch_size, splice_size, group, join, general, window)
         self.factor_data = pd.read_parquet(get_parquet(self.live) / 'data_price.parquet.brotli')
 
-    @ray.remote
-    def function(self, splice_data):
         T = [1]
-        splice_data = create_return(splice_data, windows=T)
-        splice_data['tempage'] = splice_data.groupby(self.group).cumcount() + 1
+        self.factor_data = create_return(self.factor_data, windows=T)
+        self.factor_data['tempage'] = self.factor_data.groupby(self.group).cumcount() + 1
         def compound_return(group, day):
             compound_return = 1
             for i in range(1, day+1):
@@ -35,8 +33,7 @@ class FactorAgeMom(Factor):
         # Scaling factor for daily data
         scale_factor = 1
 
-        splice_data['age_mom'] = splice_data.groupby(self.group).apply(compound_return, day=5*scale_factor).reset_index(level=0, drop=True)
-        splice_data.loc[(splice_data['Close'].abs() < 5) | (splice_data['tempage'] < 12*scale_factor), 'age_mom'] = np.nan
+        self.factor_data['age_mom'] = self.factor_data.groupby(self.group).apply(compound_return, day=5*scale_factor).reset_index(level=0, drop=True)
+        self.factor_data.loc[(self.factor_data['Close'].abs() < 5) | (self.factor_data['tempage'] < 12*scale_factor), 'age_mom'] = np.nan
 
-        splice_data = splice_data[['age_mom']]
-        return splice_data
+        self.factor_data = self.factor_data[['age_mom']]

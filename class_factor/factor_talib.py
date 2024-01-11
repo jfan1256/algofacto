@@ -25,99 +25,96 @@ class FactorTalib(Factor):
         self.factor_data = pd.read_parquet(get_parquet(self.live) / 'data_price.parquet.brotli')
         self.mAT = [5, 21, 63]
 
-    # -----------------------------------------Moving Averages----------------------------------------------------
-    # Simple Moving Average
-    def _SMA(self, splice_data):
-        for t in self.mAT:
-            splice_data[f'sma_{t}'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.SMA(x.Close, timeperiod=t)))
-
-    # Exponential Moving Average
-    def _EMA(self, splice_data):
-        for t in self.mAT:
-            splice_data[f'ema_{t}'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.EMA(x.Close, timeperiod=t)))
-
-    # ----------------------------------------Price and Volatility Trends----------------------------------------------------
-    # Hilbert Transform
-    def _HT(self, splice_data):
-        splice_data['ht'] = (splice_data.groupby(self.group, group_keys=False).Close.apply(talib.HT_TRENDLINE).div(splice_data.Close).sub(1))
-
-    # -------------------------------------------Momentum Indicators----------------------------------------------------
-    # Plus/Minus Directional Index
-    def _PMDI(self, splice_data):
-        splice_data['plus_di'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.PLUS_DI(x.High, x.Low, x.Close, timeperiod=14)))
-        splice_data['minus_di'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.MINUS_DI(x.High, x.Low, x.Close, timeperiod=14)))
-
-    # Average Directional Movement Index Rating
-    def _ADXR(self, splice_data):
-        splice_data['adxr'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.ADXR(x.High, x.Low, x.Close, timeperiod=14)))
-
-    # Percentage Price Oscillator
-    def _PPO(self, splice_data):
-        splice_data['ppo'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.PPO(x.Close, fastperiod=12, slowperiod=26, matype=0)))
-
-    # Aroon Oscillator
-    def _AROONOSC(self, splice_data):
-        splice_data['aroonosc'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.AROONOSC(high=x.High, low=x.Low, timeperiod=14)))
-
-    # Balance of Power
-    def _BOP(self, splice_data):
-        splice_data['bop'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.BOP(x.Open, x.High, x.Low, x.Close)))
-
-    # Commodity Channel Index
-    def _CCI(self, splice_data):
-        splice_data['cci'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.CCI(x.High, x.Low, x.Close, timeperiod=14)))
-
-    # Moving Average Convergence/Divergence
-    def _MACD(self, splice_data):
-        def compute_macd(close, fastperiod=12, slowperiod=26, signalperiod=9):
-            macd, macdsignal, macdhist = talib.MACD(close, fastperiod=fastperiod, slowperiod=slowperiod, signalperiod=signalperiod)
-            return pd.DataFrame({'macd': macd, 'macd_signal': macdsignal, 'macd_hist': macdhist}, index=close.index)
-
-        splice_data = (splice_data.join(splice_data.groupby(self.group, group_keys=False).Close.apply(compute_macd)))
-
-    # Money Flow Index
-    def _MFI(self, splice_data):
-        splice_data['mfi'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.MFI(x.High, x.Low, x.Close, x.Volume, timeperiod=14)))
-
-    # Relative Strength Index
-    def _RSI(self, splice_data):
-        splice_data['rsi'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.RSI(x.Close, timeperiod=14)))
-
-    # Ultimate Oscillator
-    def _ULTOSC(self, splice_data):
-        splice_data['ultosc'] = (splice_data.groupby(self.group, group_keys=False).apply(
-            lambda x: talib.ULTOSC(x.High, x.Low, x.Close, timeperiod1=7, timeperiod2=14, timeperiod3=28)))
-
-    # Williams Percent Range
-    def _WILLR(self, splice_data):
-        splice_data['willr'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.WILLR(x.High, x.Low, x.Close, timeperiod=14)))
-
-    # -------------------------------------------Volume Indicators----------------------------------------------------
-
-    # Chaikin A/D Line
-    def _AD(self, splice_data):
-        splice_data['ad'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.AD(x.High, x.Low, x.Close, x.Volume) / x.Volume.mean()))
-
-    # On Balance Volume
-    def _OBV(self, splice_data):
-        splice_data['obv'] = (splice_data.groupby(self.group, group_keys=False).apply(lambda x: talib.OBV(x.Close, x.Volume) / x.expanding().Volume.mean()))
-
-    @ray.remote
-    def function(self, splice_data):
-        self._SMA(splice_data)
-        # self._EMA(splice_data)
-        self._HT(splice_data)
-        # self._PMDI(splice_data)
-        self._ADXR(splice_data)
-        self._PPO(splice_data)
-        # self._AROONOSC(splice_data)
-        self._BOP(splice_data)
-        self._CCI(splice_data)
-        self._MACD(splice_data)
-        # self._MFI(splice_data)
-        self._RSI(splice_data)
-        self._ULTOSC(splice_data)
-        self._WILLR(splice_data)
-        self._AD(splice_data)
-        self._OBV(splice_data)
-        return splice_data
+        # -----------------------------------------Moving Averages----------------------------------------------------
+        # Simple Moving Average
+        def _SMA(factor_data):
+            for t in self.mAT:
+                factor_data[f'sma_{t}'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.SMA(x.Close, timeperiod=t)))
+    
+        # Exponential Moving Average
+        def _EMA(factor_data):
+            for t in self.mAT:
+                factor_data[f'ema_{t}'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.EMA(x.Close, timeperiod=t)))
+    
+        # ----------------------------------------Price and Volatility Trends----------------------------------------------------
+        # Hilbert Transform
+        def _HT(factor_data):
+            factor_data['ht'] = (factor_data.groupby(self.group, group_keys=False).Close.apply(talib.HT_TRENDLINE).div(factor_data.Close).sub(1))
+    
+        # -------------------------------------------Momentum Indicators----------------------------------------------------
+        # Plus/Minus Directional Index
+        def _PMDI(factor_data):
+            factor_data['plus_di'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.PLUS_DI(x.High, x.Low, x.Close, timeperiod=14)))
+            factor_data['minus_di'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.MINUS_DI(x.High, x.Low, x.Close, timeperiod=14)))
+    
+        # Average Directional Movement Index Rating
+        def _ADXR(factor_data):
+            factor_data['adxr'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.ADXR(x.High, x.Low, x.Close, timeperiod=14)))
+    
+        # Percentage Price Oscillator
+        def _PPO(factor_data):
+            factor_data['ppo'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.PPO(x.Close, fastperiod=12, slowperiod=26, matype=0)))
+    
+        # Aroon Oscillator
+        def _AROONOSC(factor_data):
+            factor_data['aroonosc'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.AROONOSC(high=x.High, low=x.Low, timeperiod=14)))
+    
+        # Balance of Power
+        def _BOP(factor_data):
+            factor_data['bop'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.BOP(x.Open, x.High, x.Low, x.Close)))
+    
+        # Commodity Channel Index
+        def _CCI(factor_data):
+            factor_data['cci'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.CCI(x.High, x.Low, x.Close, timeperiod=14)))
+    
+        # Moving Average Convergence/Divergence
+        def _MACD(factor_data):
+            def compute_macd(close, fastperiod=12, slowperiod=26, signalperiod=9):
+                macd, macdsignal, macdhist = talib.MACD(close, fastperiod=fastperiod, slowperiod=slowperiod, signalperiod=signalperiod)
+                return pd.DataFrame({'macd': macd, 'macd_signal': macdsignal, 'macd_hist': macdhist}, index=close.index)
+    
+            factor_data = (factor_data.join(factor_data.groupby(self.group, group_keys=False).Close.apply(compute_macd)))
+    
+        # Money Flow Index
+        def _MFI(factor_data):
+            factor_data['mfi'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.MFI(x.High, x.Low, x.Close, x.Volume, timeperiod=14)))
+    
+        # Relative Strength Index
+        def _RSI(factor_data):
+            factor_data['rsi'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.RSI(x.Close, timeperiod=14)))
+    
+        # Ultimate Oscillator
+        def _ULTOSC(factor_data):
+            factor_data['ultosc'] = (factor_data.groupby(self.group, group_keys=False).apply(
+                lambda x: talib.ULTOSC(x.High, x.Low, x.Close, timeperiod1=7, timeperiod2=14, timeperiod3=28)))
+    
+        # Williams Percent Range
+        def _WILLR(factor_data):
+            factor_data['willr'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.WILLR(x.High, x.Low, x.Close, timeperiod=14)))
+    
+        # -------------------------------------------Volume Indicators----------------------------------------------------
+    
+        # Chaikin A/D Line
+        def _AD(factor_data):
+            factor_data['ad'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.AD(x.High, x.Low, x.Close, x.Volume) / x.Volume.mean()))
+    
+        # On Balance Volume
+        def _OBV(factor_data):
+            factor_data['obv'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.OBV(x.Close, x.Volume) / x.expanding().Volume.mean()))
+    
+        _SMA(self.factor_data)
+        # _EMA(factor_data)
+        _HT(self.factor_data)
+        # _PMDI(factor_data)
+        _ADXR(self.factor_data)
+        _PPO(self.factor_data)
+        # _AROONOSC(factor_data)
+        _BOP(self.factor_data)
+        _CCI(self.factor_data)
+        _MACD(self.factor_data)
+        # _MFI(factor_data)
+        _RSI(self.factor_data)
+        _ULTOSC(self.factor_data)
+        _WILLR(self.factor_data)
+        _AD(self.factor_data)
+        _OBV(self.factor_data)
