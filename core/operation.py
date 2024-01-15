@@ -220,7 +220,7 @@ def remove_nan_before_end(data, column):
     data = data[~(data[column].isna() & mask)]
     return data
 
-# Outputs window data from a specified date
+# Outputs window data from a specified date (For live execution make sure to set always set window=self.window*2 - to avoid possible window issues)
 def window_data(data, date, window):
     target_date = pd.to_datetime(date)
     def process_group(group):
