@@ -1,0 +1,13 @@
+# Pycharm
+__pycache__/
+*.pyc
+
+# API
+api_key.json
+
+# Jupyter Notebbok
+.ipynb_checkpoints
+
+# Git
+.gitattributes
+.gitignore
