@@ -8,9 +8,6 @@ api_key.json
 # Jupyter Notebbok
 .ipynb_checkpoints
 
-# Git
-*.gitattributes
-
 # Data
 *.parquet.brotli
 *.csv
