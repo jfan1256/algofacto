@@ -149,9 +149,9 @@ class ModelTest:
     def process_period(self, period, period_returns, candidates, threshold):
         # Find sp500 candidates for the given year and assign it to data
         period_year = period.index.get_level_values('date')[0].year
-        sp500 = candidates[period_year]
-        tickers = common_stocks(sp500, period)
-        sp500_period = get_stocks_data(period, tickers)
+        # sp500 = candidates[period_year]
+        # tickers = common_stocks(sp500, period)
+        # sp500_period = get_stocks_data(period, tickers)
 
         # Filter the DataFrame to only include rows with market cap over the threshold
         filtered_period = period[period['market_cap'] > threshold]
@@ -418,9 +418,9 @@ class ModelTest:
     def sharpe_process_period(self, period, period_returns, candidates, threshold):
         # Find sp500 candidates for the given year and assign it to data
         period_year = period.index.get_level_values('date')[0].year
-        sp500 = candidates[period_year]
-        tickers = common_stocks(sp500, period)
-        sp500_period = get_stocks_data(period, tickers)
+        # sp500 = candidates[period_year]
+        # tickers = common_stocks(sp500, period)
+        # sp500_period = get_stocks_data(period, tickers)
 
         # Filter the DataFrame to only include rows with market cap over the threshold
         filtered_period = period[period['market_cap'] > threshold]
