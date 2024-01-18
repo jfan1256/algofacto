@@ -9,5 +9,12 @@ api_key.json
 .ipynb_checkpoints
 
 # Git
-.gitattributes
-.gitignore
+*.gitattributes
+
+# Data
+*.parquet.brotli
+*.csv
+*.json
+*.pkl
+*.txt
+
