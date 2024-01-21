@@ -149,7 +149,6 @@ def trade():
     # Retrieve live close prices
     loop = asyncio.get_event_loop()
     loop.run_until_complete(live_price.exec_live_price())
-    loop.close()
 
     # Parallel Strategy Execution
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -171,7 +170,6 @@ def trade():
     if ibkr_crit['first_day'] == "False":
         loop = asyncio.get_event_loop()
         loop.run_until_complete(live_close.exec_close())
-        loop.close()
 
     # Execute new trades for today
     loop = asyncio.get_event_loop()
@@ -231,6 +229,8 @@ def monitor():
     # Monitor All Strategies
     mont_all.monitor_all()
 
+trade()
+
 # Build
 schedule.every().monday.at("00:01").do(build)
 schedule.every().tuesday.at("00:01").do(build)
@@ -252,3 +252,4 @@ schedule.every().friday.at("16:00").do(monitor)
 while True:
     schedule.run_pending()
     time.sleep(1)
+
