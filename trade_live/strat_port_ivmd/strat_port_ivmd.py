@@ -43,7 +43,7 @@ class StratPortIVMD(Strategy):
 
         # Create returns and resample fund_q date index to daily
         ret_price = create_return(historical_price, [1])
-        ret_price = ret_price.groupby('permno').shift(-2)
+        ret_price = ret_price.groupby('permno').shift(-1)
         date_index = historical_price.drop(historical_price.columns, axis=1)
         fund_q = fund_q.groupby('permno').shift(3)
         fund_q = date_index.merge(fund_q, left_index=True, right_index=True, how='left').groupby('permno').ffill()
@@ -166,8 +166,8 @@ class StratPortIVMD(Strategy):
             "mom_season_6"
         ]
 
-        filname = f"port_ivmd_{date.today().strftime('%Y%m%d')}.html"
-        dir_path = get_strat_port_ivmd() / 'report' / filname
+        filename = f"port_ivmd_{date.today().strftime('%Y%m%d')}.html"
+        dir_path = get_strat_port_ivmd() / 'report' / filename
 
         long_short_stocks = PortFactor(data=factor_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,
                                        threshold=self.threshold, backtest=True, dir_path=dir_path).create_factor_port()
@@ -192,7 +192,7 @@ class StratPortIVMD(Strategy):
 
         # Create returns crop into window data
         ret_price = create_return(price, [1])
-        ret_price = window_data(data=ret_price, date=self.current_date, window=self.window_port * 2)
+        ret_price = window_data(data=ret_price, date=self.current_date, window=126 * 2)
 
         # Resample fund_q date index to daily and crop into window data
         year_price = window_data(data=price, date=self.current_date, window=252 * 2)
@@ -201,8 +201,134 @@ class StratPortIVMD(Strategy):
         fund_q = window_data(data=fund_q, date=self.current_date, window=self.window_port * 2)
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # ------------------------------------------------------------------------LOAD FACTOR DATA-------------------------------------------------------------------------------------
-        print("-------------------------------------------------------------------LOAD FACTOR DATA-------------------------------------------------------------------------------------")
+        # ------------------------------------------------------------------------CREATE FACTOR DATA-----------------------------------------------------------------------------------
+        print("-------------------------------------------------------------------CREATE FACTOR DATA-----------------------------------------------------------------------------------")
+        # Create Factor Data
+        factor_data = ret_price.copy(deep=True)
+
+        # Momentum
+        # Momentum Season
+        def compute_mom(group):
+            for n in range(23, 60, 12):
+                group[f'temp{n}'] = group['RET_01'].shift(n)
+            group['retTemp1'] = group[[col for col in group.columns if 'temp' in col]].sum(axis=1, skipna=True)
+            group['retTemp2'] = group[[col for col in group.columns if 'temp' in col]].count(axis=1)
+            group['mom_season'] = group['retTemp1'] / group['retTemp2']
+            return group
+
+        factor_data = factor_data.groupby('permno').apply(compute_mom).reset_index(level=0, drop=True)
+
+        # Momentum Season 6
+        def compute_mom_6(group):
+            for n in range(71, 121, 12):
+                group[f'temp{n}'] = group['RET_01'].shift(n)
+            group['retTemp1'] = group[[col for col in group.columns if 'temp' in col]].sum(axis=1, skipna=True)
+            group['retTemp2'] = group[[col for col in group.columns if 'temp' in col]].count(axis=1)
+            group['mom_season_6'] = group['retTemp1'] / group['retTemp2']
+            return group
+
+        factor_data = factor_data.groupby('permno').apply(compute_mom_6).reset_index(level=0, drop=True)
+
+        # Momentum Season Short
+        def compute_mom_short(group):
+            group['mom_season_short'] = group['RET_01'].shift(21)
+            return group
+
+        factor_data = factor_data.groupby('permno').apply(compute_mom_short).reset_index(level=0, drop=True)
+
+        # PCA Loading Return
+        def compute_load_ret(data):
+            # Normalize data
+            just_ret = data[['RET_01']]
+            just_ret = just_ret['RET_01'].unstack('permno')
+            just_ret = (just_ret - just_ret.mean()) / just_ret.std()
+            # Get Current Date Data (Cross-Sectional)
+            just_ret = just_ret.loc[just_ret.index == self.current_date]
+            # Drop columns that have more than half of missing data
+            just_ret = just_ret.drop(columns=just_ret.columns[just_ret.isna().sum() > len(just_ret) / 2])
+            just_ret = just_ret.fillna(0)
+            # Get loadings
+            pca = PCA(n_components=5, random_state=42)
+            pca.fit_transform(just_ret)
+            loading = pca.components_.T * np.sqrt(pca.explained_variance_)
+            # Create a dataframe that matches loadings to stock
+            cols = just_ret.columns
+            date = just_ret.index[0]
+            just_ret = pd.DataFrame(loading, columns=[f'load_ret_{i + 1}' for i in range(5)], index=[[date] * len(cols), cols])
+            just_ret.index.names = ['date', 'permno']
+            # Merge data back into dataframe
+            data = data.merge(just_ret, left_index=True, right_index=True, how='left')
+            return data
+
+        factor_data = compute_load_ret(factor_data)
+
+        # Defensive
+        # Smart Beta PCA
+        def compute_sb_pca(data):
+            # Initialize Data
+            risk_free = pd.read_parquet(get_parquet(True) / 'data_rf.parquet.brotli')
+            pca_ret = data.copy(deep=True)
+            ret = pca_ret[['RET_01']]
+            ret = ret['RET_01'].unstack(pca_ret.index.names[0])
+
+            # Execute Rolling PCA
+            window_size = 21
+            num_components = 5
+            pca_data = rolling_pca(data=ret, window_size=window_size, num_components=num_components, name='Return')
+            pca_data = pd.concat([pca_data, risk_free['RF']], axis=1)
+            pca_data = pca_data.loc[ret.index.min():ret.index.max()]
+            pca_data = pca_data.fillna(0)
+            factor_col = pca_data.columns[:-1]
+
+            # Execute Rolling LR
+            T = [1]
+            for t in T:
+                ret = f'RET_{t:02}'
+                windows = [126]
+                for window in windows:
+                    betas = rolling_ols_parallel(data=data, ret=ret, factor_data=pca_data, factor_cols=factor_col.tolist(), window=window, name=f'ret_pca_{t:02}')
+                    data = data.join(betas)
+
+            return data
+
+        factor_data = compute_sb_pca(factor_data)
+
+        # Smart Beta Sector
+        def compute_sb_sector(data):
+            # Load sector dataset
+            historical_sector = pd.read_parquet(get_strat_mrev_etf() / 'data' / 'data_hedge.parquet.brotli', columns=['Close'])
+            historical_sector = historical_sector.loc[historical_sector.index.get_level_values('date') != self.current_date]
+            live_sector = pd.read_parquet(get_live_price() / 'data_etf_live.parquet.brotli')
+            # Merge historical dataset and live dataset
+            sector = pd.concat([historical_sector, live_sector], axis=0)
+            # Create returns
+            sector_ret = create_return(sector, [1])
+            sector_ret = sector_ret.drop(['Close'], axis=1)
+            sector_ret = sector_ret.unstack('ticker').swaplevel(axis=1)
+            sector_ret.columns = ['_'.join(col).strip() for col in sector_ret.columns.values]
+
+            # Load risk-free rate
+            risk_free = pd.read_parquet(get_parquet(True) / 'data_rf.parquet.brotli')
+
+            # Create factor dataset
+            sector_data = pd.concat([sector_ret, risk_free['RF']], axis=1)
+            sector_data = sector_data.loc[data.index.get_level_values('date').min():data.index.get_level_values('date').max()]
+            sector_data = sector_data.fillna(0)
+            factor_col = sector_data.columns[:-1]
+
+            # Execute Rolling LR
+            T = [1]
+            for t in T:
+                ret = f'RET_{t:02}'
+                windows = [126]
+                for window in windows:
+                    betas = rolling_ols_parallel(data=data, ret=ret, factor_data=sector_data, factor_cols=factor_col.tolist(), window=window, name=f'sector_{t:02}')
+                    data = data.join(betas)
+
+            return data
+
+        factor_data = compute_sb_sector(factor_data)
+
         # Fundamental
         accrual = ModelPrep(live=live, factor_name='factor_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
         comp_debt = ModelPrep(live=live, factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
@@ -220,25 +346,11 @@ class StratPortIVMD(Strategy):
         fund_q = fund_q.replace([np.inf, -np.inf], np.nan)
         fund_factor = fund_q[['ev_to_ebitda']]
 
-        # Momentum
-        mom_season = ModelPrep(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-        mom_season6 = ModelPrep(live=live, factor_name='factor_mom_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-        load_ret = ModelPrep(live=live, factor_name='factor_load_ret', group='permno', interval='D', kind='loading', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-        mom_season_short = ModelPrep(live=live, factor_name='factor_mom_season_short', group='permno', interval='D', kind='mom', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-
-        # Defensive
-        sb_sector = ModelPrep(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-        sb_pca = ModelPrep(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=window_date, end=self.current_date, save=False).prep()
-
         # Merge into one dataframe
-        factor_data = (pd.merge(ret_price, sb_sector, left_index=True, right_index=True, how='left')
-                          .merge(sb_pca, left_index=True, right_index=True, how='left')
-                          .merge(accrual, left_index=True, right_index=True, how='left')
+        factor_data = (pd.merge(factor_data, accrual, left_index=True, right_index=True, how='left')
                           .merge(comp_debt, left_index=True, right_index=True, how='left')
                           .merge(inv_growth, left_index=True, right_index=True, how='left')
                           .merge(pcttoacc, left_index=True, right_index=True, how='left')
-                          .merge(mom_season, left_index=True, right_index=True, how='left')
-                          .merge(mom_season6, left_index=True, right_index=True, how='left')
                           .merge(chtax, left_index=True, right_index=True, how='left')
                           .merge(net_debt_finance, left_index=True, right_index=True, how='left')
                           .merge(noa, left_index=True, right_index=True, how='left')
@@ -247,8 +359,6 @@ class StratPortIVMD(Strategy):
                           .merge(xfin, left_index=True, right_index=True, how='left')
                           .merge(emmult, left_index=True, right_index=True, how='left')
                           .merge(grcapx, left_index=True, right_index=True, how='left')
-                          .merge(mom_season_short, left_index=True, right_index=True, how='left')
-                          .merge(load_ret, left_index=True, right_index=True, how='left')
                           .merge(fund_factor, left_index=True, right_index=True, how='left')
                           .merge(market, left_index=True, right_index=True, how='left'))
 
@@ -296,8 +406,8 @@ class StratPortIVMD(Strategy):
         # Forward Fill Factors
         factor_data[factors] = factor_data.groupby('permno')[factors].ffill()
 
-        filname = f"port_ivmd_{date.today().strftime('%Y%m%d')}"
-        dir_path = get_strat_port_ivmd() / 'report' / filname
+        filename = f"port_ivmd_{date.today().strftime('%Y%m%d')}"
+        dir_path = get_strat_port_ivmd() / 'report' / filename
 
         latest_window_data = window_data(data=factor_data, date=self.current_date, window=self.window_port*2)
         long_short_stocks = PortFactor(data=latest_window_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,

@@ -8,6 +8,7 @@ from class_factor.factor_sb_sector import FactorSBSector
 from class_factor.factor_fund_raw import FactorFundRaw
 from class_factor.factor_sb_bond import FactorSBBond
 from class_factor.factor_sb_pca import FactorSBPCA
+from class_factor.factor_load_ret import FactorLoadRet
 
 start = '2005-01-01'
 end = date.today().strftime('%Y-%m-%d')
@@ -23,7 +24,7 @@ start_time = time.time()
 
 # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # # --------------------------------------------------------------------------------GENERAL----------------------------------------------------------------------------------------
-FactorRet(live=live, file_name='factor_ret', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorRet(live=live, file_name='factor_ret', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorRetComp(trade_live=trade_live, file_name='factor_ret_comp', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorVolComp(trade_live=trade_live, file_name='factor_vol_comp', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorSignRet(trade_live=trade_live, file_name='factor_sign_ret', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
@@ -34,11 +35,11 @@ FactorRet(live=live, file_name='factor_ret', stock=stock, start=start, end=end, 
 # FactorTime(trade_live=trade_live, file_name='factor_time', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorMacro(trade_live=trade_live, file_name='factor_macro', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno', general=True).create_factor()
 # FactorTalib(trade_live=trade_live, file_name='factor_talib', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-FactorFundRaw(live=live, file_name='factor_fund_raw', skip=True, stock=stock, start=start, end=end).create_factor()
+# FactorFundRaw(live=live, file_name='factor_fund_raw', skip=True, stock=stock, start=start, end=end).create_factor()
 # FactorFundQ(trade_live=trade_live, file_name='factor_fund_q', skip=True, stock=stock, start=start, end=end).create_factor()
 # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # # -----------------------------------------------------------------------------------PCA-----------------------------------------------------------------------------------------
-# FactorLoadRet(trade_live=trade_live, file_name='factor_load_ret', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=21, component=5).create_factor()
+FactorLoadRet(live=live, file_name='factor_load_ret', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=21, component=5).create_factor()
 # FactorLoadVolume(trade_live=trade_live, file_name='factor_load_volume', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=21, component=5).create_factor()
 # FactorLoadVolatility(trade_live=trade_live, file_name='factor_load_volatility', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='date', join='permno', window=21, component=5).create_factor()
 # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -80,7 +81,7 @@ FactorFundRaw(live=live, file_name='factor_fund_raw', skip=True, stock=stock, st
 # FactorRDS(trade_live=trade_live, file_name='factor_rds', skip=True, stock=stock, start=start, end=end).create_factor()
 # FactorFrontier(trade_live=trade_live, file_name='factor_frontier', skip=True, stock=stock, start=start, end=end).create_factor()
 # FactorEarningStreak(trade_live=trade_live, file_name='factor_earning_streak', skip=True, stock=stock, start=start, end=end).create_factor()
-FactorDividend(live=live, file_name='factor_dividend', skip=False, stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorDividend(live=live, file_name='factor_dividend', skip=False, stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorAgeMom(trade_live=trade_live, file_name='factor_age_mom', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorMomVol(trade_live=trade_live, file_name='factor_mom_vol', skip=True, stock=stock, start=start, end=end).create_factor()
 # FactorMS(trade_live=trade_live, file_name='factor_ms', skip=True, stock=stock, start=start, end=end).create_factor()
@@ -106,11 +107,11 @@ FactorDividend(live=live, file_name='factor_dividend', skip=False, stock=stock, 
 # FactorMomRev(trade_live=trade_live, file_name='factor_mom_rev', skip=True, stock=stock, start=start, end=end).create_factor()
 # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # # ---------------------------------------------------------------------------------BETAS-----------------------------------------------------------------------------------------
-FactorSBSector(live=live, file_name='factor_sb_sector', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-FactorSBFama(live=live, file_name='factor_sb_fama', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-FactorSBPCA(live=live, file_name='factor_sb_pca', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-FactorSBBond(live=live, file_name='factor_sb_bond', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
-FactorSBInverse(live=live, file_name='factor_sb_inverse', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorSBSector(live=live, file_name='factor_sb_sector', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorSBFama(live=live, file_name='factor_sb_fama', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorSBPCA(live=live, file_name='factor_sb_pca', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorSBBond(live=live, file_name='factor_sb_bond', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
+# FactorSBInverse(live=live, file_name='factor_sb_inverse', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorSBPCACopy(trade_live=trade_live, file_name='factor_sb_pca_copy', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # FactorSBSectorCopy(trade_live=trade_live, file_name='factor_sb_sector_copy', stock=stock, start=start, end=end, batch_size=10, splice_size=20, group='permno').create_factor()
 # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

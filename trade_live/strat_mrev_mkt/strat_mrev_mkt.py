@@ -128,8 +128,8 @@ class StratMrevMkt(Strategy):
         # Calculate total returns and weights
         total_ret, beta_weight, stock_weight = mrev_sd_epsil.calc_total_ret(signal_data, hedge_ret)
         # Export backtest result
-        filname = f"mrev_mkt_{date.today().strftime('%Y%m%d')}.html"
-        dir_path = get_strat_mrev_mkt() / 'report' / filname
+        filename = f"mrev_mkt_{date.today().strftime('%Y%m%d')}.html"
+        dir_path = get_strat_mrev_mkt() / 'report' / filename
         qs.reports.html(total_ret, 'SPY', output=dir_path)
 
     def exec_live(self):

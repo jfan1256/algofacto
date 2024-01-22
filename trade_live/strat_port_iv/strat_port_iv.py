@@ -47,7 +47,7 @@ class StratPortIV(Strategy):
 
         # Create returns and resample fund_q date index to daily
         ret_price = create_return(historical_price, [1])
-        ret_price = ret_price.groupby('permno').shift(-2)
+        ret_price = ret_price.groupby('permno').shift(-1)
         date_index = historical_price.drop(historical_price.columns, axis=1)
         fund_q = fund_q.groupby('permno').shift(3)
         fund_q = date_index.merge(fund_q, left_index=True, right_index=True, how='left').groupby('permno').ffill()
@@ -132,8 +132,8 @@ class StratPortIV(Strategy):
             'ev_to_ebitda'
         ]
 
-        filname = f"port_iv_{date.today().strftime('%Y%m%d')}.html"
-        dir_path = get_strat_port_iv() / 'report' / filname
+        filename = f"port_iv_{date.today().strftime('%Y%m%d')}.html"
+        dir_path = get_strat_port_iv() / 'report' / filename
 
         long_short_stocks = PortFactor(data=factor_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,
                                        threshold=self.threshold, backtest=True, dir_path=dir_path).create_factor_port()
@@ -224,8 +224,8 @@ class StratPortIV(Strategy):
         # Forward Fill Factors
         factor_data[factors] = factor_data.groupby('permno')[factors].ffill()
 
-        filname = f"port_iv_{date.today().strftime('%Y%m%d')}"
-        dir_path = get_strat_port_iv() / 'report' / filname
+        filename = f"port_iv_{date.today().strftime('%Y%m%d')}"
+        dir_path = get_strat_port_iv() / 'report' / filename
 
         latest_window_data = window_data(data=factor_data, date=self.current_date, window=self.window_port*2)
         long_short_stocks = PortFactor(data=latest_window_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,

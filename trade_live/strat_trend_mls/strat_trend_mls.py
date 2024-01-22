@@ -185,8 +185,8 @@ class StratTrendMLS(Strategy):
         total_daily_ret = total_ret['total_ret']
 
         # Export backtest result
-        filname = f"trend_mls_{date.today().strftime('%Y%m%d')}.html"
-        dir_path = get_strat_trend_mls() / 'report' / filname
+        filename = f"trend_mls_{date.today().strftime('%Y%m%d')}.html"
+        dir_path = get_strat_trend_mls() / 'report' / filename
         qs.reports.html(total_daily_ret, 'SPY', output=dir_path)
 
     def exec_live(self):
