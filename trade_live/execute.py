@@ -150,41 +150,41 @@ def trade():
     loop = asyncio.get_event_loop()
     loop.run_until_complete(live_price.exec_live_price())
 
-    # # Parallel Strategy Execution
-    # with concurrent.futures.ThreadPoolExecutor() as executor:
-    #     # Load Strategies
-    #     exec_strategies = [
-    #         executor.submit(strat_port_iv.exec_live),
-    #         executor.submit(strat_port_im.exec_live),
-    #         executor.submit(strat_port_id.exec_live),
-    #         executor.submit(strat_port_ivmd.exec_live),
-    #         executor.submit(strat_trend_mls.exec_live),
-    #         executor.submit(strat_mrev_etf.exec_live),
-    #         executor.submit(strat_mrev_mkt.exec_live)
-    #     ]
-    #     # Wait for all strategies to execute
-    #     for future in concurrent.futures.as_completed(exec_strategies):
-    #         future.result()
-    #
-    # # Close trades from previous day
-    # if ibkr_crit['first_day'] == "False":
-    #     loop = asyncio.get_event_loop()
-    #     loop.run_until_complete(live_close.exec_close())
-    #
-    # # Execute new trades for today
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(live_trade.exec_trade())
-    # loop.close()
-    #
-    # # Log Time
-    # print("-" * 180)
-    # elapsed_time = time.time() - start_time
-    # minutes, seconds = divmod(elapsed_time, 60)
-    # print(f"Total Time to Execute Trade: {int(minutes)}:{int(seconds):02}")
-    # print("-" * 180)
-    #
-    # # Store live price and live stock data
-    # live_price.exec_live_store()
+    # Parallel Strategy Execution
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Load Strategies
+        exec_strategies = [
+            executor.submit(strat_port_iv.exec_live),
+            executor.submit(strat_port_im.exec_live),
+            executor.submit(strat_port_id.exec_live),
+            executor.submit(strat_port_ivmd.exec_live),
+            executor.submit(strat_trend_mls.exec_live),
+            executor.submit(strat_mrev_etf.exec_live),
+            executor.submit(strat_mrev_mkt.exec_live)
+        ]
+        # Wait for all strategies to execute
+        for future in concurrent.futures.as_completed(exec_strategies):
+            future.result()
+
+    # Close trades from previous day
+    if ibkr_crit['first_day'] == "False":
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(live_close.exec_close())
+
+    # Execute new trades for today
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(live_trade.exec_trade())
+    loop.close()
+
+    # Log Time
+    print("-" * 180)
+    elapsed_time = time.time() - start_time
+    minutes, seconds = divmod(elapsed_time, 60)
+    print(f"Total Time to Execute Trade: {int(minutes)}:{int(seconds):02}")
+    print("-" * 180)
+
+    # Store live price and live stock data
+    live_price.exec_live_store()
 
     # Disconnect
     ibkr_server.disconnect()
