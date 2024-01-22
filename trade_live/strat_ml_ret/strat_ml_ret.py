@@ -374,6 +374,7 @@ class StratMLRet(Strategy):
             # Convert Permno to Ticker
             tic = returns.merge(ticker, left_index=True, right_index=True, how='left')
             tic = tic.merge(misc, left_index=True, right_index=True, how='left')
+            tic['market_cap'] = tic.groupby('permno')['market_cap'].ffill()
             tic = tic.reset_index().set_index(['window', 'ticker', 'date'])
             tic = tic.drop('permno', axis=1)
             # Calculate SHARPE with EWP
@@ -424,6 +425,7 @@ class StratMLRet(Strategy):
         print("-----------------------------------------------------------------CONVERT FROM PERMNO TO TICKER/EXCHANGE-------------------------------------------------------------------")
         tic = merged.merge(ticker, left_index=True, right_index=True, how='left')
         tic = tic.merge(misc, left_index=True, right_index=True, how='left')
+        tic['market_cap'] = tic.groupby('permno')['market_cap'].ffill()
         tic = tic.reset_index().set_index(['window', 'ticker', 'date'])
         exchange = pd.read_parquet(get_parquet(live) / 'data_exchange.parquet.brotli')
         tic_reset = tic.reset_index()

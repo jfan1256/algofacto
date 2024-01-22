@@ -37,6 +37,7 @@ class FactorSBSector(Factor):
         self.sector_data = sector_df
         self.sector_data = pd.concat([self.sector_data, self.risk_free['RF']], axis=1)
         self.sector_data = self.sector_data.loc[self.start:self.end]
+        self.sector_data['RF'] = self.sector_data['RF'].ffill()
         self.sector_data = self.sector_data.fillna(0)
         self.factor_col = self.sector_data.columns[:-1]
 

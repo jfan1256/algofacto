@@ -34,6 +34,7 @@ class FactorSBPCA(Factor):
         self.pca_data = rolling_pca(data=ret, window_size=window_size, num_components=num_components, name='Return')
         self.pca_data = pd.concat([self.pca_data, self.risk_free['RF']], axis=1)
         self.pca_data = self.pca_data.loc[self.start:self.end]
+        self.pca_data['RF'] = self.pca_data['RF'].ffill()
         self.pca_data = self.pca_data.fillna(0)
         self.factor_col = self.pca_data.columns[:-1]
 

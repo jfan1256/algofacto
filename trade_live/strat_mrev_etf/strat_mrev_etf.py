@@ -205,6 +205,7 @@ class StratMrevETF(Strategy):
         # Add Market Cap data
         market = pd.read_parquet(get_parquet(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
         comb_data = comb_data.merge(market, left_index=True, right_index=True, how='left')
+        comb_data['market_cap'] = comb_data.groupby('permno')['market_cap'].ffill()
 
         # Create Signals
         window_comb = window_data(data=comb_data, date=self.current_date, window=21*2)

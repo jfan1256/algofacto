@@ -36,6 +36,7 @@ class FactorSBInverse(Factor):
         self.overall_data = overall_df
         self.overall_data = pd.concat([self.overall_data, self.risk_free['RF']], axis=1)
         self.overall_data = self.overall_data.loc[self.start:self.end]
+        self.overall_data['RF'] = self.overall_data['RF'].ffill()
         self.overall_data = self.overall_data.fillna(0)
         self.factor_col = self.overall_data.columns[:-1]
 

@@ -242,20 +242,19 @@ class StratPortIVMD(Strategy):
             just_ret = data[['RET_01']]
             just_ret = just_ret['RET_01'].unstack('permno')
             just_ret = (just_ret - just_ret.mean()) / just_ret.std()
-            # Get Current Date Data (Cross-Sectional)
-            just_ret = just_ret.loc[just_ret.index == self.current_date]
-            # Drop columns that have more than half of missing data
-            just_ret = just_ret.drop(columns=just_ret.columns[just_ret.isna().sum() > len(just_ret) / 2])
-            just_ret = just_ret.fillna(0)
+            # Get Window Date Data (Cross-Sectional)
+            window = 21
+            just_ret = just_ret.tail(window)
             # Get loadings
             pca = PCA(n_components=5, random_state=42)
             pca.fit_transform(just_ret)
             loading = pca.components_.T * np.sqrt(pca.explained_variance_)
             # Create a dataframe that matches loadings to stock
             cols = just_ret.columns
-            date = just_ret.index[0]
+            date = just_ret.index.max()
             just_ret = pd.DataFrame(loading, columns=[f'load_ret_{i + 1}' for i in range(5)], index=[[date] * len(cols), cols])
             just_ret.index.names = ['date', 'permno']
+            just_ret = just_ret.swaplevel()
             # Merge data back into dataframe
             data = data.merge(just_ret, left_index=True, right_index=True, how='left')
             return data
@@ -277,6 +276,7 @@ class StratPortIVMD(Strategy):
             pca_data = rolling_pca(data=ret, window_size=window_size, num_components=num_components, name='Return')
             pca_data = pd.concat([pca_data, risk_free['RF']], axis=1)
             pca_data = pca_data.loc[ret.index.min():ret.index.max()]
+            pca_data['RF'] = pca_data['RF'].ffill()
             pca_data = pca_data.fillna(0)
             factor_col = pca_data.columns[:-1]
 
@@ -313,6 +313,7 @@ class StratPortIVMD(Strategy):
             # Create factor dataset
             sector_data = pd.concat([sector_ret, risk_free['RF']], axis=1)
             sector_data = sector_data.loc[data.index.get_level_values('date').min():data.index.get_level_values('date').max()]
+            sector_data['RF'] = sector_data['RF'].ffill()
             sector_data = sector_data.fillna(0)
             factor_col = sector_data.columns[:-1]
 
@@ -361,6 +362,8 @@ class StratPortIVMD(Strategy):
                          .merge(grcapx, left_index=True, right_index=True, how='left')
                          .merge(fund_factor, left_index=True, right_index=True, how='left')
                          .merge(market, left_index=True, right_index=True, how='left'))
+
+        factor_data['market_cap'] = factor_data.groupby('permno')['market_cap'].ffill()
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ----------------------------------------------------------------------------GET RANKINGS-------------------------------------------------------------------------------------

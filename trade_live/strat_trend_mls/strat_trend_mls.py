@@ -219,6 +219,7 @@ class StratTrendMLS(Strategy):
         # Create returns
         price = create_return(price, [1])
         price = price.merge(market, left_index=True, right_index=True, how='left')
+        price['market_cap'] = price.groupby('permno')['market_cap'].ffill()
         com = create_return(com, [1])
         bond = create_return(bond, [1])
 

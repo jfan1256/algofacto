@@ -23,6 +23,7 @@ class FactorSBFama(Factor):
         self.factor_data = pd.read_parquet(get_parquet(self.live) / 'data_price.parquet.brotli')
         self.risk_free = pd.read_parquet(get_parquet(self.live) / 'data_rf.parquet.brotli')
         self.risk_free = self.risk_free.loc[self.start:self.end]
+        self.risk_free['RF'] = self.risk_free['RF'].ffill()
         self.risk_free = self.risk_free.fillna(0)
         self.factor_col = self.risk_free.columns[:-1]
 

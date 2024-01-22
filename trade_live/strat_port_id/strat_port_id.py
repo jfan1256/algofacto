@@ -102,6 +102,8 @@ class StratPortID(Strategy):
         # Create returns crop into window data
         ret_price = create_return(price, [1])
         ret_price = window_data(data=ret_price, date=self.current_date, window=126 * 2)
+        ret_price = ret_price.merge(market, left_index=True, right_index=True, how='left')
+        ret_price['market_cap'] = ret_price.groupby('permno')['market_cap'].ffill()
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------CREATE FACTOR DATA-----------------------------------------------------------------------------------
@@ -123,6 +125,7 @@ class StratPortID(Strategy):
             pca_data = rolling_pca(data=ret, window_size=window_size, num_components=num_components, name='Return')
             pca_data = pd.concat([pca_data, risk_free['RF']], axis=1)
             pca_data = pca_data.loc[ret.index.min():ret.index.max()]
+            pca_data['RF'] = pca_data['RF'].ffill()
             pca_data = pca_data.fillna(0)
             factor_col = pca_data.columns[:-1]
 
@@ -159,6 +162,7 @@ class StratPortID(Strategy):
             # Create factor dataset
             sector_data = pd.concat([sector_ret, risk_free['RF']], axis=1)
             sector_data = sector_data.loc[data.index.get_level_values('date').min():data.index.get_level_values('date').max()]
+            sector_data['RF'] = sector_data['RF'].ffill()
             sector_data = sector_data.fillna(0)
             factor_col = sector_data.columns[:-1]
 

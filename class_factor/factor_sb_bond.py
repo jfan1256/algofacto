@@ -34,6 +34,7 @@ class FactorSBBond(Factor):
         self.bond_data = bond_df
         self.bond_data = pd.concat([self.bond_data, self.risk_free['RF']], axis=1)
         self.bond_data = self.bond_data.loc[self.start:self.end]
+        self.bond_data['RF'] = self.bond_data['RF'].ffill()
         self.bond_data = self.bond_data.fillna(0)
         self.factor_col = self.bond_data.columns[:-1]
 

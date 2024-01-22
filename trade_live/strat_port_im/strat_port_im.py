@@ -100,6 +100,8 @@ class StratPortIM(Strategy):
         # Create returns crop into window data
         ret_price = create_return(price, [1])
         ret_price = window_data(data=ret_price, date=self.current_date, window=self.window_port * 2)
+        ret_price = ret_price.merge(market, left_index=True, right_index=True, how='left')
+        ret_price['market_cap'] = ret_price.groupby('permno')['market_cap'].ffill()
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------CREATE FACTOR DATA-----------------------------------------------------------------------------------
@@ -142,20 +144,19 @@ class StratPortIM(Strategy):
             just_ret = data[['RET_01']]
             just_ret = just_ret['RET_01'].unstack('permno')
             just_ret = (just_ret - just_ret.mean()) / just_ret.std()
-            # Get Current Date Data (Cross-Sectional)
-            just_ret = just_ret.loc[just_ret.index == self.current_date]
-            # Drop columns that have more than half of missing data
-            just_ret = just_ret.drop(columns=just_ret.columns[just_ret.isna().sum() > len(just_ret) / 2])
-            just_ret = just_ret.fillna(0)
+            # Get Window Date Data (Cross-Sectional)
+            window = 21
+            just_ret = just_ret.tail(window)
             # Get loadings
             pca = PCA(n_components=5, random_state=42)
             pca.fit_transform(just_ret)
             loading = pca.components_.T * np.sqrt(pca.explained_variance_)
             # Create a dataframe that matches loadings to stock
             cols = just_ret.columns
-            date = just_ret.index[0]
+            date = just_ret.index.max()
             just_ret = pd.DataFrame(loading, columns=[f'load_ret_{i + 1}' for i in range(5)], index=[[date] * len(cols), cols])
             just_ret.index.names = ['date', 'permno']
+            just_ret = just_ret.swaplevel()
             # Merge data back into dataframe
             data = data.merge(just_ret, left_index=True, right_index=True, how='left')
             return data
