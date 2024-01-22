@@ -348,19 +348,19 @@ class StratPortIVMD(Strategy):
 
         # Merge into one dataframe
         factor_data = (pd.merge(factor_data, accrual, left_index=True, right_index=True, how='left')
-                          .merge(comp_debt, left_index=True, right_index=True, how='left')
-                          .merge(inv_growth, left_index=True, right_index=True, how='left')
-                          .merge(pcttoacc, left_index=True, right_index=True, how='left')
-                          .merge(chtax, left_index=True, right_index=True, how='left')
-                          .merge(net_debt_finance, left_index=True, right_index=True, how='left')
-                          .merge(noa, left_index=True, right_index=True, how='left')
-                          .merge(invest_ppe, left_index=True, right_index=True, how='left')
-                          .merge(cheq, left_index=True, right_index=True, how='left')
-                          .merge(xfin, left_index=True, right_index=True, how='left')
-                          .merge(emmult, left_index=True, right_index=True, how='left')
-                          .merge(grcapx, left_index=True, right_index=True, how='left')
-                          .merge(fund_factor, left_index=True, right_index=True, how='left')
-                          .merge(market, left_index=True, right_index=True, how='left'))
+                         .merge(comp_debt, left_index=True, right_index=True, how='left')
+                         .merge(inv_growth, left_index=True, right_index=True, how='left')
+                         .merge(pcttoacc, left_index=True, right_index=True, how='left')
+                         .merge(chtax, left_index=True, right_index=True, how='left')
+                         .merge(net_debt_finance, left_index=True, right_index=True, how='left')
+                         .merge(noa, left_index=True, right_index=True, how='left')
+                         .merge(invest_ppe, left_index=True, right_index=True, how='left')
+                         .merge(cheq, left_index=True, right_index=True, how='left')
+                         .merge(xfin, left_index=True, right_index=True, how='left')
+                         .merge(emmult, left_index=True, right_index=True, how='left')
+                         .merge(grcapx, left_index=True, right_index=True, how='left')
+                         .merge(fund_factor, left_index=True, right_index=True, how='left')
+                         .merge(market, left_index=True, right_index=True, how='left'))
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ----------------------------------------------------------------------------GET RANKINGS-------------------------------------------------------------------------------------
