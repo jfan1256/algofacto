@@ -139,7 +139,7 @@ class StratPortIVM(Strategy):
         ]
 
         filename = f"port_ivmd_{date.today().strftime('%Y%m%d')}.html"
-        dir_path = get_strat_port_ivmd() / 'report' / filename
+        dir_path = get_strat_port_ivm() / 'report' / filename
 
         long_short_stocks = PortFactor(data=factor_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,
                                        threshold=self.threshold, backtest=True, dir_path=dir_path).create_factor_port()
@@ -269,7 +269,7 @@ class StratPortIVM(Strategy):
         factor_data[factors] = factor_data.groupby('permno')[factors].ffill()
 
         filename = f"port_ivmd_{date.today().strftime('%Y%m%d')}"
-        dir_path = get_strat_port_ivmd() / 'report' / filename
+        dir_path = get_strat_port_ivm() / 'report' / filename
 
         latest_window_data = window_data(data=factor_data, date=self.current_date, window=self.window_port*2)
         long_short_stocks = PortFactor(data=latest_window_data, window=self.window_port, num_stocks=self.num_stocks, factors=factors,

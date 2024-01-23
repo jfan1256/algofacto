@@ -79,8 +79,8 @@ def get_strat_mrev_etf():
 def get_strat_port_ims():
     return get_live_trade() / 'strat_port_ims'
 
-def get_strat_port_ivmd():
-    return get_live_trade() / 'strat_port_ivmd'
+def get_strat_port_ivm():
+    return get_live_trade() / 'strat_port_ivm'
 
 def get_strat_port_iv():
     return get_live_trade() / 'strat_port_iv'
