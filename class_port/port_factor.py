@@ -52,8 +52,8 @@ class PortFactor:
         df['avg_rank'] = df[[f'{f}_Rank' for f in self.factors]].mean(axis=1)
         # Calculating rank weights
         df['rank_weight'] = (1 / len(self.factors)) * df['avg_rank']
-        # Calculating inverse volatility
-        df['vol'] = df.groupby('permno')['RET_01'].transform(lambda x: x.rolling(self.window).std())
+        # Calculating inverse volatility (exclude the current date)
+        df['vol'] = df.groupby('permno')['RET_01'].transform(lambda x: x.rolling(self.window).std().shift(1))
         df['inv_vol_weight'] = 1 / df['vol']
         # Find adjusted weight that accounts for rank and inverse volatility
         df['adj_weight'] = df['rank_weight'] * df['inv_vol_weight']
@@ -63,6 +63,8 @@ class PortFactor:
         top_bottom_stocks = df.groupby('date').apply(self._select_long_short_stocks).reset_index(level=0, drop=True)
         # Normalizing Weights
         top_bottom_stocks['final_weight'] /= top_bottom_stocks.groupby('date')['final_weight'].transform(lambda x: x.abs().sum())
+        # Shift returns
+        top_bottom_stocks['RET_01'] = top_bottom_stocks.groupby('permno')['RET_01'].shift(-1)
         top_bottom_stocks['total_ret'] = top_bottom_stocks['RET_01'] * top_bottom_stocks['final_weight']
         total_ret = top_bottom_stocks.groupby('date').total_ret.sum()
         if self.backtest:

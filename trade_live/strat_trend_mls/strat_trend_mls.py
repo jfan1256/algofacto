@@ -75,14 +75,14 @@ class StratTrendMLS(Strategy):
 
         # Create portfolio
         bond_com_port = pd.concat([bond, com], axis=0)
-        bond_com_port['vol'] = bond_com_port.groupby('ticker')['RET_01'].rolling(self.window_hedge).std().reset_index(level=0, drop=True)
+        bond_com_port['vol'] = bond_com_port.groupby('ticker')['RET_01'].transform(lambda x: x.rolling(self.window_hedge).std().shift(1))
         bond_com_port['inv_vol'] = 1 / bond_com_port['vol']
         bond_com_port['norm_inv_vol'] = bond_com_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
+        bond_com_port['RET_01'] = bond_com_port['RET_01'].groupby('ticker').shift(-1)
         bond_com_port['weighted_ret'] = bond_com_port['RET_01'] * bond_com_port['norm_inv_vol']
         bond_com_port = bond_com_port.groupby('date')['weighted_ret'].sum()
         bond_com_port = bond_com_port.to_frame()
         bond_com_port.columns = ['bond_comm_ret']
-        bond_com_port['bond_comm_ret'] = bond_com_port['bond_comm_ret'].shift(-1)
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------GET MACRO DATA-------------------------------------------------------------------------------------
@@ -168,7 +168,8 @@ class StratTrendMLS(Strategy):
         # -----------------------------------------------------------------------------BACKTEST----------------------------------------------------------------------------------------
         print("------------------------------------------------------------------------BACKTEST----------------------------------------------------------------------------------------")
         # Create trend portfolio
-        price['vol'] = price.groupby('permno')['RET_01'].rolling(self.window_port).std().reset_index(level=0, drop=True)
+        price['current_ret'] = price.groupby('permno')['RET_01'].shift(1)
+        price['vol'] = price.groupby('permno')['current_ret'].transform(lambda x: x.rolling(self.window_port).std().shift(1))
         price['inv_vol'] = 1 / price['vol']
         trend_port = price.groupby('date').apply(trend_helper._top_inv_vol).reset_index(level=0, drop=True)
         trend_port['norm_inv_vol'] = trend_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
@@ -229,7 +230,7 @@ class StratTrendMLS(Strategy):
         # Create portfolio
         bond_com_port = pd.concat([bond, com], axis=0)
         window_bond_com_port = window_data(data=bond_com_port, date=self.current_date, window=self.window_hedge*2)
-        window_bond_com_port['vol'] = window_bond_com_port.groupby('ticker')['RET_01'].rolling(self.window_hedge).std().reset_index(level=0, drop=True)
+        window_bond_com_port['vol'] = window_bond_com_port.groupby('ticker')['RET_01'].transform(lambda x: x.rolling(self.window_hedge).std().shift(1))
         window_bond_com_port['inv_vol'] = 1 / window_bond_com_port['vol']
         window_bond_com_port['weight'] = window_bond_com_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
 
@@ -300,7 +301,7 @@ class StratTrendMLS(Strategy):
         # -----------------------------------------------------------------------------GET STOCKS--------------------------------------------------------------------------------------
         print("------------------------------------------------------------------------GET STOCKS--------------------------------------------------------------------------------------")
         # Create trend portfolio
-        window_price['vol'] = window_price.groupby('permno')['RET_01'].rolling(self.window_port).std().reset_index(level=0, drop=True)
+        window_price['vol'] = window_price.groupby('permno')['RET_01'].transform(lambda x: x.rolling(self.window_port).std().shift(1))
         window_price['inv_vol'] = 1 / window_price['vol']
         trend_port = window_price.groupby('date').apply(trend_helper._top_inv_vol).reset_index(level=0, drop=True)
         trend_port['weight'] = trend_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)

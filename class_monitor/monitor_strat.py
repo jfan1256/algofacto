@@ -89,7 +89,7 @@ class MonitorStrat:
         # Reset index to just be ('date', 'ticker')
         strat_weight = strat_weight.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
 
-        if self.strat_name in ['StratMLRet', 'StratMLTrend', 'StratPortIV', 'StratPortIM', 'StratPortID', 'StratPortIVMD']:
+        if self.strat_name in ['StratMLRet', 'StratMLTrend', 'StratPortIV', 'StratPortIM', 'StratPortID', 'StratPortIVM']:
             strat_price = pd.read_parquet(get_live() / 'data_permno_store.parquet.brotli')
             strat_price = strat_price.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
         elif self.strat_name in ['StratMrevETF']:
@@ -149,11 +149,11 @@ class MonitorStrat:
         strat_port_iv = pd.read_parquet(get_live_monitor() / 'strat_port_iv' / 'data_strat.parquet.brotli')
         strat_port_im = pd.read_parquet(get_live_monitor() / 'strat_port_im' / 'data_strat.parquet.brotli')
         strat_port_id = pd.read_parquet(get_live_monitor() / 'strat_port_id' / 'data_strat.parquet.brotli')
-        strat_port_ivmd = pd.read_parquet(get_live_monitor() / 'strat_port_ivmd' / 'data_strat.parquet.brotli')
+        strat_port_ivm = pd.read_parquet(get_live_monitor() / 'strat_port_ivm' / 'data_strat.parquet.brotli')
         strat_trend_mls = pd.read_parquet(get_live_monitor() / 'strat_trend_mls' / 'data_strat.parquet.brotli')
 
         # Merge all data
-        strat_data = pd.concat([strat_ml_ret, strat_ml_trend, strat_mrev_etf, strat_mrev_mkt, strat_port_iv, strat_port_im, strat_port_id, strat_port_ivmd, strat_trend_mls], axis=0)
+        strat_data = pd.concat([strat_ml_ret, strat_ml_trend, strat_mrev_etf, strat_mrev_mkt, strat_port_iv, strat_port_im, strat_port_id, strat_port_ivm, strat_trend_mls], axis=0)
         strat_data = strat_data.sort_index(level=['date'])
 
         # Export Data

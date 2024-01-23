@@ -42,18 +42,15 @@ class StratPortID(Strategy):
 
         # Create returns and resample fund_q date index to daily
         ret_price = create_return(historical_price, [1])
-        ret_price = ret_price.groupby('permno').shift(-1)
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------LOAD FACTOR DATA-------------------------------------------------------------------------------------
         print("-------------------------------------------------------------------LOAD FACTOR DATA-------------------------------------------------------------------------------------")
         # Defensive
         sb_sector = ModelPrep(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
-        sb_pca = ModelPrep(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_date, end=self.current_date, save=False).prep()
 
         # Merge into one dataframe
         factor_data = (pd.merge(ret_price, sb_sector, left_index=True, right_index=True, how='left')
-                       .merge(sb_pca, left_index=True, right_index=True, how='left')
                        .merge(market, left_index=True, right_index=True, how='left'))
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -69,11 +66,6 @@ class StratPortID(Strategy):
             "XLU_RET_01_sector_01_126",
             "XLV_RET_01_sector_01_126",
             "XLY_RET_01_sector_01_126",
-            'PCA_Return_1_ret_pca_01_126',
-            'PCA_Return_2_ret_pca_01_126',
-            'PCA_Return_3_ret_pca_01_126',
-            'PCA_Return_4_ret_pca_01_126',
-            'PCA_Return_5_ret_pca_01_126'
         ]
 
         filname = f"port_id_{date.today().strftime('%Y%m%d')}.html"
@@ -110,37 +102,6 @@ class StratPortID(Strategy):
         print("-------------------------------------------------------------------CREATE FACTOR DATA-----------------------------------------------------------------------------------")
         # Defensive
         factor_data = ret_price.copy(deep=True)
-
-        # Smart Beta PCA
-        def compute_sb_pca(data):
-            # Initialize Data
-            risk_free = pd.read_parquet(get_parquet(True) / 'data_rf.parquet.brotli')
-            pca_ret = data.copy(deep=True)
-            ret = pca_ret[['RET_01']]
-            ret = ret['RET_01'].unstack(pca_ret.index.names[0])
-
-            # Execute Rolling PCA
-            window_size = 21
-            num_components = 5
-            pca_data = rolling_pca(data=ret, window_size=window_size, num_components=num_components, name='Return')
-            pca_data = pd.concat([pca_data, risk_free['RF']], axis=1)
-            pca_data = pca_data.loc[ret.index.min():ret.index.max()]
-            pca_data['RF'] = pca_data['RF'].ffill()
-            pca_data = pca_data.fillna(0)
-            factor_col = pca_data.columns[:-1]
-
-            # Execute Rolling LR
-            T = [1]
-            for t in T:
-                ret = f'RET_{t:02}'
-                windows = [126]
-                for window in windows:
-                    betas = rolling_ols_parallel(data=data, ret=ret, factor_data=pca_data, factor_cols=factor_col.tolist(), window=window, name=f'ret_pca_{t:02}')
-                    data = data.join(betas)
-
-            return data
-
-        factor_data = compute_sb_pca(factor_data)
 
         # Smart Beta Sector
         def compute_sb_sector(data):
@@ -192,11 +153,6 @@ class StratPortID(Strategy):
             "XLU_RET_01_sector_01_126",
             "XLV_RET_01_sector_01_126",
             "XLY_RET_01_sector_01_126",
-            'PCA_Return_1_ret_pca_01_126',
-            'PCA_Return_2_ret_pca_01_126',
-            'PCA_Return_3_ret_pca_01_126',
-            'PCA_Return_4_ret_pca_01_126',
-            'PCA_Return_5_ret_pca_01_126'
         ]
 
         filename = f"port_id_{date.today().strftime('%Y%m%d')}"

@@ -47,7 +47,6 @@ class StratPortIV(Strategy):
 
         # Create returns and resample fund_q date index to daily
         ret_price = create_return(historical_price, [1])
-        ret_price = ret_price.groupby('permno').shift(-1)
         date_index = historical_price.drop(historical_price.columns, axis=1)
         fund_q = fund_q.groupby('permno').shift(3)
         fund_q = date_index.merge(fund_q, left_index=True, right_index=True, how='left').groupby('permno').ffill()
