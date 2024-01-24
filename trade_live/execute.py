@@ -47,7 +47,7 @@ def build():
     strat_crit = json.load(open(get_config() / 'strat_crit.json'))
     # Get data criteria
     data_crit = json.load(open(get_config() / 'data_crit.json'))
-        
+
     # Params
     current_date = date.today().strftime('%Y-%m-%d')
 
@@ -250,4 +250,3 @@ schedule.every().friday.at("16:00").do(monitor)
 while True:
     schedule.run_pending()
     time.sleep(1)
-

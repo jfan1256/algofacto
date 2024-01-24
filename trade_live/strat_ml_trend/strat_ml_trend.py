@@ -1,11 +1,14 @@
 import shutil
+import json
 import quantstats as qs
 
+from fredapi import Fred
 from scipy.stats import spearmanr
 from class_model.model_test import ModelTest
 from class_model.model_prep import ModelPrep
 from class_model.model_train import ModelTrain
 from class_strat.strat import Strategy
+from class_trend.trend_helper import TrendHelper
 from core.operation import *
 
 class StratMLTrend(Strategy):
@@ -39,6 +42,11 @@ class StratMLTrend(Strategy):
         self.leverage = leverage
         self.port_opt = port_opt
         self.use_top = use_top
+
+        with open(get_config() / 'api_key.json') as f:
+            config = json.load(f)
+            fred_key = config['fred_key']
+        self.fred_key = fred_key
 
     def exec_backtest(self):
         print("-----------------------------------------------------------------EXEC ML TREND MODEL--------------------------------------------------------------------------------------")
@@ -485,21 +493,115 @@ class StratMLTrend(Strategy):
         pred_return = live_test.backtest(combined, self.threshold)
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # -----------------------------------------------------------------------------------CREATE HEDGE--------------------------------------------------------------------------------
+        print("------------------------------------------------------------------------------CREATE HEDGE-------------------------------------------------------------------------------")
+        # Commodities
+        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_model, num_stocks=10)
+        re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT', 'REZ']
+        re = trend_helper._get_ret(re_ticker)
+        # Bonds
+        bond_ticker = ['HYG', 'JNK', 'LQD', 'EMB', 'SHY', 'TLT', 'SPTL', 'IGSB', 'SPAB']
+        bond = trend_helper._get_ret(bond_ticker)
+
+        # Create portfolio
+        bond_re_port = pd.concat([bond, re], axis=0)
+        bond_re_port['vol'] = bond_re_port.groupby('ticker')['RET_01'].transform(lambda x: x.rolling(5).std().shift(1))
+        bond_re_port['inv_vol'] = 1 / bond_re_port['vol']
+        bond_re_port['norm_inv_vol'] = bond_re_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
+        bond_re_port['RET_01'] = bond_re_port['RET_01'].groupby('ticker').shift(-1)
+        bond_re_port['weighted_ret'] = bond_re_port['RET_01'] * bond_re_port['norm_inv_vol']
+        hedge_ret = bond_re_port.groupby('date')['weighted_ret'].sum()
+        hedge_ret = hedge_ret.to_frame()
+        hedge_ret.columns = ['bond_comm_ret']
+
+        # Date Index
+        date_index = hedge_ret.index
+        date_index = date_index.to_frame().drop('date', axis=1).reset_index()
+
+        # 5-Year Inflation Rate
+        fred = Fred(api_key=self.fred_key)
+        inflation = fred.get_series("T5YIE").to_frame()
+        inflation.columns = ['5YIF']
+        inflation = inflation.shift(1)
+        inflation = inflation.reset_index()
+        inflation = pd.merge_asof(date_index, inflation, left_on='date', right_on='index', direction='backward')
+        inflation = inflation.set_index('date').drop('index', axis=1)
+        inflation = inflation.ffill()
+
+        # 5-Year Market Yield
+        fred = Fred(api_key=self.fred_key)
+        unemploy = fred.get_series("DFII5").to_frame()
+        unemploy.columns = ['DF']
+        unemploy = unemploy.shift(1)
+        unemploy = unemploy.reset_index()
+        unemploy = pd.merge_asof(date_index, unemploy, left_on='date', right_on='index', direction='backward')
+        unemploy = unemploy.set_index('date').drop('index', axis=1)
+        unemploy = unemploy.ffill()
+
+        # 10-year vs. 2-year Yield Curve
+        fred = Fred(api_key=self.fred_key)
+        yield_curve = fred.get_series("T10Y2Y").to_frame()
+        yield_curve.columns = ['YIELD']
+        yield_curve = yield_curve.shift(1)
+        yield_curve = yield_curve.reset_index()
+        yield_curve = pd.merge_asof(date_index, yield_curve, left_on='date', right_on='index', direction='backward')
+        yield_curve = yield_curve.set_index('date').drop('index', axis=1)
+        yield_curve = yield_curve.ffill()
+
+        # Macro Trend
+        macro = pd.concat([inflation, unemploy, yield_curve], axis=1)
+        macro['5YIF_z'] = (macro['5YIF'] - macro['5YIF'].mean()) / macro['5YIF'].std()
+        macro['DF_z'] = (macro['DF'] - macro['DF'].mean()) / macro['DF'].std()
+        macro['YIELD_z'] = (macro['YIELD'] - macro['YIELD'].mean()) / macro['YIELD'].std()
+        macro['mt'] = macro[['5YIF_z', 'DF_z', 'YIELD_z']].mean(axis=1)
+
+        for t in [21, 60]:
+            macro[f'mt_{t}'] = macro['mt'].rolling(t).mean()
+
+        macro_buy = (macro['mt_21'] > macro['mt_60'])
+        macro_buy_df = macro_buy.to_frame()
+        macro_buy_df.columns = ['macro_buy']
+
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------RETRIEVE LONG/SHORT----------------------------------------------------------------------------
         print("---------------------------------------------------------------------------RETRIEVE LONG/SHORT----------------------------------------------------------------------------")
         data = pred_return.copy(deep=True)
         pred_return_opt, long_weights, short_weights = live_test.exec_port_opt(data=data)
         strat_ret = pred_return_opt['totalRet']
+
+        # Create total portfolio
+        total_ret = pd.merge(strat_ret.to_frame('ml_trend'), hedge_ret, left_index=True, right_index=True, how='left')
+        total_ret = total_ret.merge(macro_buy_df, left_index=True, right_index=True, how='left')
+        col1, col2 = total_ret.columns[0], total_ret.columns[1]
+
+        total_ret['total_ret'] = total_ret.apply(trend_helper._calc_total_port, args=(col1, col2), axis=1)
+        total_daily_ret = total_ret['total_ret']
+
         # Save plot to "report" directory
         spy = get_spy(start_date='2005-01-01', end_date=self.current_date)
-        qs.reports.html(strat_ret, spy, output=dir_path / 'report.html')
+        qs.reports.html(total_daily_ret, spy, output=dir_path / 'report.html')
 
-        # Retrieve stocks to long/short tomorrow (only get 'ticker')
+        # Total portfolio allocation weights
+        macro_buy_df = macro_buy_df.loc[macro_buy_df.index.get_level_values('date') == macro_buy_df.index.get_level_values('date').unique().max()]
+        if macro_buy_df.values[0]:
+            trend_factor = 0.5
+            hedge_factor = 0.5
+        else:
+            trend_factor = 0.25
+            hedge_factor = 0.75
+
+        # Retrieve stocks to long/short tomorrow (only get 'ticker') and hedge stocks
+        latest_bond_re_port = bond_re_port.loc[bond_re_port.index.get_level_values('date') == bond_re_port.index.get_level_values('date').unique().max()]
+        hedge_ticker = latest_bond_re_port.index.get_level_values('ticker').unique().tolist()
+        hedge_weight = (latest_bond_re_port['norm_inv_vol'] * hedge_factor * self.allocate).tolist()
         long = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['longStocks']]
         short = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['shortStocks']]
-        # Retrieve weights for long/short and multiply by self.allocate for strategic asset allocation
-        long_weight = (long_weights[-1] * self.allocate).tolist()
-        short_weight = (short_weight[-1] * self.allocate).tolist()
+        # Retrieve weights for long/short and multiply by self.allocate and trend_factor for strategic asset allocation
+        long_weight = (long_weights[-1] * trend_factor * self.allocate).tolist()
+        short_weight = (short_weight[-1] * trend_factor * self.allocate).tolist()
+        # Combine
+        long = long + hedge_ticker
+        long_weight = long_weight + hedge_weight
 
         # Long Stock Dataframe
         long_df = pd.DataFrame({
