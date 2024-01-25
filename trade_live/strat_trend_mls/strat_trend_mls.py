@@ -69,7 +69,7 @@ class StratTrendMLS(Strategy):
         com.to_parquet(get_strat_trend_mls() / 'data' / 'data_com.parquet.brotli', compression='brotli')
 
         # Bonds
-        bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF', 'MBB', 'GOVT', 'VGSH', 'IUSB', 'TIP']
+        bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF']
         bond = trend_helper._get_ret(bond_ticker)
         bond.to_parquet(get_strat_trend_mls() / 'data' / 'data_bond.parquet.brotli', compression='brotli')
 

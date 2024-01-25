@@ -1,11 +1,11 @@
 {
-  "ml_ret": {"start_backtest":"2008-01-01", "allocate":0.150, "threshold":2000000000, "total_stocks":100, "per_side":[50,50]},
+  "ml_ret": {"start_backtest":"2008-01-01", "allocate":0.150, "threshold":2000000000, "total_stocks":35, "per_side":[10,10]},
   "ml_trend": {"start_backtest":"2008-01-01", "allocate":0.150, "threshold":2000000000, "total_stocks":35, "per_side":[10,10]},
   "port_iv": {"start_backtest":"2005-01-01", "allocate":0.100, "threshold":8000000000, "total_stocks":50, "per_side":[25,25]},
   "port_im": {"start_backtest":"2005-01-01", "allocate":0.100, "threshold":8000000000, "total_stocks":50, "per_side":[25,25]},
   "port_id": {"start_backtest":"2005-01-01", "allocate":0.100, "threshold":2000000000, "total_stocks":50, "per_side":[25,25]},
   "port_ivm": {"start_backtest":"2005-01-01", "allocate":0.100, "threshold":2000000000, "total_stocks":50, "per_side":[25,25]},
-  "trend_mls": {"start_backtest":"2005-01-01", "allocate":0.150, "threshold":2000000000, "total_stocks":50, "per_side":[50,0]},
+  "trend_mls": {"start_backtest":"2005-01-01", "allocate":0.150, "threshold":2000000000, "total_stocks":65, "per_side":[50,0]},
   "mrev_etf": {"start_backtest":"2005-01-01", "allocate":0.075, "threshold":12000000000, "total_stocks":"Stock Universe Above 12B Market Cap", "per_side":"Long/Short Stock and Hedge with ETF respectively"},
   "mrev_mkt": {"start_backtest":"2005-01-01", "allocate":0.075, "threshold":12000000000, "total_stocks":"Stock Universe Above 12B Market Cap", "per_side":"Long/Short Stock and Hedge with MKT respectively"}
 }
