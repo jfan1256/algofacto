@@ -495,8 +495,8 @@ class StratMLTrend(Strategy):
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------------CREATE HEDGE--------------------------------------------------------------------------------
         print("------------------------------------------------------------------------------CREATE HEDGE-------------------------------------------------------------------------------")
-        # Commodities
-        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_model, num_stocks=10)
+        # Real Estate
+        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_model, num_stocks=15)
         re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT', 'REZ']
         re = trend_helper._get_ret(re_ticker)
         # Bonds
@@ -596,9 +596,11 @@ class StratMLTrend(Strategy):
         hedge_weight = (latest_bond_re_port['norm_inv_vol'] * hedge_factor * self.allocate).tolist()
         long = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['longStocks']]
         short = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['shortStocks']]
+
         # Retrieve weights for long/short and multiply by self.allocate and trend_factor for strategic asset allocation
         long_weight = (long_weights[-1] * trend_factor * self.allocate).tolist()
         short_weight = (short_weight[-1] * trend_factor * self.allocate).tolist()
+
         # Combine
         long = long + hedge_ticker
         long_weight = long_weight + hedge_weight
@@ -610,6 +612,7 @@ class StratMLTrend(Strategy):
             'weight': long_weight,
             'type': 'long'
         })
+
         # Short Stock Dataframe
         short_df = pd.DataFrame({
             'date': [self.current_date] * len(short),
