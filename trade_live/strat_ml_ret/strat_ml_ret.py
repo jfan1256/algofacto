@@ -52,6 +52,7 @@ class StratMLRet(Strategy):
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------PARAMS--------------------------------------------------------------------------------------------
         live = True
+        normalize = 'rank_normalize'
         total_time = time.time()
 
         stock = read_stock(get_large(live) / 'permno_live.csv')
@@ -72,16 +73,16 @@ class StratMLRet(Strategy):
         }
 
         lightgbm_params = {
-            'max_depth': {'optuna': ('suggest_categorical', [6]), 'gridsearch': [4, 6, 8], 'default': 6, 'best': best_params['max_depth']},
-            'learning_rate': {'optuna': ('suggest_float', 0.10, 0.50, False), 'gridsearch': [0.005, 0.01, 0.1, 0.15], 'default': 0.15, 'best': best_params['learning_rate']},
-            'num_leaves': {'optuna': ('suggest_int', 5, 150), 'gridsearch': [20, 40, 60], 'default': 15, 'best': best_params['num_leaves']},
-            'feature_fraction': {'optuna': ('suggest_categorical', [1.0]), 'gridsearch': [0.7, 0.8, 0.9], 'default': 1.0, 'best': best_params['feature_fraction']},
-            'min_gain_to_split': {'optuna': ('suggest_float', 0.02, 0.02, False), 'gridsearch': [0.0001, 0.001, 0.01], 'default': 0.02, 'best': best_params['min_gain_to_split']},
-            'min_data_in_leaf': {'optuna': ('suggest_int', 50, 200), 'gridsearch': [40, 60, 80], 'default': 60, 'best': best_params['min_data_in_leaf']},
-            'lambda_l1': {'optuna': ('suggest_float', 0, 0, False), 'gridsearch': [0.001, 0.01], 'default': 0, 'best': best_params['lambda_l1']},
-            'lambda_l2': {'optuna': ('suggest_float', 1e-5, 10, True), 'gridsearch': [0.001, 0.01], 'default': 0.01, 'best': best_params['lambda_l2']},
-            'bagging_fraction': {'optuna': ('suggest_float', 1.0, 1.0, True), 'gridsearch': [0.9, 1], 'default': 1, 'best': best_params['bagging_fraction']},
-            'bagging_freq': {'optuna': ('suggest_int', 0, 0), 'gridsearch': [0, 20], 'default': 0, 'best': best_params['bagging_freq']},
+            'max_depth':           {'optuna': ('suggest_categorical', [6]),               'gridsearch': [4, 6, 8],                     'default': 6,        'best': best_params['max_depth']},
+            'learning_rate':       {'optuna': ('suggest_float', 0.10, 0.50, False),       'gridsearch': [0.005, 0.01, 0.1, 0.15],      'default': 0.15,     'best': best_params['learning_rate']},
+            'num_leaves':          {'optuna': ('suggest_int', 5, 150),                    'gridsearch': [20, 40, 60],                  'default': 15,       'best': best_params['num_leaves']},
+            'feature_fraction':    {'optuna': ('suggest_categorical', [1.0]),             'gridsearch': [0.7, 0.8, 0.9],               'default': 1.0,      'best': best_params['feature_fraction']},
+            'min_gain_to_split':   {'optuna': ('suggest_float', 0.02, 0.02, False),       'gridsearch': [0.0001, 0.001, 0.01],         'default': 0.02,     'best': best_params['min_gain_to_split']},
+            'min_data_in_leaf':    {'optuna': ('suggest_int', 50, 200),                   'gridsearch': [40, 60, 80],                  'default': 60,       'best': best_params['min_data_in_leaf']},
+            'lambda_l1':           {'optuna': ('suggest_float', 0, 0, False),             'gridsearch': [0.001, 0.01],                 'default': 0,        'best': best_params['lambda_l1']},
+            'lambda_l2':           {'optuna': ('suggest_float', 1e-5, 10, True),          'gridsearch': [0.001, 0.01],                 'default': 0.01,     'best': best_params['lambda_l2']},
+            'bagging_fraction':    {'optuna': ('suggest_float', 1.0, 1.0, True),          'gridsearch': [0.9, 1],                      'default': 1,        'best': best_params['bagging_fraction']},
+            'bagging_freq':        {'optuna': ('suggest_int', 0, 0),                      'gridsearch': [0, 20],                       'default': 0,        'best': best_params['bagging_freq']},
         }
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -91,8 +92,7 @@ class StratMLRet(Strategy):
         tune = ['optuna', 30]
 
         alpha = ModelTrain(live=live, model_name=model_name, end=self.current_date, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0,
-                           incr=True, opt='wfo',
-                           weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
+                           incr=True, opt='wfo', weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------GENERAL-------------------------------------------------------------------------------------------
@@ -101,7 +101,7 @@ class StratMLRet(Strategy):
         del ret
 
         ret_comp = ModelPrep(live=live, factor_name='factor_ret_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(ret_comp)
+        alpha.add_factor(ret_comp, normalize=normalize)
         del ret_comp
 
         cycle = ModelPrep(live=live, factor_name='factor_time', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
@@ -109,15 +109,15 @@ class StratMLRet(Strategy):
         del cycle
 
         talib = ModelPrep(live=live, factor_name='factor_talib', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(talib)
+        alpha.add_factor(talib, normalize=normalize)
         del talib
 
         volume = ModelPrep(live=live, factor_name='factor_volume', group='permno', interval='D', kind='price', div=False, stock=stock, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(volume)
+        alpha.add_factor(volume, normalize=normalize)
         del volume
 
         volatility = ModelPrep(live=live, factor_name='factor_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(volatility)
+        alpha.add_factor(volatility, normalize=normalize)
         del volatility
 
         sign_ret = ModelPrep(live=live, factor_name='factor_sign_ret', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
@@ -125,17 +125,17 @@ class StratMLRet(Strategy):
         del sign_ret
 
         vol_comp = ModelPrep(live=live, factor_name='factor_vol_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(vol_comp)
+        alpha.add_factor(vol_comp, normalize=normalize)
         del vol_comp
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------PCA-----------------------------------------------------------------------------------------------
         load_ret = ModelPrep(live=live, factor_name='factor_load_ret', group='permno', interval='D', kind='loading', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(load_ret)
+        alpha.add_factor(load_ret, normalize=normalize)
         del load_ret
 
         load_volume = ModelPrep(live=live, factor_name='factor_load_volume', group='permno', interval='D', kind='loading', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(load_volume)
+        alpha.add_factor(load_volume, normalize=normalize)
         del load_volume
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -159,73 +159,73 @@ class StratMLRet(Strategy):
         del ind_sub
 
         ind_mom = ModelPrep(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(ind_mom)
+        alpha.add_factor(ind_mom, normalize=normalize)
         del ind_mom
 
         ind_mom_fama = ModelPrep(live=live, factor_name='factor_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(ind_mom_fama)
+        alpha.add_factor(ind_mom_fama, normalize=normalize)
         del ind_mom_fama
 
         ind_mom_sub = ModelPrep(live=live, factor_name='factor_ind_mom_sub', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(ind_mom_sub)
+        alpha.add_factor(ind_mom_sub, normalize=normalize)
         del ind_mom_sub
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------OPEN ASSET----------------------------------------------------------------------------------------
         age_mom = ModelPrep(live=live, factor_name='factor_age_mom', group='permno', interval='D', kind='age', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(age_mom)
+        alpha.add_factor(age_mom, normalize=normalize)
         del age_mom
 
         net_debt_finance = ModelPrep(live=live, factor_name='factor_net_debt_finance', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(net_debt_finance)
+        alpha.add_factor(net_debt_finance, normalize=normalize)
         del net_debt_finance
 
         chtax = ModelPrep(live=live, factor_name='factor_chtax', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(chtax)
+        alpha.add_factor(chtax, normalize=normalize)
         del chtax
 
         asset_growth = ModelPrep(live=live, factor_name='factor_asset_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(asset_growth)
+        alpha.add_factor(asset_growth, normalize=normalize)
         del asset_growth
 
         mom_season_short = ModelPrep(live=live, factor_name='factor_mom_season_short', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_season_short)
+        alpha.add_factor(mom_season_short, normalize=normalize)
         del mom_season_short
 
         mom_season = ModelPrep(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_season)
+        alpha.add_factor(mom_season, normalize=normalize)
         del mom_season
 
         noa = ModelPrep(live=live, factor_name='factor_noa', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(noa)
+        alpha.add_factor(noa, normalize=normalize)
         del noa
 
         invest_ppe = ModelPrep(live=live, factor_name='factor_invest_ppe_inv', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(invest_ppe)
+        alpha.add_factor(invest_ppe, normalize=normalize)
         del invest_ppe
 
         inv_growth = ModelPrep(live=live, factor_name='factor_inv_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(inv_growth)
+        alpha.add_factor(inv_growth, normalize=normalize)
         del inv_growth
 
         trend_factor = ModelPrep(live=live, factor_name='factor_trend_factor', group='permno', interval='D', kind='trend', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(trend_factor)
+        alpha.add_factor(trend_factor, normalize=normalize)
         del trend_factor
 
         mom_season6 = ModelPrep(live=live, factor_name='factor_mom_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_season6)
+        alpha.add_factor(mom_season6, normalize=normalize)
         del mom_season6
 
         mom_season11 = ModelPrep(live=live, factor_name='factor_mom_season11', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_season11)
+        alpha.add_factor(mom_season11, normalize=normalize)
         del mom_season11
 
         mom_season16 = ModelPrep(live=live, factor_name='factor_mom_season16', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_season16)
+        alpha.add_factor(mom_season16, normalize=normalize)
         del mom_season16
 
         comp_debt = ModelPrep(live=live, factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(comp_debt)
+        alpha.add_factor(comp_debt, normalize=normalize)
         del comp_debt
 
         mom_vol = ModelPrep(live=live, factor_name='factor_mom_vol', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
@@ -233,27 +233,27 @@ class StratMLRet(Strategy):
         del mom_vol
 
         int_mom = ModelPrep(live=live, factor_name='factor_int_mom', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(int_mom)
+        alpha.add_factor(int_mom, normalize=normalize)
         del int_mom
 
         cheq = ModelPrep(live=live, factor_name='factor_cheq', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(cheq)
+        alpha.add_factor(cheq, normalize=normalize)
         del cheq
 
         xfin = ModelPrep(live=live, factor_name='factor_xfin', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(xfin)
+        alpha.add_factor(xfin, normalize=normalize)
         del xfin
 
         emmult = ModelPrep(live=live, factor_name='factor_emmult', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(emmult)
+        alpha.add_factor(emmult, normalize=normalize)
         del emmult
 
         accrual = ModelPrep(live=live, factor_name='factor_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(accrual)
+        alpha.add_factor(accrual, normalize=normalize)
         del accrual
 
         frontier = ModelPrep(live=live, factor_name='factor_frontier', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(frontier)
+        alpha.add_factor(frontier, normalize=normalize)
         del frontier
 
         mom_rev = ModelPrep(live=live, factor_name='factor_mom_rev', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
@@ -261,35 +261,35 @@ class StratMLRet(Strategy):
         del mom_rev
 
         hire = ModelPrep(live=live, factor_name='factor_hire', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(hire)
+        alpha.add_factor(hire, normalize=normalize)
         del hire
 
         rds = ModelPrep(live=live, factor_name='factor_rds', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(rds)
+        alpha.add_factor(rds, normalize=normalize)
         del rds
 
         pcttoacc = ModelPrep(live=live, factor_name='factor_pcttotacc', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(pcttoacc)
+        alpha.add_factor(pcttoacc, normalize=normalize)
         del pcttoacc
 
         accrual_bm = ModelPrep(live=live, factor_name='factor_accrual_bm', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(accrual_bm)
+        alpha.add_factor(accrual_bm, normalize=normalize)
         del accrual_bm
 
         mom_off_season = ModelPrep(live=live, factor_name='factor_mom_off_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_off_season)
+        alpha.add_factor(mom_off_season, normalize=normalize)
         del mom_off_season
 
         grcapx = ModelPrep(live=live, factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(grcapx)
+        alpha.add_factor(grcapx, normalize=normalize)
         del grcapx
 
         earning_streak = ModelPrep(live=live, factor_name='factor_earning_streak', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(earning_streak)
+        alpha.add_factor(earning_streak, normalize=normalize)
         del earning_streak
 
         ret_skew = ModelPrep(live=live, factor_name='factor_ret_skew', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(ret_skew)
+        alpha.add_factor(ret_skew, normalize=normalize)
         del ret_skew
 
         dividend = ModelPrep(live=live, factor_name='factor_dividend', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
@@ -299,17 +299,16 @@ class StratMLRet(Strategy):
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------BETAS---------------------------------------------------------------------------------------------
         sb_pca = ModelPrep(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(sb_pca)
+        alpha.add_factor(sb_pca, normalize=normalize)
         del sb_pca
 
         sb_sector = ModelPrep(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(sb_sector)
+        alpha.add_factor(sb_sector, normalize=normalize)
         del sb_sector
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------CLUSTER-------------------------------------------------------------------------------------------
-        clust_ret = ModelPrep(live=live, factor_name='factor_clust_ret', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date,
-                              save=True).prep()
+        clust_ret = ModelPrep(live=live, factor_name='factor_clust_ret', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(clust_ret, categorical=True)
         del clust_ret
 
@@ -446,75 +445,75 @@ class StratMLRet(Strategy):
         # Create the desired dataframe with structure longRet, longStocks, shortRet, shortStocks
         pred_return = live_test.backtest(combined, self.threshold)
 
-        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # -----------------------------------------------------------------------------------CREATE HEDGE--------------------------------------------------------------------------------
-        print("------------------------------------------------------------------------------CREATE HEDGE-------------------------------------------------------------------------------")
-        # Commodities
-        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_model, num_stocks=15)
-        com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP', 'SHEL', 'CVX', 'SCCO', 'PXD']
-        com = trend_helper._get_ret(com_ticker)
-        # Bonds
-        bond_ticker = ['MBB', 'GOVT', 'VGSH', 'IUSB', 'TIP']
-        bond = trend_helper._get_ret(bond_ticker)
-
-        # Create portfolio
-        bond_com_port = pd.concat([bond, com], axis=0)
-        bond_com_port['vol'] = bond_com_port.groupby('ticker')['RET_01'].transform(lambda x: x.rolling(5).std().shift(1))
-        bond_com_port['inv_vol'] = 1 / bond_com_port['vol']
-        bond_com_port['norm_inv_vol'] = bond_com_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
-        bond_com_port['RET_01'] = bond_com_port['RET_01'].groupby('ticker').shift(-1)
-        bond_com_port['weighted_ret'] = bond_com_port['RET_01'] * bond_com_port['norm_inv_vol']
-        hedge_ret = bond_com_port.groupby('date')['weighted_ret'].sum()
-        hedge_ret = hedge_ret.to_frame()
-        hedge_ret.columns = ['bond_comm_ret']
-
-        # Date Index
-        date_index = hedge_ret.index
-        date_index = date_index.to_frame().drop('date', axis=1).reset_index()
-
-        # 5-Year Inflation Rate
-        fred = Fred(api_key=self.fred_key)
-        inflation = fred.get_series("T10YIE").to_frame()
-        inflation.columns = ['10YIF']
-        inflation = inflation.shift(1)
-        inflation = inflation.reset_index()
-        inflation = pd.merge_asof(date_index, inflation, left_on='date', right_on='index', direction='backward')
-        inflation = inflation.set_index('date').drop('index', axis=1)
-        inflation = inflation.ffill()
-
-        # 5-Year Market Yield
-        fred = Fred(api_key=self.fred_key)
-        unemploy = fred.get_series("DFII5").to_frame()
-        unemploy.columns = ['DF']
-        unemploy = unemploy.shift(1)
-        unemploy = unemploy.reset_index()
-        unemploy = pd.merge_asof(date_index, unemploy, left_on='date', right_on='index', direction='backward')
-        unemploy = unemploy.set_index('date').drop('index', axis=1)
-        unemploy = unemploy.ffill()
-
-        # 10-year vs. 2-year Yield Curve
-        fred = Fred(api_key=self.fred_key)
-        yield_curve = fred.get_series("T10Y2Y").to_frame()
-        yield_curve.columns = ['YIELD']
-        yield_curve = yield_curve.shift(1)
-        yield_curve = yield_curve.reset_index()
-        yield_curve = pd.merge_asof(date_index, yield_curve, left_on='date', right_on='index', direction='backward')
-        yield_curve = yield_curve.set_index('date').drop('index', axis=1)
-        yield_curve = yield_curve.ffill()
-
-        # Macro Trend
-        macro = pd.concat([inflation, unemploy, yield_curve], axis=1)
-        macro['10YIF_z'] = (macro['10YIF'] - macro['10YIF'].mean()) / macro['10YIF'].std()
-        macro['DF_z'] = (macro['DF'] - macro['DF'].mean()) / macro['DF'].std()
-        macro['YIELD_z'] = (macro['YIELD'] - macro['YIELD'].mean()) / macro['YIELD'].std()
-        macro['mt'] = macro[['5YIF_z', 'DF_z', 'YIELD_z']].mean(axis=1)
-
-        for t in [21, 60]:
-            macro[f'mt_{t}'] = macro['mt'].rolling(t).mean()
-
-        macro_buy = (macro['mt_21'] > macro['mt_60'])
-        macro_buy_df = macro_buy.to_frame()
-        macro_buy_df.columns = ['macro_buy']
+        # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # # -----------------------------------------------------------------------------------CREATE HEDGE--------------------------------------------------------------------------------
+        # print("------------------------------------------------------------------------------CREATE HEDGE-------------------------------------------------------------------------------")
+        # # Commodities
+        # trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_model, num_stocks=15)
+        # com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP', 'SHEL', 'CVX', 'SCCO', 'PXD']
+        # com = trend_helper._get_ret(com_ticker)
+        # # Bonds
+        # bond_ticker = ['MBB', 'GOVT', 'VGSH', 'IUSB', 'TIP']
+        # bond = trend_helper._get_ret(bond_ticker)
+        #
+        # # Create portfolio
+        # bond_com_port = pd.concat([bond, com], axis=0)
+        # bond_com_port['vol'] = bond_com_port.groupby('ticker')['RET_01'].transform(lambda x: x.rolling(5).std().shift(1))
+        # bond_com_port['inv_vol'] = 1 / bond_com_port['vol']
+        # bond_com_port['norm_inv_vol'] = bond_com_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
+        # bond_com_port['RET_01'] = bond_com_port['RET_01'].groupby('ticker').shift(-1)
+        # bond_com_port['weighted_ret'] = bond_com_port['RET_01'] * bond_com_port['norm_inv_vol']
+        # hedge_ret = bond_com_port.groupby('date')['weighted_ret'].sum()
+        # hedge_ret = hedge_ret.to_frame()
+        # hedge_ret.columns = ['bond_comm_ret']
+        #
+        # # Date Index
+        # date_index = hedge_ret.index
+        # date_index = date_index.to_frame().drop('date', axis=1).reset_index()
+        #
+        # # 5-Year Inflation Rate
+        # fred = Fred(api_key=self.fred_key)
+        # inflation = fred.get_series("T10YIE").to_frame()
+        # inflation.columns = ['10YIF']
+        # inflation = inflation.shift(1)
+        # inflation = inflation.reset_index()
+        # inflation = pd.merge_asof(date_index, inflation, left_on='date', right_on='index', direction='backward')
+        # inflation = inflation.set_index('date').drop('index', axis=1)
+        # inflation = inflation.ffill()
+        #
+        # # 5-Year Market Yield
+        # fred = Fred(api_key=self.fred_key)
+        # unemploy = fred.get_series("DFII5").to_frame()
+        # unemploy.columns = ['DF']
+        # unemploy = unemploy.shift(1)
+        # unemploy = unemploy.reset_index()
+        # unemploy = pd.merge_asof(date_index, unemploy, left_on='date', right_on='index', direction='backward')
+        # unemploy = unemploy.set_index('date').drop('index', axis=1)
+        # unemploy = unemploy.ffill()
+        #
+        # # 10-year vs. 2-year Yield Curve
+        # fred = Fred(api_key=self.fred_key)
+        # yield_curve = fred.get_series("T10Y2Y").to_frame()
+        # yield_curve.columns = ['YIELD']
+        # yield_curve = yield_curve.shift(1)
+        # yield_curve = yield_curve.reset_index()
+        # yield_curve = pd.merge_asof(date_index, yield_curve, left_on='date', right_on='index', direction='backward')
+        # yield_curve = yield_curve.set_index('date').drop('index', axis=1)
+        # yield_curve = yield_curve.ffill()
+        #
+        # # Macro Trend
+        # macro = pd.concat([inflation, unemploy, yield_curve], axis=1)
+        # macro['10YIF_z'] = (macro['10YIF'] - macro['10YIF'].mean()) / macro['10YIF'].std()
+        # macro['DF_z'] = (macro['DF'] - macro['DF'].mean()) / macro['DF'].std()
+        # macro['YIELD_z'] = (macro['YIELD'] - macro['YIELD'].mean()) / macro['YIELD'].std()
+        # macro['mt'] = macro[['10YIF_z', 'DF_z', 'YIELD_z']].mean(axis=1)
+        #
+        # for t in [21, 60]:
+        #     macro[f'mt_{t}'] = macro['mt'].rolling(t).mean()
+        #
+        # macro_buy = (macro['mt_21'] > macro['mt_60'])
+        # macro_buy_df = macro_buy.to_frame()
+        # macro_buy_df.columns = ['macro_buy']
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------------RETRIEVE LONG/SHORT----------------------------------------------------------------------------
@@ -523,41 +522,47 @@ class StratMLRet(Strategy):
         pred_return_opt, long_weights, short_weights = live_test.exec_port_opt(data=data)
         strat_ret = pred_return_opt['totalRet']
 
-        # Create total portfolio
-        total_ret = pd.merge(strat_ret.to_frame('ml_ret'), hedge_ret, left_index=True, right_index=True, how='left')
-        total_ret = total_ret.merge(macro_buy_df, left_index=True, right_index=True, how='left')
-        col1, col2 = total_ret.columns[0], total_ret.columns[1]
+        # # Create total portfolio
+        # total_ret = pd.merge(strat_ret.to_frame('ml_ret'), hedge_ret, left_index=True, right_index=True, how='left')
+        # total_ret = total_ret.merge(macro_buy_df, left_index=True, right_index=True, how='left')
+        # col1, col2 = total_ret.columns[0], total_ret.columns[1]
+        #
+        # total_ret['total_ret'] = total_ret.apply(trend_helper._calc_total_port, args=(col1, col2), axis=1)
+        # total_daily_ret = total_ret['total_ret']
 
-        total_ret['total_ret'] = total_ret.apply(trend_helper._calc_total_port, args=(col1, col2), axis=1)
-        total_daily_ret = total_ret['total_ret']
+        # # Total portfolio allocation weights
+        # macro_buy_df = macro_buy_df.loc[macro_buy_df.index.get_level_values('date') == macro_buy_df.index.get_level_values('date').unique().max()]
+        # if macro_buy_df.values[0]:
+        #     trend_factor = 0.5
+        #     hedge_factor = 0.5
+        # else:
+        #     trend_factor = 0.25
+        #     hedge_factor = 0.75
 
         # Save plot to "report" directory
         spy = get_spy(start_date='2005-01-01', end_date=self.current_date)
-        qs.reports.html(total_daily_ret, spy, output=dir_path / 'report.html')
+        qs.reports.html(strat_ret, spy, output=dir_path / 'report.html')
 
-        # Total portfolio allocation weights
-        macro_buy_df = macro_buy_df.loc[macro_buy_df.index.get_level_values('date') == macro_buy_df.index.get_level_values('date').unique().max()]
-        if macro_buy_df.values[0]:
-            trend_factor = 0.5
-            hedge_factor = 0.5
-        else:
-            trend_factor = 0.25
-            hedge_factor = 0.75
+        # # Retrieve stocks for hedge stocks
+        # latest_bond_com_port = bond_com_port.loc[bond_com_port.index.get_level_values('date') == bond_com_port.index.get_level_values('date').unique().max()]
+        # hedge_ticker = latest_bond_com_port.index.get_level_values('ticker').unique().tolist()
+        # hedge_weight = (latest_bond_com_port['norm_inv_vol'] * hedge_factor * self.allocate).tolist()
 
-        # Retrieve stocks to long/short tomorrow (only get 'ticker') and hedge stocks
-        latest_bond_com_port = bond_com_port.loc[bond_com_port.index.get_level_values('date') == bond_com_port.index.get_level_values('date').unique().max()]
-        hedge_ticker = latest_bond_com_port.index.get_level_values('ticker').unique().tolist()
-        hedge_weight = (latest_bond_com_port['norm_inv_vol'] * hedge_factor * self.allocate).tolist()
+        # Retrieve stocks to long/short tomorrow (only get 'ticker')
         long = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['longStocks']]
         short = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['shortStocks']]
 
-        # Retrieve weights for long/short and multiply by self.allocate and trend_factor for strategic asset allocation
-        long_weight = (long_weights[-1] * trend_factor * self.allocate).tolist()
-        short_weight = (short_weight[-1] * trend_factor * self.allocate).tolist()
+        # Retrieve weights for long/short and multiply by self.allocate
+        long_weight = (long_weights[-1] * self.allocate).tolist()
+        short_weight = (short_weight[-1] * self.allocate).tolist()
 
-        # Combine
-        long = long + hedge_ticker
-        long_weight = long_weight + hedge_weight
+        # # Retrieve weights for long/short and multiply by self.allocate and trend_factor for strategic asset allocation
+        # long_weight = (long_weights[-1] * trend_factor * self.allocate).tolist()
+        # short_weight = (short_weight[-1] * trend_factor * self.allocate).tolist()
+
+        # # Combine
+        # long = long + hedge_ticker
+        # long_weight = long_weight + hedge_weight
 
         # Long Stock Dataframe
         long_df = pd.DataFrame({

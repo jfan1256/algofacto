@@ -283,7 +283,7 @@ class ModelTrain:
 
     # Adds the created and prepped factors to the entire dataset that will be used for training
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Adding to {self.model_name}', animation=spinner_animation)
-    def add_factor(self, factor, categorical=False, normalize=False, date=False):
+    def add_factor(self, factor, categorical=False, normalize=None, date=False):
         # If self.data is None then assign self.data to it, else merge the factor to self.data
         def condition_add(factor):
             if self.data is None:
@@ -309,17 +309,45 @@ class ModelTrain:
                 condition_add(factor)
         else:
             # If normalize is true, then you normalize using MinMaxScaler
-            if normalize:
+            if normalize == 'min_max_normalize':
+                # Remove infinite values
                 factor = factor.replace([np.inf, -np.inf], np.nan)
+                # Min-Max Scalar Normalization
                 scaler = MinMaxScaler((-1, 1))
                 # Normalization function to be applied to each stock
-                def normalize(group):
+                def minmax_normalize(group):
                     value = scaler.fit_transform(group)
                     return pd.DataFrame(value, index=group.index, columns=group.columns)
-                factor = factor.groupby(level='date').apply(normalize)
+                factor = factor.groupby(level='date').apply(normalize).reset_index(level=0, drop=True)
+                condition_add(factor)
+
+            elif normalize == 'rank_normalize':
+                # Remove infinite values
+                factor = factor.replace([np.inf, -np.inf], np.nan)
+                # Rank-normalization function to be applied to each stock
+                def rank_normalize(group):
+                    # Separate the RET_01 column if it exists in the group
+                    if 'RET_01' in group.columns:
+                        ret_01 = group[['RET_01']]
+                        group = group.drop(columns=['RET_01'], axis=1)
+                    else:
+                        ret_01 = None
+                    # Rank the remaining data
+                    ranks = group.rank(method='average', na_option='keep')
+                    # Scale ranks to [-1, 1] range
+                    min_rank, max_rank = ranks.min(), ranks.max()
+                    scaled_ranks = -1 + 2.0 * (ranks - min_rank) / (max_rank - min_rank)
+                    scaled_ranks_df = pd.DataFrame(scaled_ranks, index=group.index, columns=group.columns)
+                    # Re-include the RET_01 column if it was initially present
+                    if ret_01 is not None:
+                        scaled_ranks_df = pd.concat([ret_01, scaled_ranks_df], axis=1)
+                    return scaled_ranks_df
+
+                factor = factor.groupby(level='date').apply(rank_normalize).reset_index(level=0, drop=True)
+                factor = factor.sort_index(level=['permno', 'date'])
                 condition_add(factor)
             else:
-                # If normalize is false then just add the factor to the data
+                # If normalize is None then just add the factor to the data
                 condition_add(factor)
 
     # Training model with lightgbm
