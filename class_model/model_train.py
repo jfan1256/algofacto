@@ -137,12 +137,12 @@ class ModelTrain:
 
     # Renumber categorical data to consecutive numbers (Lightgbm requires this)
     @staticmethod
-    def _renumber_cat(factor, date):
+    def _renumber_cat(factor, compress):
         category_mapping = {}
         max_categories = 259
         # Lightgbm can only handle max 259 different categories for one column (on GPU)
         for col in factor.columns:
-            if date:
+            if compress:
                 # Set max bin size to 259
                 max_rank = factor[col].max()
                 bin_size = np.ceil(max_rank / max_categories) + 0.2
@@ -283,7 +283,7 @@ class ModelTrain:
 
     # Adds the created and prepped factors to the entire dataset that will be used for training
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Adding to {self.model_name}', animation=spinner_animation)
-    def add_factor(self, factor, categorical=False, normalize=None, date=False):
+    def add_factor(self, factor, categorical=False, normalize=None, impute=None, compress=False):
         # If self.data is None then assign self.data to it, else merge the factor to self.data
         def condition_add(factor):
             if self.data is None:
@@ -300,7 +300,7 @@ class ModelTrain:
             # Must renumber categories for lightgbm
             if 'lightgbm' in self.model_name:
                 # Make sure self.model_name has 'lightgbm' in it, or else it will not append categorical factors to the dataframe
-                factor = self._renumber_cat(factor, date)
+                factor = self._renumber_cat(factor, compress)
                 condition_add(factor)
             # Must renumber fill NAN values for catboost
             elif 'catboost' in self.model_name:
@@ -308,7 +308,7 @@ class ModelTrain:
                 factor = factor.fillna(-9999).astype(int)
                 condition_add(factor)
         else:
-            # If normalize is true, then you normalize using MinMaxScaler
+            # Normalize data
             if normalize == 'min_max_normalize':
                 # Remove infinite values
                 factor = factor.replace([np.inf, -np.inf], np.nan)
@@ -319,7 +319,6 @@ class ModelTrain:
                     value = scaler.fit_transform(group)
                     return pd.DataFrame(value, index=group.index, columns=group.columns)
                 factor = factor.groupby(level='date').apply(normalize).reset_index(level=0, drop=True)
-                condition_add(factor)
 
             elif normalize == 'rank_normalize':
                 # Remove infinite values
@@ -345,10 +344,15 @@ class ModelTrain:
 
                 factor = factor.groupby(level='date').apply(rank_normalize).reset_index(level=0, drop=True)
                 factor = factor.sort_index(level=['permno', 'date'])
-                condition_add(factor)
-            else:
-                # If normalize is None then just add the factor to the data
-                condition_add(factor)
+
+            # Impute missing data
+            if impute == "cross_median":
+                # Cross-sectional median imputation
+                daily_median = factor.groupby(level='date').transform('median')
+                factor = factor.fillna(daily_median)
+
+            # Add factor
+            condition_add(factor)
 
     # Training model with lightgbm
     def lightgbm(self):
