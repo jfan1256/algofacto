@@ -301,28 +301,31 @@ class ModelTrain:
             if 'lightgbm' in self.model_name:
                 # Make sure self.model_name has 'lightgbm' in it, or else it will not append categorical factors to the dataframe
                 factor = self._renumber_cat(factor, compress)
-                condition_add(factor)
+
             # Must renumber fill NAN values for catboost
             elif 'catboost' in self.model_name:
                 factor = (factor + 1) * 2
                 factor = factor.fillna(-9999).astype(int)
-                condition_add(factor)
+
+            # Add factor
+            condition_add(factor)
         else:
-            # Normalize data
+            # Min-Max Normalization
             if normalize == 'min_max_normalize':
+                def minmax_normalize(group):
+                    value = scaler.fit_transform(group)
+                    return pd.DataFrame(value, index=group.index, columns=group.columns)
+
                 # Remove infinite values
                 factor = factor.replace([np.inf, -np.inf], np.nan)
                 # Min-Max Scalar Normalization
                 scaler = MinMaxScaler((-1, 1))
-                # Normalization function to be applied to each stock
-                def minmax_normalize(group):
-                    value = scaler.fit_transform(group)
-                    return pd.DataFrame(value, index=group.index, columns=group.columns)
-                factor = factor.groupby(level='date').apply(normalize).reset_index(level=0, drop=True)
+                # Normalize dataset
+                factor = factor.groupby(level='date').apply(minmax_normalize).reset_index(level=0, drop=True)
+                factor = factor.sort_index(level=['permno', 'date'])
 
+            # Rank Normalization
             elif normalize == 'rank_normalize':
-                # Remove infinite values
-                factor = factor.replace([np.inf, -np.inf], np.nan)
                 # Rank-normalization function to be applied to each stock
                 def rank_normalize(group):
                     # Separate the RET_01 column if it exists in the group
@@ -342,6 +345,9 @@ class ModelTrain:
                         scaled_ranks_df = pd.concat([ret_01, scaled_ranks_df], axis=1)
                     return scaled_ranks_df
 
+                # Remove infinite values
+                factor = factor.replace([np.inf, -np.inf], np.nan)
+                # Normalize dataset
                 factor = factor.groupby(level='date').apply(rank_normalize).reset_index(level=0, drop=True)
                 factor = factor.sort_index(level=['permno', 'date'])
 
