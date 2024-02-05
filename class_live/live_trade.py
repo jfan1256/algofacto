@@ -46,7 +46,7 @@ class LiveTrade:
         port_iv = pd.read_parquet(get_live_stock() / 'trade_stock_port_iv.parquet.brotli')
         port_im = pd.read_parquet(get_live_stock() / 'trade_stock_port_im.parquet.brotli')
         port_id = pd.read_parquet(get_live_stock() / 'trade_stock_port_id.parquet.brotli')
-        port_ivmd = pd.read_parquet(get_live_stock() / 'trade_stock_port_ivmd.parquet.brotli')
+        port_ivm = pd.read_parquet(get_live_stock() / 'trade_stock_port_ivm.parquet.brotli')
         trend_mls = pd.read_parquet(get_live_stock() / 'trade_stock_trend_mls.parquet.brotli')
         mrev_etf = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_etf.parquet.brotli')
         mrev_mkt = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_mkt.parquet.brotli')
@@ -59,7 +59,7 @@ class LiveTrade:
         com_data = pd.read_parquet(get_live_price() / 'data_com_live.parquet.brotli')
 
         # Merge data by 'date', 'ticker', 'type'
-        stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_im, port_id, port_ivmd, trend_mls, mrev_etf, mrev_mkt], axis=0)
+        stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_im, port_id, port_ivm, trend_mls, mrev_etf, mrev_mkt], axis=0)
         stock_data = stock_data.groupby(level=['date', 'ticker', 'type']).sum()
         stock_data = stock_data.loc[stock_data.index.get_level_values('date') == self.current_date]
 
