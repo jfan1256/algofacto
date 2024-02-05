@@ -85,7 +85,7 @@ def build():
     strat_port_im.exec_backtest()
     # Backtest StratPortID
     strat_port_id.exec_backtest()
-    # Backtest StratPortIVMD
+    # Backtest StratPortIVM
     strat_port_ivm.exec_backtest()
     # Backtest StratTrendMLS
     strat_trend_mls.exec_backtest()
