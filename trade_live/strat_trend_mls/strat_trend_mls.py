@@ -315,8 +315,15 @@ class StratTrendMLS(Strategy):
             trend_factor = 0.25
             hedge_factor = 0.75
 
+
         # Get long weights and tickers from trend portfolio and hedge portfolio
         latest_trend_port = trend_port.loc[trend_port.index.get_level_values('date') == self.current_date]
+
+        # If all signals are 0, allocate 1 to the hedge portfolio
+        if len(latest_trend_port) == 0:
+            trend_factor = 0.0
+            hedge_factor = 1.0
+
         latest_bond_com_port = window_bond_com_port.loc[window_bond_com_port.index.get_level_values('date') == self.current_date]
         trend_ticker = latest_trend_port['ticker'].tolist()
         trend_weight = (latest_trend_port['weight'] * trend_factor * self.allocate).tolist()
