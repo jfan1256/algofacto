@@ -63,8 +63,8 @@ class StratMLTrend(Strategy):
         randomforest_params = {
             'n_estimators': {'optuna': ('suggest_int', 50, 1000),           'gridsearch': [100, 300, 500, 800],           'default': 50},
             'max_depth': {'optuna': ('suggest_int', 4, 6),                  'gridsearch': [4, 6, 8, 12, 16, 20],          'default': 6},
-            'min_samples_split': {'optuna': ('suggest_int', 2, 10),          'gridsearch': [2, 4, 6, 8],                   'default': 2},
-            'min_samples_leaf': {'optuna': ('suggest_int', 1, 4),            'gridsearch': [1, 2, 3],                      'default': 1}
+            'min_samples_split': {'optuna': ('suggest_int', 2, 10),         'gridsearch': [2, 4, 6, 8],                   'default': 2},
+            'min_samples_leaf': {'optuna': ('suggest_int', 1, 4),           'gridsearch': [1, 2, 3],                      'default': 1}
         }
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

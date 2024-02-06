@@ -134,11 +134,31 @@ class LiveCreate:
         print("----------------------------------------------------------------------EXEC FACTORS----------------------------------------------------------------------------------------")
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------CREATE FACTORS---------------------------------------------------------------------------------------
+        # Params
         live = True
-
         stock = read_stock(get_large(live) / 'permno_live.csv')
 
-        ray.init(num_cpus=16, ignore_reinit_error=True)
+        # Initialize Ray
+        max_retries = 3
+        retry_delay = 5
+        retry_count = 0
+
+        print("-"*60)
+        while retry_count < max_retries:
+            try:
+                ray.shutdown()
+                ray.init(num_cpus=16, ignore_reinit_error=True)
+                print("Ray initialized successfully.")
+                break
+            except Exception as e:
+                print(f"Failed to initialize Ray: {e}")
+                retry_count += 1
+                if retry_count < max_retries:
+                    print(f"Retrying initialization [{retry_count + 1} / {max_retries}]...")
+                    time.sleep(retry_delay)
+                else:
+                    print("Failed to initialize Ray after several attempts.")
+        print("-"*60)
         start_time = time.time()
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
