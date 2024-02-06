@@ -32,7 +32,7 @@ class TrendHelper:
     def _calc_total_port(row, col1, col2):
         if row[col1] == 0:
             return 0 * row[col1] * 1.0 * row[col2]
-        if row['macro_buy']:
+        elif row['macro_buy']:
             return 0.50 * row[col1] + 0.50 * row[col2]
         else:
             return 0.25 * row[col1] + 0.75 * row[col2]
