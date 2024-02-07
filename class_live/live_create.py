@@ -236,7 +236,6 @@ class LiveCreate:
         # ---------------------------------------------------------------------------------BETAS-----------------------------------------------------------------------------------------
         FactorSBSector(live=live, file_name='factor_sb_sector', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='permno').create_factor()
         FactorSBPCA(live=live, file_name='factor_sb_pca', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='permno').create_factor()
-        FactorSBInverse(live=live, file_name='factor_sb_inverse', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='permno').create_factor()
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ---------------------------------------------------------------------------------CLUSTER---------------------------------------------------------------------------------------
         FactorClustRet(live=live, file_name='factor_clust_ret', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()

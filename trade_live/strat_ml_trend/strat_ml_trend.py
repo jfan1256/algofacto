@@ -337,10 +337,6 @@ class StratMLTrend(Strategy):
         alpha.add_factor(sb_sector, normalize=normalize)
         del sb_sector
 
-        sb_inverse = ModelPrep(live=live, factor_name='factor_sb_inverse', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(sb_inverse, normalize=normalize)
-        del sb_inverse
-
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------CLUSTER-------------------------------------------------------------------------------------------
         clust_ret = ModelPrep(live=live, factor_name='factor_clust_ret', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
