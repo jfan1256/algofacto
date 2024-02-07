@@ -148,7 +148,7 @@ class StratMrevETF(Strategy):
         live_price = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
         historical_hedge = pd.read_parquet(get_strat_mrev_etf() / 'data' / 'data_hedge.parquet.brotli', columns=['Close'])
         historical_hedge = historical_hedge.loc[historical_hedge.index.get_level_values('date') != self.current_date]
-        live_hedge = pd.read_parquet(get_live_price() / 'data_etf_live.parquet.brotli')
+        live_hedge = pd.read_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli')
 
         # Merge historical dataset and live dataset
         price = pd.concat([historical_price, live_price], axis=0)

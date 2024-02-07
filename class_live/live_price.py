@@ -90,19 +90,25 @@ class LivePrice:
         permno_ticker = latest_data.ticker.tolist()
 
         # MREV ETF Ticker
-        etf_ticker = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
+        mrev_etf_hedge_ticker = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
 
         # MREV Market Ticker
-        market_ticker = ['SPY', 'MDY', 'VEA', 'EEM', 'VNQ', 'DBC']
+        mrev_mkt_hedge_ticker = ['SPY', 'MDY', 'VEA', 'EEM', 'VNQ', 'DBC']
 
-        # Commodity Ticker
-        com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
+        # Trend MLS Commodity Ticker
+        trend_mls_com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
 
-        # Bond Ticker
-        bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF', 'MBB', 'GOVT', 'VGSH', 'IUSB', 'TIP']
+        # Trend MLS Bond Ticker
+        trend_mls_bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF']
+
+        # ML Trend Real Estate Ticker
+        ml_trend_re_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
+
+        # ML Trend Bond Ticker
+        ml_trend_bond_ticker = ['HYG', 'JNK', 'LQD', 'EMB', 'SHY', 'TLT', 'SPTL', 'IGSB', 'SPAB']
 
         # Combine all tickers
-        all_stocks = permno_ticker + etf_ticker + market_ticker + com_ticker + bond_ticker
+        all_stocks = permno_ticker + mrev_etf_hedge_ticker + mrev_mkt_hedge_ticker + trend_mls_com_ticker + trend_mls_bond_ticker + ml_trend_re_ticker + ml_trend_bond_ticker
 
         # Get stock prices in batches (or else it will hit ticker request rate limit ~ 250 request per 5 seconds)
         batch_size = 75
@@ -114,14 +120,19 @@ class LivePrice:
 
         # Separate all price data into respective ticker datasets
         permno_data = all_price_data[all_price_data['ticker'].isin(permno_ticker)]
-        etf_data = all_price_data[all_price_data['ticker'].isin(etf_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
-        etf_data = etf_data[~etf_data.index.duplicated(keep='last')]
-        market_data = all_price_data[all_price_data['ticker'].isin(market_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
-        market_data = market_data[~market_data.index.duplicated(keep='last')]
-        com_data = all_price_data[all_price_data['ticker'].isin(com_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
-        com_data = com_data[~com_data.index.duplicated(keep='last')]
-        bond_data = all_price_data[all_price_data['ticker'].isin(bond_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
-        bond_data = bond_data[~bond_data.index.duplicated(keep='last')]
+        mrev_etf_hedge_data = all_price_data[all_price_data['ticker'].isin(mrev_etf_hedge_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+        mrev_etf_hedge_data = mrev_etf_hedge_data[~mrev_etf_hedge_data.index.duplicated(keep='last')]
+        mrev_mkt_hedge_data = all_price_data[all_price_data['ticker'].isin(mrev_mkt_hedge_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+        mrev_mkt_hedge_data = mrev_mkt_hedge_data[~mrev_mkt_hedge_data.index.duplicated(keep='last')]
+        trend_mls_com_data = all_price_data[all_price_data['ticker'].isin(trend_mls_com_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+        trend_mls_com_data = trend_mls_com_data[~trend_mls_com_data.index.duplicated(keep='last')]
+        trend_mls_bond_data = all_price_data[all_price_data['ticker'].isin(trend_mls_bond_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+        trend_mls_bond_data = trend_mls_bond_data[~trend_mls_bond_data.index.duplicated(keep='last')]
+        ml_trend_re_data = all_price_data[all_price_data['ticker'].isin(ml_trend_re_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+        ml_trend_re_data = ml_trend_re_data[~ml_trend_re_data.index.duplicated(keep='last')]
+        ml_trend_bond_data = all_price_data[all_price_data['ticker'].isin(ml_trend_bond_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+        ml_trend_bond_data = ml_trend_bond_data[~ml_trend_bond_data.index.duplicated(keep='last')]
+
 
         # Add permnos to permno_data and keep 'ticker' column (this will be used for easy conversion when identifying stocks to long/short for different strategies)
         permno_to_ticker_dict = latest_data.reset_index(level='date')['ticker'].to_dict()
@@ -138,32 +149,44 @@ class LivePrice:
         permno_data = permno_data.drop('adj_factor', axis=1)
         permno_data = permno_data.sort_index(level=['permno', 'date'])
 
-        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_etf_live.parquet.brotli')
-        etf_data['adj_factor'] = adj_factor_trade['adj_factor'].values
-        etf_data['Close'] = etf_data['Close'] / etf_data['adj_factor']
-        etf_data = etf_data.drop('adj_factor', axis=1)
+        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_mrev_etf_hedge_live.parquet.brotli')
+        mrev_etf_hedge_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        mrev_etf_hedge_data['Close'] = mrev_etf_hedge_data['Close'] / mrev_etf_hedge_data['adj_factor']
+        mrev_etf_hedge_data = mrev_etf_hedge_data.drop('adj_factor', axis=1)
 
-        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_mkt_live.parquet.brotli')
-        market_data['adj_factor'] = adj_factor_trade['adj_factor'].values
-        market_data['Close'] = market_data['Close'] / market_data['adj_factor']
-        market_data = market_data.drop('adj_factor', axis=1)
+        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_mrev_mkt_hedge_live.parquet.brotli')
+        mrev_mkt_hedge_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        mrev_mkt_hedge_data['Close'] = mrev_mkt_hedge_data['Close'] / mrev_mkt_hedge_data['adj_factor']
+        mrev_mkt_hedge_data = mrev_mkt_hedge_data.drop('adj_factor', axis=1)
 
-        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_com_live.parquet.brotli')
-        com_data['adj_factor'] = adj_factor_trade['adj_factor'].values
-        com_data['Close'] = com_data['Close'] / com_data['adj_factor']
-        com_data = com_data.drop('adj_factor', axis=1)
+        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_trend_mls_com_live.parquet.brotli')
+        trend_mls_com_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        trend_mls_com_data['Close'] = trend_mls_com_data['Close'] / trend_mls_com_data['adj_factor']
+        trend_mls_com_data = trend_mls_com_data.drop('adj_factor', axis=1)
 
-        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_bond_live.parquet.brotli')
-        bond_data['adj_factor'] = adj_factor_trade['adj_factor'].values
-        bond_data['Close'] = bond_data['Close'] / bond_data['adj_factor']
-        bond_data = bond_data.drop('adj_factor', axis=1)
+        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_trend_mls_bond_live.parquet.brotli')
+        trend_mls_bond_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        trend_mls_bond_data['Close'] = trend_mls_bond_data['Close'] / trend_mls_bond_data['adj_factor']
+        trend_mls_bond_data = trend_mls_bond_data.drop('adj_factor', axis=1)
+
+        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_ml_trend_re_live.parquet.brotli')
+        ml_trend_re_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        ml_trend_re_data['Close'] = ml_trend_re_data['Close'] / ml_trend_re_data['adj_factor']
+        ml_trend_re_data = ml_trend_re_data.drop('adj_factor', axis=1)
+
+        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_trend_mls_live.parquet.brotli')
+        ml_trend_bond_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        ml_trend_bond_data['Close'] = ml_trend_bond_data['Close'] / ml_trend_bond_data['adj_factor']
+        ml_trend_bond_data = ml_trend_bond_data.drop('adj_factor', axis=1)
 
         # Export Data
         permno_data.to_parquet(get_live_price() / 'data_permno_live.parquet.brotli', compression='brotli')
-        etf_data.to_parquet(get_live_price() / 'data_etf_live.parquet.brotli', compression='brotli')
-        market_data.to_parquet(get_live_price() / 'data_mkt_live.parquet.brotli', compression='brotli')
-        bond_data.to_parquet(get_live_price() / 'data_bond_live.parquet.brotli', compression='brotli')
-        com_data.to_parquet(get_live_price() / 'data_com_live.parquet.brotli', compression='brotli')
+        mrev_etf_hedge_data.to_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli', compression='brotli')
+        mrev_mkt_hedge_data.to_parquet(get_live_price() / 'data_mrev_mkt_hedge_live.parquet.brotli', compression='brotli')
+        trend_mls_com_data.to_parquet(get_live_price() / 'data_trend_mls_com_live.parquet.brotli', compression='brotli')
+        trend_mls_bond_data.to_parquet(get_live_price() / 'data_trend_mls_bond_live.parquet.brotli', compression='brotli')
+        ml_trend_re_data.to_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli', compression='brotli')
+        ml_trend_bond_data.to_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli', compression='brotli')
 
     # Store live price and live stock data in a recurring dataset
     def exec_live_store(self):
@@ -183,10 +206,12 @@ class LivePrice:
 
         # Load Live Price
         permno_data = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
-        etf_data = pd.read_parquet(get_live_price() / 'data_etf_live.parquet.brotli')
-        market_data = pd.read_parquet(get_live_price() / 'data_mkt_live.parquet.brotli')
-        bond_data = pd.read_parquet(get_live_price() / 'data_bond_live.parquet.brotli')
-        com_data = pd.read_parquet(get_live_price() / 'data_com_live.parquet.brotli')
+        mrev_etf_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli')
+        mrev_mkt_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_mkt_hedge_live.parquet.brotli')
+        trend_mls_bond_data = pd.read_parquet(get_live_price() / 'data_trend_mls_com_live.parquet.brotli')
+        trend_mls_com_data = pd.read_parquet(get_live_price() / 'data_trend_mls_bond_live.parquet.brotli')
+        ml_trend_re_data = pd.read_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli')
+        ml_trend_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli')
 
         # Load Live Stock
         ml_ret = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret.parquet.brotli')
@@ -201,10 +226,12 @@ class LivePrice:
 
         # Store Live Price
         add_store(data=permno_data, filename=get_live() / 'data_permno_store.parquet.brotli')
-        add_store(data=etf_data, filename=get_live() / 'data_etf_store.parquet.brotli')
-        add_store(data=market_data, filename=get_live() / 'data_mkt_store.parquet.brotli')
-        add_store(data=bond_data, filename=get_live() / 'data_bond_store.parquet.brotli')
-        add_store(data=com_data, filename=get_live() / 'data_com_store.parquet.brotli')
+        add_store(data=mrev_etf_hedge_data, filename=get_live() / 'data_mrev_etf_hedge_store.parquet.brotli')
+        add_store(data=mrev_mkt_hedge_data, filename=get_live() / 'data_mrev_mkt_hedge_store.parquet.brotli')
+        add_store(data=trend_mls_bond_data, filename=get_live() / 'data_trend_mls_bond_store.parquet.brotli')
+        add_store(data=trend_mls_com_data, filename=get_live() / 'data_trend_mls_com_store.parquet.brotli')
+        add_store(data=ml_trend_re_data, filename=get_live() / 'data_ml_trend_re_store.parquet.brotli')
+        add_store(data=ml_trend_bond_data, filename=get_live() / 'data_ml_trend_bond_store.parquet.brotli')
 
         # Store Live Stock
         add_store(data=ml_ret, filename=get_live() / 'data_ml_ret_store.parquet.brotli')

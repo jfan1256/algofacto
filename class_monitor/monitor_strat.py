@@ -89,29 +89,38 @@ class MonitorStrat:
         # Reset index to just be ('date', 'ticker')
         strat_weight = strat_weight.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
 
-        if self.strat_name in ['StratMLRet', 'StratMLTrend', 'StratPortIV', 'StratPortIM', 'StratPortID', 'StratPortIVM']:
+        if self.strat_name in ['StratMLRet', 'StratPortIV', 'StratPortIM', 'StratPortID', 'StratPortIVM']:
             strat_price = pd.read_parquet(get_live() / 'data_permno_store.parquet.brotli')
             strat_price = strat_price.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
         elif self.strat_name in ['StratMrevETF']:
             strat_price = pd.read_parquet(get_live() / 'data_permno_store.parquet.brotli')
             strat_price = strat_price.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
-            hedge_price = pd.read_parquet(get_live() / 'data_etf_store.parquet.brotli')
+            hedge_price = pd.read_parquet(get_live() / 'data_mrev_etf_hedge_store.parquet.brotli')
             hedge_price = hedge_price.swaplevel()
             strat_price = pd.concat([strat_price, hedge_price], axis=0).sort_index(level=['date', 'ticker'])
         elif self.strat_name in ['StratMrevMkt']:
             strat_price = pd.read_parquet(get_live() / 'data_permno_store.parquet.brotli')
             strat_price = strat_price.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
-            hedge_price = pd.read_parquet(get_live() / 'data_mkt_store.parquet.brotli')
+            hedge_price = pd.read_parquet(get_live() / 'data_mrev_mkt_hedge_store.parquet.brotli')
             hedge_price = hedge_price.swaplevel()
             strat_price = pd.concat([strat_price, hedge_price], axis=0).sort_index(level=['date', 'ticker'])
         elif self.strat_name in ['StratTrendMLS']:
             strat_price = pd.read_parquet(get_live() / 'data_permno_store.parquet.brotli')
             strat_price = strat_price.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
-            bond_price = pd.read_parquet(get_live() / 'data_bond_store.parquet.brotli')
+            bond_price = pd.read_parquet(get_live() / 'data_trend_mls_bond_store.parquet.brotli')
             bond_price = bond_price.swaplevel()
-            com_price = pd.read_parquet(get_live() / 'data_com_store.parquet.brotli')
+            com_price = pd.read_parquet(get_live() / 'data_trend_mls_com_store.parquet.brotli')
             com_price = com_price.swaplevel()
             strat_price = pd.concat([strat_price, bond_price, com_price], axis=0).sort_index(level=['date', 'ticker'])
+        elif self.strat_name in ['StratMLTrend']:
+            strat_price = pd.read_parquet(get_live() / 'data_permno_store.parquet.brotli')
+            strat_price = strat_price.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
+            bond_price = pd.read_parquet(get_live() / 'data_ml_trend_bond_store.parquet.brotli')
+            bond_price = bond_price.swaplevel()
+            re_price = pd.read_parquet(get_live() / 'data_ml_trend_re_store.parquet.brotli')
+            re_price = re_price.swaplevel()
+            strat_price = pd.concat([strat_price, bond_price, re_price], axis=0).sort_index(level=['date', 'ticker'])
+
 
         # Merge to dataframes
         strat_data = pd.merge(strat_price, strat_weight, left_index=True, right_index=True, how='left')

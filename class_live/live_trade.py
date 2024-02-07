@@ -53,10 +53,12 @@ class LiveTrade:
 
         # Load Live Price
         permno_data = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
-        etf_data = pd.read_parquet(get_live_price() / 'data_etf_live.parquet.brotli')
-        market_data = pd.read_parquet(get_live_price() / 'data_mkt_live.parquet.brotli')
-        bond_data = pd.read_parquet(get_live_price() / 'data_bond_live.parquet.brotli')
-        com_data = pd.read_parquet(get_live_price() / 'data_com_live.parquet.brotli')
+        mrev_etf_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli')
+        mrev_mkt_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_mkt_hedge_live.parquet.brotli')
+        trend_mls_bond_data = pd.read_parquet(get_live_price() / 'data_trend_mls_com_live.parquet.brotli')
+        trend_mls_com_data = pd.read_parquet(get_live_price() / 'data_trend_mls_bond_live.parquet.brotli')
+        ml_trend_re_data = pd.read_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli')
+        ml_trend_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli')
 
         # Merge data by 'date', 'ticker', 'type'
         stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_im, port_id, port_ivm, trend_mls, mrev_etf, mrev_mkt], axis=0)
@@ -65,7 +67,7 @@ class LiveTrade:
 
         # Merge price data
         permno_data = permno_data.reset_index().set_index(['ticker', 'date'])
-        price_data = pd.concat([permno_data, etf_data, market_data, bond_data, com_data], axis=0)
+        price_data = pd.concat([permno_data, mrev_etf_hedge_data, mrev_mkt_hedge_data, trend_mls_bond_data, trend_mls_com_data, ml_trend_re_data, ml_trend_bond_data], axis=0)
         price_data = price_data.loc[~price_data.duplicated(keep='last')]
 
         # Params (Note: IBKR has an Order Limit of 50 per second)

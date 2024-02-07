@@ -267,27 +267,37 @@ class LiveCreate:
         permno_ticker = latest_data.ticker.tolist()
 
         # MREV ETF Ticker
-        etf_ticker = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
+        mrev_etf_ticker_hedge = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
 
         # MREV Market Ticker
-        market_ticker = ['SPY', 'MDY', 'VEA', 'EEM', 'VNQ', 'DBC']
+        mrev_mkt_ticker_hedge = ['SPY', 'MDY', 'VEA', 'EEM', 'VNQ', 'DBC']
 
-        # Commodity Ticker
-        com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
+        # Trend MLS Commodity Ticker
+        trend_mls_com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
 
-        # Bond Ticker
-        bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF', 'MBB', 'GOVT', 'VGSH', 'IUSB', 'TIP']
+        # Trend MLS Bond Ticker
+        trend_mls_bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF']
+
+        # ML Trend Real Estate Ticker
+        ml_trend_re_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
+
+        # ML Trend Bond Ticker
+        ml_trend_bond_ticker = ['HYG', 'JNK', 'LQD', 'EMB', 'SHY', 'TLT', 'SPTL', 'IGSB', 'SPAB']
 
         # Get Adjustment Factors
         adj_permno = get_adj_factor_fmp(permno_ticker, latest_date)
-        adj_etf = get_adj_factor_fmp(etf_ticker, latest_date)
-        adj_mkt = get_adj_factor_fmp(market_ticker, latest_date)
-        adj_com = get_adj_factor_fmp(com_ticker, latest_date)
-        adj_bond = get_adj_factor_fmp(bond_ticker, latest_date)
+        adj_mrev_etf_hedge = get_adj_factor_fmp(mrev_etf_ticker_hedge, latest_date)
+        adj_mrev_mkt_hedge = get_adj_factor_fmp(mrev_mkt_ticker_hedge, latest_date)
+        adj_trend_mls_com = get_adj_factor_fmp(trend_mls_com_ticker, latest_date)
+        adj_trend_mls_bond = get_adj_factor_fmp(trend_mls_bond_ticker, latest_date)
+        adj_ml_trend_re = get_adj_factor_fmp(ml_trend_re_ticker, latest_date)
+        adj_ml_trend_bond = get_adj_factor_fmp(ml_trend_bond_ticker, latest_date)
 
         # Export Data
         adj_permno.to_parquet(get_adj() / 'data_adj_permno_live.parquet.brotli', compression='brotli')
-        adj_etf.to_parquet(get_adj() / 'data_adj_etf_live.parquet.brotli', compression='brotli')
-        adj_mkt.to_parquet(get_adj() / 'data_adj_mkt_live.parquet.brotli', compression='brotli')
-        adj_com.to_parquet(get_adj() / 'data_adj_com_live.parquet.brotli', compression='brotli')
-        adj_bond.to_parquet(get_adj() / 'data_adj_bond_live.parquet.brotli', compression='brotli')
+        adj_mrev_etf_hedge.to_parquet(get_adj() / 'data_adj_mrev_etf_hedge_live.parquet.brotli', compression='brotli')
+        adj_mrev_mkt_hedge.to_parquet(get_adj() / 'data_adj_mrev_mkt_hedge_live.parquet.brotli', compression='brotli')
+        adj_trend_mls_com.to_parquet(get_adj() / 'data_adj_trend_mls_com_live.parquet.brotli', compression='brotli')
+        adj_trend_mls_bond.to_parquet(get_adj() / 'data_adj_trend_mls_bond_live.parquet.brotli', compression='brotli')
+        adj_ml_trend_re.to_parquet(get_adj() / 'data_adj_ml_trend_re_live.parquet.brotli', compression='brotli')
+        adj_ml_trend_bond.to_parquet(get_adj() / 'data_adj_ml_trend_bond_live.parquet.brotli', compression='brotli')

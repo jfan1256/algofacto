@@ -206,10 +206,10 @@ class StratTrendMLS(Strategy):
         live_price = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
         historical_com = pd.read_parquet(get_strat_trend_mls() / 'data' / 'data_com.parquet.brotli', columns=['Close'])
         historical_com = historical_com.loc[historical_com.index.get_level_values('date') != self.current_date]
-        live_com = pd.read_parquet(get_live_price() / 'data_com_live.parquet.brotli')
+        live_com = pd.read_parquet(get_live_price() / 'data_trend_mls_com_live.parquet.brotli')
         historical_bond = pd.read_parquet(get_strat_trend_mls() / 'data' / 'data_bond.parquet.brotli', columns=['Close'])
         historical_bond = historical_bond.loc[historical_bond.index.get_level_values('date') != self.current_date]
-        live_bond = pd.read_parquet(get_live_price() / 'data_bond_live.parquet.brotli')
+        live_bond = pd.read_parquet(get_live_price() / 'data_trend_mls_bond_live.parquet.brotli')
         market = pd.read_parquet(get_parquet(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
 
         # Merge historical dataset and live dataset
