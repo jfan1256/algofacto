@@ -219,7 +219,7 @@ class ModelTrain:
             test_end_idx = test_start_idx + test_period_length - 1
             split_idx.append([train_start_idx, train_end_idx, test_start_idx, test_end_idx])
 
-        # Check if the last test_end date is not the last available date
+        # Check if the last test_end date is not the last available date (this handles cases where the len(test_period) != test_period_length)
         if days[test_end_idx] < days[-1]:
             # Use the previous test_end as the start of the new training period
             train_start_idx = test_end_idx + 1 - train_period_length
@@ -227,7 +227,7 @@ class ModelTrain:
 
             # Set the testing window to start right after the previous one ended
             test_start_idx = test_end_idx + 1
-            test_end_idx = len(days) - 1  # Last available date
+            test_end_idx = len(days) - 1
 
             split_idx.append([train_start_idx, train_end_idx, test_start_idx, test_end_idx])
 
@@ -253,6 +253,10 @@ class ModelTrain:
             train_end_idx = train_start_idx + i * test_period_length + train_period_length - 1
             test_start_idx = train_end_idx + lookahead
             test_end_idx = test_start_idx + test_period_length - 1
+
+            # If test_start_idx exceeds the number of days (index out of bounds), break the loop
+            if test_start_idx >= len(days):
+                break
 
             # If the last index exceeds the number of days (index out of bounds), break the loop
             if test_end_idx >= len(days):
