@@ -38,7 +38,7 @@ class LiveStop:
         # Execute Close Orders for each position in Portfolio
         for item in portfolio:
             symbol = item.contract.symbol
-            action = 'SELL' if item.contract.position > 0 else 'BUY'
+            action = 'SELL' if item.position > 0 else 'BUY'
 
             # Create close order task
             task = order_ibkr._execute_close(symbol=symbol, action=action, order_num=order_num, instant=True)
