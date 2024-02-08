@@ -92,9 +92,10 @@ class LiveTrade:
             try:
                 stock_price = price_data.loc[price_data.index.get_level_values('ticker') == ticker, 'Close'].iloc[0]
 
-                if stock_price >= 0:
+                if pd.isna(stock_price) or stock_price < 0:
                     nan_num+=1
                     nan_tickers.append(ticker)
+                    continue
             except IndexError:
                 nan_num+=1
                 nan_tickers.append(ticker)

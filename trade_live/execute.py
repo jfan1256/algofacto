@@ -174,7 +174,6 @@ def trade():
     # Execute new trades for today
     loop = asyncio.get_event_loop()
     loop.run_until_complete(live_trade.exec_trade())
-    loop.close()
 
     # Log Time
     print("-" * 180)
@@ -188,6 +187,7 @@ def trade():
 
     # Disconnect
     ibkr_server.disconnect()
+    loop.close()
 
 def monitor():
     '''
@@ -228,9 +228,6 @@ def monitor():
 
     # Monitor All Strategies
     mont_all.monitor_all()
-
-
-trade()
 
 # Build
 schedule.every().monday.at("00:01").do(build)
