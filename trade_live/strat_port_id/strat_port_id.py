@@ -108,7 +108,7 @@ class StratPortID(Strategy):
             # Load sector dataset
             historical_sector = pd.read_parquet(get_strat_mrev_etf() / 'data' / 'data_hedge.parquet.brotli', columns=['Close'])
             historical_sector = historical_sector.loc[historical_sector.index.get_level_values('date') != self.current_date]
-            live_sector = pd.read_parquet(get_live_price() / 'data_etf_live.parquet.brotli')
+            live_sector = pd.read_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli')
             # Merge historical dataset and live dataset
             sector = pd.concat([historical_sector, live_sector], axis=0)
             # Create returns

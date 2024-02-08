@@ -74,6 +74,8 @@ class LiveTrade:
         tasks = []
         batch_size = 50
         order_num = 1
+        nan_tickers = []
+        nan_num = 0
         # Subscribe the class method to the newOrderEvent
         order_counter = OrderCounter()
         self.ibkr_server.orderStatusEvent += order_counter.order_status_event_handler
@@ -84,8 +86,15 @@ class LiveTrade:
             ticker = row[0][1]
             type = row[0][2]
             weight = row[1]
-            stock_price = price_data.loc[price_data.index.get_level_values('ticker') == ticker]['Close'][0]
             capital_per_stock = settle_capital * weight
+
+            # Fetch Live Price
+            try:
+                stock_price = price_data.loc[price_data.index.get_level_values('ticker') == ticker, 'Close'].iloc[0]
+            except IndexError:
+                nan_num+=1
+                nan_tickers.append(ticker)
+                continue
 
             # Create orders
             if type == 'long':
@@ -118,4 +127,7 @@ class LiveTrade:
         # Display Order Counts
         print("----------------------------------------------------------------------ORDER METRIC------------------------------------------------------------------------------------------")
         print(f"Total stocks to trade: {len(stock_data)}")
+        print(f"Skipped Orders: {nan_num}")
+        print(f"    Cause: no live price data")
+        print(f"    Symbols: {', '.join(nan_tickers)}")
         order_counter.display_metric()

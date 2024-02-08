@@ -174,7 +174,7 @@ class LivePrice:
         ml_trend_re_data['Close'] = ml_trend_re_data['Close'] / ml_trend_re_data['adj_factor']
         ml_trend_re_data = ml_trend_re_data.drop('adj_factor', axis=1)
 
-        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_trend_mls_live.parquet.brotli')
+        adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_ml_trend_bond_live.parquet.brotli')
         ml_trend_bond_data['adj_factor'] = adj_factor_trade['adj_factor'].values
         ml_trend_bond_data['Close'] = ml_trend_bond_data['Close'] / ml_trend_bond_data['adj_factor']
         ml_trend_bond_data = ml_trend_bond_data.drop('adj_factor', axis=1)
