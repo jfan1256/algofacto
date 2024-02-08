@@ -55,8 +55,8 @@ class LiveTrade:
         permno_data = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
         mrev_etf_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli')
         mrev_mkt_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_mkt_hedge_live.parquet.brotli')
-        trend_mls_bond_data = pd.read_parquet(get_live_price() / 'data_trend_mls_com_live.parquet.brotli')
-        trend_mls_com_data = pd.read_parquet(get_live_price() / 'data_trend_mls_bond_live.parquet.brotli')
+        trend_mls_com_data = pd.read_parquet(get_live_price() / 'data_trend_mls_com_live.parquet.brotli')
+        trend_mls_bond_data = pd.read_parquet(get_live_price() / 'data_trend_mls_bond_live.parquet.brotli')
         ml_trend_re_data = pd.read_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli')
         ml_trend_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli')
 
@@ -68,7 +68,7 @@ class LiveTrade:
         # Merge price data
         permno_data = permno_data.reset_index().set_index(['ticker', 'date'])
         price_data = pd.concat([permno_data, mrev_etf_hedge_data, mrev_mkt_hedge_data, trend_mls_bond_data, trend_mls_com_data, ml_trend_re_data, ml_trend_bond_data], axis=0)
-        price_data = price_data.loc[~price_data.duplicated(keep='last')]
+        price_data = price_data.loc[~price_data.index.duplicated(keep='last')]
 
         # Params (Note: IBKR has an Order Limit of 50 per second)
         tasks = []
@@ -91,6 +91,10 @@ class LiveTrade:
             # Fetch Live Price
             try:
                 stock_price = price_data.loc[price_data.index.get_level_values('ticker') == ticker, 'Close'].iloc[0]
+
+                if stock_price >= 0:
+                    nan_num+=1
+                    nan_tickers.append(ticker)
             except IndexError:
                 nan_num+=1
                 nan_tickers.append(ticker)

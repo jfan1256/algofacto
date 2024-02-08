@@ -133,7 +133,6 @@ class LivePrice:
         ml_trend_bond_data = all_price_data[all_price_data['ticker'].isin(ml_trend_bond_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
         ml_trend_bond_data = ml_trend_bond_data[~ml_trend_bond_data.index.duplicated(keep='last')]
 
-
         # Add permnos to permno_data and keep 'ticker' column (this will be used for easy conversion when identifying stocks to long/short for different strategies)
         permno_to_ticker_dict = latest_data.reset_index(level='date')['ticker'].to_dict()
         ticker_to_permno_dict = {v: k for k, v in permno_to_ticker_dict.items()}
