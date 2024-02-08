@@ -114,6 +114,7 @@ class LiveCreate:
         # Get Data
         if self.update_crsp_price == "True":
             live_data.create_crsp_price(self.threshold, self.set_length)
+        live_data.create_link_table()
         live_data.create_compustat_quarterly()
         live_data.create_compustat_annual()
         live_data.create_stock_list()

@@ -18,7 +18,7 @@ class LiveClose:
         self.ibkr_server = ibkr_server
         self.current_date = current_date
 
-    # Execute all orders
+    # Execute close orders
     async def exec_close(self):
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------------EXECUTE CLOSE ORDERS-----------------------------------------------------------------------------
@@ -72,11 +72,11 @@ class LiveClose:
 
             # Create orders
             if type == 'long':
-                task = order_ibkr._execute_close(symbol=ticker, action='SELL', order_num=order_num)
+                task = order_ibkr._execute_close(symbol=ticker, action='SELL', order_num=order_num, instant=False)
                 tasks.append(task)
                 order_num += 1
             elif type == 'short':
-                task = order_ibkr._execute_close(symbol=ticker, action='BUY', order_num=order_num)
+                task = order_ibkr._execute_close(symbol=ticker, action='BUY', order_num=order_num, instant=False)
                 tasks.append(task)
                 order_num += 1
 

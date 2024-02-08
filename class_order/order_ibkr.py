@@ -1,6 +1,3 @@
-import math
-import asyncio
-
 from ib_insync import *
 
 class OrderIBKR:
@@ -9,12 +6,22 @@ class OrderIBKR:
 
         self.ibkr_server = ibkr_server
 
-    # Execute trades
+    # Execute MOC order
     @staticmethod
     def _create_moc_order(action, quantity):
         order = Order()
         order.action = action
         order.orderType = "MOC"
+        order.totalQuantity = quantity
+        order.transmit = True
+        return order
+
+    # Execute Market order
+    @staticmethod
+    def _create_market_order(action, quantity):
+        order = Order()
+        order.action = action
+        order.orderType = "MKT"
         order.totalQuantity = quantity
         order.transmit = True
         return order
@@ -48,7 +55,7 @@ class OrderIBKR:
         print("-" * 60)
 
     # Execute close order
-    async def _execute_close(self, symbol, action, order_num):
+    async def _execute_close(self, symbol, action, order_num, instant):
         print("-" * 60)
         print(f"Placing orders for {action} position on: {symbol}")
         stock = await self._get_contract(symbol)
@@ -62,8 +69,16 @@ class OrderIBKR:
                 break
 
         # Placing MOC order
-        moc_order = self._create_moc_order(action, abs(position.position))
-        print(f"Close: Placing MOC order to {action}: {abs(position.position)} of {symbol}")
-        self.ibkr_server.placeOrder(stock, moc_order)
-        print(f"Order Number: {order_num}")
-        print("-" * 60)
+        if instant == False:
+            moc_order = self._create_moc_order(action, abs(position.position))
+            print(f"Close: Placing MOC order to {action}: {abs(position.position)} of {symbol}")
+            self.ibkr_server.placeOrder(stock, moc_order)
+            print(f"Order Number: {order_num}")
+            print("-" * 60)
+        else:
+            # Placing Market order for immediate execution
+            market_order = self._create_market_order(action, abs(position.position))
+            print(f"Close: Placing Market order to {action}: {abs(position.position)} of {symbol}")
+            self.ibkr_server.placeOrder(stock, market_order)
+            print(f"Order Number: {order_num}")
+            print("-" * 60)

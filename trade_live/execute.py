@@ -7,6 +7,7 @@ import schedule
 
 from ib_insync import *
 
+from class_live.live_stop import LiveStop
 from core.operation import *
 
 from class_live.live_create import LiveCreate
@@ -26,6 +27,8 @@ from trade_live.strat_mrev_mkt.strat_mrev_mkt import StratMrevMkt
 
 from class_monitor.monitor_strat import MonitorStrat
 
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------BUILD, TRADE, MONITOR, STOP, RESET----------------------------------------------------------------------
 def build():
     '''
     Note: Specify strategy criteria in strat_crit.json. Each strategy's criteria should contain "allocate", "start_backtest", "num_stocks", and "threshold":
@@ -133,7 +136,7 @@ def trade():
     print("Attempting to connect to IBKR TWS Workstation...")
     ibkr_server = IB()
     ibkr_server.connect(host='127.0.0.1', port=7497, clientId=1512)
-    print("Connected to IBKR TWS Workstation.")
+    print("Connected to IBKR TWS Workstation")
 
     # Create Executioners
     live_price = LivePrice(ibkr_server=ibkr_server, current_date=current_date)
@@ -232,6 +235,30 @@ def monitor():
     # Monitor All Strategies
     mont_all.monitor_all()
 
+def stop():
+    '''
+    Note: Closes all actively open positions in portfolio
+
+          stop() should be executed whenever the portfolio blows up
+    '''
+
+    # Connect to IB
+    print("Attempting to connect to IBKR TWS Workstation...")
+    ibkr_server = IB()
+    ibkr_server.connect(host='127.0.0.1', port=7497, clientId=1512)
+    print("Connected to IBKR TWS Workstation")
+
+    # Create Executioners
+    live_stop = LiveStop(ibkr_server=ibkr_server, )
+
+    # Execute stop orders
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(live_stop.exec_stop())
+
+    # Disconnect
+    ibkr_server.disconnect()
+    loop.close()
+
 def reset():
     '''
     Note: Deletes all data, prices, and reports in trade_live directory's subdirectories
@@ -281,6 +308,8 @@ def reset():
 
     print("Finished\n" + "-"*60)
 
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------TIME TO MAKE MONEY--------------------------------------------------------------------------------
 # Build
 schedule.every().monday.at("00:01").do(build)
 schedule.every().tuesday.at("00:01").do(build)
