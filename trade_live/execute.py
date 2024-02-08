@@ -272,7 +272,7 @@ def reset():
         item_path = os.path.join(get_live_trade(), item)
 
         # Skip data_large reset
-        if item=='data_large':
+        if item=='data_large' or item=='data_parquet':
             continue
 
         # Remove data in live_monitor
