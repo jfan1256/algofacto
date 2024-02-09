@@ -69,8 +69,9 @@ class StratMrevMkt(Strategy):
         hedge_ret = hedge_ret.fillna(0)
 
         # Load in datasets
-        stock = read_stock(get_large(live) / 'permno_live.csv')
+        stock = read_stock(get_large(live) / 'permno_mrev_mkt.csv')
         historical_price = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli')
+        historical_price = get_stocks_data(historical_price, stock)
 
         # Create returns
         price = create_return(historical_price, [1])
@@ -143,7 +144,7 @@ class StratMrevMkt(Strategy):
         live = True
 
         # Load in datasets
-        stock = read_stock(get_large(live) / 'permno_live.csv')
+        stock = read_stock(get_large(live) / 'permno_mrev_mkt.csv')
         historical_price = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli')
         historical_price = historical_price.loc[historical_price.index.get_level_values('date') != self.current_date]
         live_price = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
@@ -151,9 +152,13 @@ class StratMrevMkt(Strategy):
         historical_hedge = historical_hedge.loc[historical_hedge.index.get_level_values('date') != self.current_date]
         live_hedge = pd.read_parquet(get_live_price() / 'data_mrev_mkt_hedge_live.parquet.brotli')
 
+
         # Merge historical dataset and live dataset
         price = pd.concat([historical_price, live_price], axis=0)
         hedge = pd.concat([historical_hedge, live_hedge], axis=0)
+
+        # Get mrev stock
+        price = get_stocks_data(price, stock)
 
         # Create returns
         price = create_return(price, [1])
