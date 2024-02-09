@@ -138,7 +138,7 @@ def trade():
     # Create Executioners
     live_price = LivePrice(ibkr_server=ibkr_server, current_date=current_date)
     live_close = LiveClose(ibkr_server=ibkr_server, current_date=current_date)
-    live_trade = LiveTrade(ibkr_server=ibkr_server, current_date=current_date, settle_period=ibkr_crit['settle_period'])
+    live_trade = LiveTrade(ibkr_server=ibkr_server, current_date=current_date, capital=ibkr_crit['capital'], settle_period=ibkr_crit['settle_period'])
 
     # Create Strategies
     strat_port_iv = StratPortIV(allocate=strat_crit['port_iv']['allocate'], current_date=current_date, start_date=strat_crit['port_iv']['start_backtest'], threshold=strat_crit['port_iv']['threshold'], num_stocks=strat_crit['port_iv']['per_side'][0], window_port=5)

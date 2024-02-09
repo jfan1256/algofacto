@@ -12,9 +12,9 @@ warnings.filterwarnings('ignore')
 
 class LiveData:
     def __init__(self,
-                 live: bool = None,
-                 start_date: str = None,
-                 current_date: str = None):
+                 live=None,
+                 start_date=None,
+                 current_date=None):
 
         '''
         live (bool): Get live data or historical data

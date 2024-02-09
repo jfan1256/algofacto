@@ -102,7 +102,7 @@ class LivePrice:
         trend_mls_bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF']
 
         # ML Trend Real Estate Ticker
-        ml_trend_re_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
+        ml_trend_re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT', 'REZ']
 
         # ML Trend Bond Ticker
         ml_trend_bond_ticker = ['HYG', 'JNK', 'LQD', 'EMB', 'SHY', 'TLT', 'SPTL', 'IGSB', 'SPAB']

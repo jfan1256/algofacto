@@ -7,18 +7,21 @@ from class_order.order_ibkr import OrderIBKR
 
 class LiveTrade:
     def __init__(self,
-                 ibkr_server,
-                 current_date,
-                 settle_period):
+                 ibkr_server=None,
+                 current_date=None,
+                 capital=None,
+                 settle_period=None):
 
         '''
         ibkr_server (ib_sync server): IBKR IB Sync server
         current_date (str: YYYY-MM-DD): Current date (this will be used as the end date for model training)
+        capital (int): Total capital to trade (this is not equal to portfolio cash)
         settle_period (int): IBKR Settlement Period (time it takes cash to settle after buy/sell for reuse)
         '''
 
         self.ibkr_server = ibkr_server
         self.current_date = current_date
+        self.capital = capital
         self.settle_period = settle_period
 
     # Execute all orders
@@ -35,8 +38,9 @@ class LiveTrade:
         for item in account_info:
             if item.tag == 'NetLiquidation':
                 available_capital = float(item.value)
-                settle_capital = available_capital / self.settle_period
-                print(f"Total capital: ${available_capital}")
+                settle_capital = self.capital / self.settle_period
+                print(f"Total capital to trade (margin): ${self.capital}")
+                print(f"Total cash in portfolio: ${available_capital}")
                 print(f"Allocated capital (Settlement): ${settle_capital}")
                 break
 

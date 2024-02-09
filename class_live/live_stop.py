@@ -7,8 +7,7 @@ from class_live.live_callback import OrderCounter
 
 class LiveStop:
     def __init__(self,
-                 ibkr_server
-                 ):
+                 ibkr_server=None):
 
         '''
         ibkr_server (ib_sync server): IBKR IB Sync server

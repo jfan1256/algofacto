@@ -7,8 +7,8 @@ from class_live.live_callback import OrderCounter
 
 class LiveClose:
     def __init__(self,
-                 ibkr_server,
-                 current_date):
+                 ibkr_server=None,
+                 current_date=None):
 
         '''
         ibkr_server (ib_sync server): IBKR IB Sync server
