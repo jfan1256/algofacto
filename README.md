@@ -1,2 +1,2 @@
-# Hedge Fund
+# Quantitative Hedge Fund
 In the making...
