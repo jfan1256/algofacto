@@ -1,0 +1,1 @@
+This directory should have sp500 Candidates, CRSP (Annually Updated Price Dataset), and a directory named "Macro"
