@@ -84,6 +84,9 @@ class MonitorStrat:
 
     # Monitor Strategy
     def monitor_strat(self):
+        print(f"--------------------------------------------------------------MONITOR {self.strat_name}--------------------------------------------------------------------------------")
+        # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # --------------------------------------------------------------------------MONITOR--------------------------------------------------------------------------------------------
         # Load in data
         strat_weight = pd.read_parquet(get_live() / self.strat_file)
         # Reset index to just be ('date', 'ticker')
@@ -121,7 +124,6 @@ class MonitorStrat:
             re_price = re_price.swaplevel()
             strat_price = pd.concat([strat_price, bond_price, re_price], axis=0).sort_index(level=['date', 'ticker'])
 
-
         # Merge to dataframes
         strat_data = pd.merge(strat_price, strat_weight, left_index=True, right_index=True, how='left')
 
@@ -150,6 +152,9 @@ class MonitorStrat:
 
     # Monitor Total Portfolio (make sure to run this after you have monitored all strategies first)
     def monitor_all(self):
+        print(f"------------------------------------------------------------------MONITOR ALL------------------------------------------------------------------------------------------")
+        # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # ---------------------------------------------------------------- -------MONITOR ALL------------------------------------------------------------------------------------------
         # Load in data
         strat_ml_ret = pd.read_parquet(get_live_monitor() / 'strat_ml_ret' / 'data_strat.parquet.brotli')
         strat_ml_trend = pd.read_parquet(get_live_monitor() / 'strat_ml_trend' / 'data_strat.parquet.brotli')
