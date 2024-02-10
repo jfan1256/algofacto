@@ -91,7 +91,7 @@ class StratPortIM(Strategy):
 
         # Create returns crop into window data
         ret_price = create_return(price, [1])
-        ret_price = window_data(data=ret_price, date=self.current_date, window=self.window_port * 2)
+        ret_price = window_data(data=ret_price, date=self.current_date, window=121 * 2)
         ret_price = ret_price.merge(market, left_index=True, right_index=True, how='left')
         ret_price['market_cap'] = ret_price.groupby('permno')['market_cap'].ffill()
 
