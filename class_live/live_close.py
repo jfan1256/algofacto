@@ -8,15 +8,19 @@ from class_live.live_callback import OrderCounter
 class LiveClose:
     def __init__(self,
                  ibkr_server=None,
-                 current_date=None):
+                 current_date=None,
+                 capital=None
+                 ):
 
         '''
         ibkr_server (ib_sync server): IBKR IB Sync server
         current_date (str: YYYY-MM-DD): Current date (this will be used as the end date for model training)
+        capital (int): Total capital to trade (this is not equal to portfolio cash)
         '''
 
         self.ibkr_server = ibkr_server
         self.current_date = current_date
+        self.capital = capital
 
     # Execute close orders
     async def exec_close(self):
@@ -32,7 +36,8 @@ class LiveClose:
         for item in account_info:
             if item.tag == 'NetLiquidation':
                 available_capital = float(item.value)
-                print(f"Available capital: ${available_capital}")
+                print(f"Total capital to trade (margin): ${self.capital}")
+                print(f"Total cash in portfolio: ${available_capital}")
                 break
 
         # Get Stock Data

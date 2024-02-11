@@ -137,7 +137,7 @@ def trade():
 
     # Create Executioners
     live_price = LivePrice(ibkr_server=ibkr_server, current_date=current_date)
-    live_close = LiveClose(ibkr_server=ibkr_server, current_date=current_date)
+    live_close = LiveClose(ibkr_server=ibkr_server, current_date=current_date, capital=ibkr_crit['capital'])
     live_trade = LiveTrade(ibkr_server=ibkr_server, current_date=current_date, capital=ibkr_crit['capital'], settle_period=ibkr_crit['settle_period'])
 
     # Create Strategies
