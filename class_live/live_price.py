@@ -142,39 +142,48 @@ class LivePrice:
 
         # Adjust close price using previous day's dividend adjustment factor
         adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_permno_live.parquet.brotli')
+        permno_data = permno_data.reset_index().set_index(['ticker', 'date'])
+        permno_data = permno_data.merge(adj_factor_trade[['adj_factor']], left_index=True, right_index=True, how='left')
+        permno_data['adj_factor'] = permno_data['adj_factor'].fillna(1.0)
+        permno_data = permno_data.reset_index().set_index(['permno', 'date'])
         permno_data = permno_data.sort_values('ticker')
-        permno_data['adj_factor'] = adj_factor_trade['adj_factor'].values
         permno_data['Close'] = permno_data['Close'] / permno_data['adj_factor']
         permno_data = permno_data.drop('adj_factor', axis=1)
         permno_data = permno_data.sort_index(level=['permno', 'date'])
 
         adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_mrev_etf_hedge_live.parquet.brotli')
-        mrev_etf_hedge_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        mrev_etf_hedge_data = mrev_etf_hedge_data.merge(adj_factor_trade[['adj_factor']], left_index=True, right_index=True, how='left')
+        mrev_etf_hedge_data['adj_factor'] = mrev_etf_hedge_data['adj_factor'].fillna(1.0)
         mrev_etf_hedge_data['Close'] = mrev_etf_hedge_data['Close'] / mrev_etf_hedge_data['adj_factor']
         mrev_etf_hedge_data = mrev_etf_hedge_data.drop('adj_factor', axis=1)
 
         adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_mrev_mkt_hedge_live.parquet.brotli')
-        mrev_mkt_hedge_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        mrev_mkt_hedge_data = mrev_mkt_hedge_data.merge(adj_factor_trade[['adj_factor']], left_index=True, right_index=True, how='left')
+        mrev_mkt_hedge_data['adj_factor'] = mrev_mkt_hedge_data['adj_factor'].fillna(1.0)
         mrev_mkt_hedge_data['Close'] = mrev_mkt_hedge_data['Close'] / mrev_mkt_hedge_data['adj_factor']
         mrev_mkt_hedge_data = mrev_mkt_hedge_data.drop('adj_factor', axis=1)
 
         adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_trend_mls_com_live.parquet.brotli')
-        trend_mls_com_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        trend_mls_com_data = trend_mls_com_data.merge(adj_factor_trade[['adj_factor']], left_index=True, right_index=True, how='left')
+        trend_mls_com_data['adj_factor'] = trend_mls_com_data['adj_factor'].fillna(1.0)
         trend_mls_com_data['Close'] = trend_mls_com_data['Close'] / trend_mls_com_data['adj_factor']
         trend_mls_com_data = trend_mls_com_data.drop('adj_factor', axis=1)
 
         adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_trend_mls_bond_live.parquet.brotli')
-        trend_mls_bond_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        trend_mls_bond_data = trend_mls_bond_data.merge(adj_factor_trade[['adj_factor']], left_index=True, right_index=True, how='left')
+        trend_mls_bond_data['adj_factor'] = trend_mls_bond_data['adj_factor'].fillna(1.0)
         trend_mls_bond_data['Close'] = trend_mls_bond_data['Close'] / trend_mls_bond_data['adj_factor']
         trend_mls_bond_data = trend_mls_bond_data.drop('adj_factor', axis=1)
 
         adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_ml_trend_re_live.parquet.brotli')
-        ml_trend_re_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        ml_trend_re_data = ml_trend_re_data.merge(adj_factor_trade[['adj_factor']], left_index=True, right_index=True, how='left')
+        ml_trend_re_data['adj_factor'] = ml_trend_re_data['adj_factor'].fillna(1.0)
         ml_trend_re_data['Close'] = ml_trend_re_data['Close'] / ml_trend_re_data['adj_factor']
         ml_trend_re_data = ml_trend_re_data.drop('adj_factor', axis=1)
 
         adj_factor_trade = pd.read_parquet(get_adj() / 'data_adj_ml_trend_bond_live.parquet.brotli')
-        ml_trend_bond_data['adj_factor'] = adj_factor_trade['adj_factor'].values
+        ml_trend_bond_data = ml_trend_bond_data.merge(adj_factor_trade[['adj_factor']], left_index=True, right_index=True, how='left')
+        ml_trend_bond_data['adj_factor'] = ml_trend_bond_data['adj_factor'].fillna(1.0)
         ml_trend_bond_data['Close'] = ml_trend_bond_data['Close'] / ml_trend_bond_data['adj_factor']
         ml_trend_bond_data = ml_trend_bond_data.drop('adj_factor', axis=1)
 
