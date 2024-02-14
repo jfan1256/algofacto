@@ -229,6 +229,15 @@ def window_data(data, date, window):
             return group_filtered
         return None
     return pd.concat([process_group(group) for _, group in data.groupby(level=data.index.names[0]) if process_group(group) is not None])
+
+# Resample from daily index to monthly index per permno group
+def daily_to_monthly(data):
+    def by_month(group):
+        group = group.reset_index(level=0, drop=True)
+        return group.resample('M').last()
+    data = data.groupby('permno').apply(by_month)
+    return data
+
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------PARALLELIZED ROLLING OPERATIONS--------------------------------------------------------------------
 # Rolling Kmean
