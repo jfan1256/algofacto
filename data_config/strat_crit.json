@@ -1,8 +1,7 @@
 {
-  "ml_ret": {"start_backtest":"2008-01-01", "allocate":0.150, "threshold":2000000000, "total_stocks":50, "per_side":[25,25], "hedge":0},
-  "ml_trend": {"start_backtest":"2008-01-01", "allocate":0.150, "threshold":2000000000, "total_stocks":35, "per_side":[10,10], "hedge":15},
+  "ml_ret": {"start_backtest":"2008-01-01", "allocate":0.200, "threshold":2000000000, "total_stocks":50, "per_side":[25,25], "hedge":0},
+  "ml_trend": {"start_backtest":"2008-01-01", "allocate":0.200, "threshold":2000000000, "total_stocks":35, "per_side":[10,10], "hedge":15},
   "port_iv": {"start_backtest":"2005-01-01", "allocate":0.100, "threshold":8000000000, "total_stocks":50, "per_side":[25,25], "hedge":0},
-  "port_im": {"start_backtest":"2005-01-01", "allocate":0.100, "threshold":8000000000, "total_stocks":50, "per_side":[25,25], "hedge":0},
   "port_id": {"start_backtest":"2005-01-01", "allocate":0.100, "threshold":2000000000, "total_stocks":50, "per_side":[25,25], "hedge":0},
   "port_ivm": {"start_backtest":"2005-01-01", "allocate":0.100, "threshold":2000000000, "total_stocks":50, "per_side":[25,25], "hedge":0},
   "trend_mls": {"start_backtest":"2005-01-01", "allocate":0.150, "threshold":2000000000, "total_stocks":50, "per_side":[35,0], "hedge":15},
