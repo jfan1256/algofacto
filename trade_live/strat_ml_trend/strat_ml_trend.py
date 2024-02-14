@@ -1,12 +1,12 @@
 import shutil
-import json
 import quantstats as qs
 
 from fredapi import Fred
 from scipy.stats import spearmanr
+
+from class_model.model_randomforest import ModelRandomforest
 from class_model.model_test import ModelTest
 from class_model.model_prep import ModelPrep
-from class_model.model_train import ModelTrain
 from class_strat.strat import Strategy
 from class_trend.trend_helper import TrendHelper
 from core.operation import *
@@ -73,9 +73,8 @@ class StratMLTrend(Strategy):
         model_name = f'randomforest_{format_end}'
         tune = 'default'
 
-        alpha = ModelTrain(live=live, model_name=model_name, end=self.current_date, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='sign',
-                           stock='permno', lookahead=1, trend=1, incr=False, opt='ewo', weight=False, outlier=False, early=False,
-                           pretrain_len=0, train_len=504, valid_len=21, test_len=21, **randomforest_params)
+        alpha = ModelRandomforest(live=live, model_name=model_name, end=self.current_date, tuning=tune, plot_loss=False, plot_hist=False, pred='sign', stock='permno',
+                                  lookahead=1, trend=1, opt='ewo', weight=False, outlier=False, train_len=504, valid_len=21, test_len=21, **randomforest_params)
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------GENERAL-------------------------------------------------------------------------------------------
@@ -380,7 +379,7 @@ class StratMLTrend(Strategy):
         print("-" * 60)
         print("Run Model")
 
-        alpha.randomforest()
+        alpha.exec_train()
 
         elapsed_time = time.time() - total_time
         minutes, seconds = divmod(elapsed_time, 60)

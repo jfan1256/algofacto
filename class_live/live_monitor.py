@@ -2,7 +2,7 @@ from core.operation import *
 
 import quantstats as qs
 
-class MonitorStrat:
+class LiveMonitor:
     def __init__(self,
                  strat_name=None,
                  strat_file=None,
@@ -83,7 +83,7 @@ class MonitorStrat:
         fig.write_html(str(filename), auto_open=False)
 
     # Monitor Strategy
-    def monitor_strat(self):
+    def exec_monitor_strat(self):
         print(f"--------------------------------------------------------------MONITOR {self.strat_name}--------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------MONITOR--------------------------------------------------------------------------------------------
@@ -92,7 +92,7 @@ class MonitorStrat:
         # Reset index to just be ('date', 'ticker')
         strat_weight = strat_weight.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
 
-        if self.strat_name in ['StratMLRet', 'StratPortIV', 'StratPortIM', 'StratPortID', 'StratPortIVM']:
+        if self.strat_name in ['StratMLRet', 'StratPortIV', 'StratPortID', 'StratPortIVM']:
             strat_price = pd.read_parquet(get_live() / 'data_permno_store.parquet.brotli')
             strat_price = strat_price.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
         elif self.strat_name in ['StratMrevETF']:
@@ -151,23 +151,22 @@ class MonitorStrat:
         self._rolling_full_alpha(strat_ret=daily_strat_df, windows=self.alpha_windows, path=self.output_path)
 
     # Monitor Total Portfolio (make sure to run this after you have monitored all strategies first)
-    def monitor_all(self):
+    def exec_monitor_all(self):
         print(f"------------------------------------------------------------------MONITOR ALL------------------------------------------------------------------------------------------")
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # ---------------------------------------------------------------- -------MONITOR ALL------------------------------------------------------------------------------------------
+        # ------------------------------------------------------------------------MONITOR ALL------------------------------------------------------------------------------------------
         # Load in data
         strat_ml_ret = pd.read_parquet(get_live_monitor() / 'strat_ml_ret' / 'data_strat.parquet.brotli')
         strat_ml_trend = pd.read_parquet(get_live_monitor() / 'strat_ml_trend' / 'data_strat.parquet.brotli')
         strat_mrev_etf = pd.read_parquet(get_live_monitor() / 'strat_mrev_etf' / 'data_strat.parquet.brotli')
         strat_mrev_mkt = pd.read_parquet(get_live_monitor() / 'strat_mrev_mkt' / 'data_strat.parquet.brotli')
         strat_port_iv = pd.read_parquet(get_live_monitor() / 'strat_port_iv' / 'data_strat.parquet.brotli')
-        strat_port_im = pd.read_parquet(get_live_monitor() / 'strat_port_im' / 'data_strat.parquet.brotli')
         strat_port_id = pd.read_parquet(get_live_monitor() / 'strat_port_id' / 'data_strat.parquet.brotli')
         strat_port_ivm = pd.read_parquet(get_live_monitor() / 'strat_port_ivm' / 'data_strat.parquet.brotli')
         strat_trend_mls = pd.read_parquet(get_live_monitor() / 'strat_trend_mls' / 'data_strat.parquet.brotli')
 
         # Merge all data
-        strat_data = pd.concat([strat_ml_ret, strat_ml_trend, strat_mrev_etf, strat_mrev_mkt, strat_port_iv, strat_port_im, strat_port_id, strat_port_ivm, strat_trend_mls], axis=0)
+        strat_data = pd.concat([strat_ml_ret, strat_ml_trend, strat_mrev_etf, strat_mrev_mkt, strat_port_iv, strat_port_id, strat_port_ivm, strat_trend_mls], axis=0)
         strat_data = strat_data.sort_index(level=['date'])
 
         # Export Data

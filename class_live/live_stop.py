@@ -2,8 +2,8 @@ import asyncio
 
 from core.operation import *
 
-from class_order.order_ibkr import OrderIBKR
-from class_live.live_callback import OrderCounter
+from class_live.live_order import LiveOrder
+from class_live.live_callback import LiveCallback
 
 class LiveStop:
     def __init__(self,
@@ -20,8 +20,8 @@ class LiveStop:
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------------EXECUTE STOP ORDERS------------------------------------------------------------------------------
         print("-------------------------------------------------------------------------EXECUTE STOP ORDERS------------------------------------------------------------------------------")
-        # Create OrderIBKR Class
-        order_ibkr = OrderIBKR(ibkr_server=self.ibkr_server)
+        # Create LiveOrder Class
+        live_order = LiveOrder(ibkr_server=self.ibkr_server)
 
         # Fetch portfolio
         portfolio = self.ibkr_server.portfolio()
@@ -31,8 +31,8 @@ class LiveStop:
         batch_size = 50
         order_num = 1
         # Subscribe the class method to the newOrderEvent
-        order_counter = OrderCounter()
-        self.ibkr_server.orderStatusEvent += order_counter.order_status_event_handler
+        live_callback = LiveCallback()
+        self.ibkr_server.orderStatusEvent += live_callback.order_status_event_handler
 
         # Execute Close Orders for each position in Portfolio
         for item in portfolio:
@@ -40,7 +40,7 @@ class LiveStop:
             action = 'SELL' if item.position > 0 else 'BUY'
 
             # Create close order task
-            task = order_ibkr._execute_close(symbol=symbol, action=action, order_num=order_num, instant=True)
+            task = live_order._execute_close(symbol=symbol, action=action, order_num=order_num, instant=True)
             tasks.append(task)
             order_num += 1
 
@@ -64,4 +64,4 @@ class LiveStop:
         # Display Order Counts
         print("----------------------------------------------------------------------ORDER METRIC------------------------------------------------------------------------------------------")
         print(f"Total positions closed: {len(portfolio)}")
-        order_counter.display_metric()
+        live_callback.display_metric()

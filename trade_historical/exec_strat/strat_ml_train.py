@@ -1,5 +1,7 @@
+from class_model.model_cboost import ModelCboost
+from class_model.model_lgbm import ModelLgbm
 from class_model.model_prep import ModelPrep
-from class_model.model_train import ModelTrain
+from class_model.model_rf import ModelRf
 from core.operation import *
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -49,14 +51,14 @@ start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = ModelTrain(live=live, model_name='lightgbm_trial_106', end=end, tuning='default', shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0,
+alpha = ModelLgbm(live=live, model_name='lightgbm_trial_106', end=end, tuning='default', shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0,
                            incr=True, opt='wfo', weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
 
-# alpha = ModelTrain(live=live, model_name='randomforest_trial_10', end=end, tuning='default', shap=False, plot_loss=False, plot_hist=False, pred='sign', stock='permno', lookahead=1,
-#                    trend=1, incr=False, opt='ewo', weight=False, outlier=False, early=False, pretrain_len=0, train_len=504, valid_len=21, test_len=21, **randomforest_params)
+alpha = ModelRf(live=live, model_name='randomforest_trial_10', end=end, tuning='default', plot_loss=False, plot_hist=False, pred='sign', stock='permno', lookahead=1,
+                   trend=1, opt='ewo', outlier=False, train_len=504, valid_len=21, test_len=21, **randomforest_params)
 
-# alpha = ModelTrain(live=live, model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, incr=False, opt='ewo',
-#                    weight=False, outlier=False, early=True, pretrain_len=0, train_len=1260, valid_len=252, test_len=21, **catboost_params)
+alpha = ModelCboost(live=live, model_name='catboost_trial_1', tuning='default', plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, opt='ewo',
+                    outlier=False, early=True, train_len=1260, valid_len=252, test_len=21, **catboost_params)
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------GENERAL-------------------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-class OrderCounter:
+class LiveCallback:
     def __init__(self):
         self.processed_orders = set()
         self.order_count = 0

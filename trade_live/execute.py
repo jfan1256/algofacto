@@ -1,6 +1,5 @@
 import asyncio
 import concurrent.futures
-
 import schedule
 
 from ib_insync import *
@@ -11,18 +10,16 @@ from class_live.live_create import LiveCreate
 from class_live.live_price import LivePrice
 from class_live.live_close import LiveClose
 from class_live.live_trade import LiveTrade
+from class_live.live_monitor import LiveMonitor
 
 from trade_live.strat_ml_trend.strat_ml_trend import StratMLTrend
 from trade_live.strat_ml_ret.strat_ml_ret import StratMLRet
 from trade_live.strat_port_iv.strat_port_iv import StratPortIV
-from trade_live.strat_port_im.strat_port_im import StratPortIM
 from trade_live.strat_port_id.strat_port_id import StratPortID
 from trade_live.strat_port_ivm.strat_port_ivm import StratPortIVM
 from trade_live.strat_trend_mls.strat_trend_mls import StratTrendMLS
 from trade_live.strat_mrev_etf.strat_mrev_etf import StratMrevETF
 from trade_live.strat_mrev_mkt.strat_mrev_mkt import StratMrevMkt
-
-from class_monitor.monitor_strat import MonitorStrat
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------BUILD, TRADE, MONITOR---------------------------------------------------------------------------
@@ -58,7 +55,6 @@ def build():
     start_ml_trend = StratMLTrend(allocate=strat_crit['ml_trend']['allocate'], current_date=current_date, start_model=strat_crit['ml_trend']['start_backtest'], threshold=strat_crit['ml_trend']['threshold'], num_stocks=strat_crit['ml_trend']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=1)
     strat_ml_ret = StratMLRet(allocate=strat_crit['ml_ret']['allocate'], current_date=current_date, start_model=strat_crit['ml_ret']['start_backtest'], threshold=strat_crit['ml_ret']['threshold'], num_stocks=strat_crit['ml_ret']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=10)
     strat_port_iv = StratPortIV(allocate=strat_crit['port_iv']['allocate'], current_date=current_date, start_date=strat_crit['port_iv']['start_backtest'], threshold=strat_crit['port_iv']['threshold'], num_stocks=strat_crit['port_iv']['per_side'][0], window_port=5)
-    strat_port_im = StratPortIM(allocate=strat_crit['port_im']['allocate'], current_date=current_date, start_date=strat_crit['port_im']['start_backtest'], threshold=strat_crit['port_im']['threshold'], num_stocks=strat_crit['port_im']['per_side'][0], window_port=5)
     strat_port_id = StratPortID(allocate=strat_crit['port_id']['allocate'], current_date=current_date, start_date=strat_crit['port_id']['start_backtest'], threshold=strat_crit['port_id']['threshold'], num_stocks=strat_crit['port_id']['per_side'][0], window_port=5)
     strat_port_ivm = StratPortIVM(allocate=strat_crit['port_ivm']['allocate'], current_date=current_date, start_date=strat_crit['port_ivm']['start_backtest'], threshold=strat_crit['port_ivm']['threshold'], num_stocks=strat_crit['port_ivm']['per_side'][0], window_port=5)
     strat_trend_mls = StratTrendMLS(allocate=strat_crit['trend_mls']['allocate'], current_date=current_date, start_date=strat_crit['trend_mls']['start_backtest'], threshold=strat_crit['trend_mls']['threshold'], num_stocks=strat_crit['trend_mls']['per_side'][0], window_hedge=5, window_port=5)
@@ -84,8 +80,6 @@ def build():
 
     # Backtest StratPortIV
     strat_port_iv.exec_backtest()
-    # Backtest StratPortIM
-    strat_port_im.exec_backtest()
     # Backtest StratPortID
     strat_port_id.exec_backtest()
     # Backtest StratPortIVM
@@ -142,7 +136,6 @@ def trade():
 
     # Create Strategies
     strat_port_iv = StratPortIV(allocate=strat_crit['port_iv']['allocate'], current_date=current_date, start_date=strat_crit['port_iv']['start_backtest'], threshold=strat_crit['port_iv']['threshold'], num_stocks=strat_crit['port_iv']['per_side'][0], window_port=5)
-    strat_port_im = StratPortIM(allocate=strat_crit['port_im']['allocate'], current_date=current_date, start_date=strat_crit['port_im']['start_backtest'], threshold=strat_crit['port_im']['threshold'], num_stocks=strat_crit['port_im']['per_side'][0], window_port=5)
     strat_port_id = StratPortID(allocate=strat_crit['port_id']['allocate'], current_date=current_date, start_date=strat_crit['port_id']['start_backtest'], threshold=strat_crit['port_id']['threshold'], num_stocks=strat_crit['port_id']['per_side'][0], window_port=5)
     strat_port_ivm = StratPortIVM(allocate=strat_crit['port_ivm']['allocate'], current_date=current_date, start_date=strat_crit['port_ivm']['start_backtest'], threshold=strat_crit['port_ivm']['threshold'], num_stocks=strat_crit['port_ivm']['per_side'][0], window_port=5)
     strat_trend_mls = StratTrendMLS(allocate=strat_crit['trend_mls']['allocate'], current_date=current_date, start_date=strat_crit['trend_mls']['start_backtest'], threshold=strat_crit['trend_mls']['threshold'], num_stocks=strat_crit['trend_mls']['per_side'][0], window_hedge=60, window_port=252)
@@ -158,7 +151,6 @@ def trade():
         # Load Strategies
         exec_strategies = [
             executor.submit(strat_port_iv.exec_live),
-            executor.submit(strat_port_im.exec_live),
             executor.submit(strat_port_id.exec_live),
             executor.submit(strat_port_ivm.exec_live),
             executor.submit(strat_trend_mls.exec_live),
@@ -207,30 +199,28 @@ def monitor():
     mont_crit = json.load(open(get_config() / 'mont_crit.json'))
     
     # Create Monitors
-    mont_ml_ret = MonitorStrat(strat_name='StratMLRet', strat_file='data_ml_ret_store.parquet.brotli', allocate=strat_crit['ml_ret']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_ret')
-    mont_ml_trend = MonitorStrat(strat_name='StratMLTrend', strat_file='data_ml_trend_store.parquet.brotli', allocate=strat_crit['ml_trend']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_trend')
-    mont_port_iv = MonitorStrat(strat_name='StratPortIV', strat_file='data_port_iv_store.parquet.brotli', allocate=strat_crit['port_iv']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_iv')
-    mont_port_im = MonitorStrat(strat_name='StratPortIM', strat_file='data_port_im_store.parquet.brotli', allocate=strat_crit['port_im']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_im')
-    mont_port_id = MonitorStrat(strat_name='StratPortID', strat_file='data_port_id_store.parquet.brotli', allocate=strat_crit['port_id']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_id')
-    mont_port_ivm = MonitorStrat(strat_name='StratPortIVM', strat_file='data_port_ivm_store.parquet.brotli', allocate=strat_crit['port_ivm']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_ivm')
-    mont_trend_mls = MonitorStrat(strat_name='StratTrendMLS', strat_file='data_trend_mls_store.parquet.brotli', allocate=strat_crit['trend_mls']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_trend_mls')
-    mont_mrev_etf = MonitorStrat(strat_name='StratMrevETF', strat_file='data_mrev_etf_store.parquet.brotli', allocate=strat_crit['mrev_etf']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_etf')
-    mont_mrev_mkt = MonitorStrat(strat_name='StratMrevMkt', strat_file='data_mrev_mkt_store.parquet.brotli', allocate=strat_crit['mrev_mkt']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_mkt')
-    mont_all = MonitorStrat(output_path=get_live_monitor() / 'strat_all')
+    mont_ml_ret = LiveMonitor(strat_name='StratMLRet', strat_file='data_ml_ret_store.parquet.brotli', allocate=strat_crit['ml_ret']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_ret')
+    mont_ml_trend = LiveMonitor(strat_name='StratMLTrend', strat_file='data_ml_trend_store.parquet.brotli', allocate=strat_crit['ml_trend']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_trend')
+    mont_port_iv = LiveMonitor(strat_name='StratPortIV', strat_file='data_port_iv_store.parquet.brotli', allocate=strat_crit['port_iv']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_iv')
+    mont_port_id = LiveMonitor(strat_name='StratPortID', strat_file='data_port_id_store.parquet.brotli', allocate=strat_crit['port_id']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_id')
+    mont_port_ivm = LiveMonitor(strat_name='StratPortIVM', strat_file='data_port_ivm_store.parquet.brotli', allocate=strat_crit['port_ivm']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_ivm')
+    mont_trend_mls = LiveMonitor(strat_name='StratTrendMLS', strat_file='data_trend_mls_store.parquet.brotli', allocate=strat_crit['trend_mls']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_trend_mls')
+    mont_mrev_etf = LiveMonitor(strat_name='StratMrevETF', strat_file='data_mrev_etf_store.parquet.brotli', allocate=strat_crit['mrev_etf']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_etf')
+    mont_mrev_mkt = LiveMonitor(strat_name='StratMrevMkt', strat_file='data_mrev_mkt_store.parquet.brotli', allocate=strat_crit['mrev_mkt']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_mkt')
+    mont_all = LiveMonitor(output_path=get_live_monitor() / 'strat_all')
 
     # Monitor Strategies
-    mont_ml_ret.monitor_strat()
-    mont_ml_trend.monitor_strat()
-    mont_port_iv.monitor_strat()
-    mont_port_im.monitor_strat()
-    mont_port_id.monitor_strat()
-    mont_port_ivm.monitor_strat()
-    mont_trend_mls.monitor_strat()
-    mont_mrev_etf.monitor_strat()
-    mont_mrev_mkt.monitor_strat()
+    mont_ml_ret.exec_monitor_strat()
+    mont_ml_trend.exec_monitor_strat()
+    mont_port_iv.exec_monitor_strat()
+    mont_port_id.exec_monitor_strat()
+    mont_port_ivm.exec_monitor_strat()
+    mont_trend_mls.exec_monitor_strat()
+    mont_mrev_etf.exec_monitor_strat()
+    mont_mrev_mkt.exec_monitor_strat()
 
     # Monitor All Strategies
-    mont_all.monitor_all()
+    mont_all.exec_monitor_all()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------TIME TO MAKE MONEY--------------------------------------------------------------------------------

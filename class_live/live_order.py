@@ -1,6 +1,6 @@
 from ib_insync import *
 
-class OrderIBKR:
+class LiveOrder:
     def __init__(self,
                  ibkr_server):
 

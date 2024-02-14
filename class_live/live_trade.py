@@ -2,8 +2,8 @@ import asyncio
 
 from core.operation import *
 
-from class_live.live_callback import OrderCounter
-from class_order.order_ibkr import OrderIBKR
+from class_live.live_callback import LiveCallback
+from class_live.live_order import LiveOrder
 
 class LiveTrade:
     def __init__(self,
@@ -29,8 +29,8 @@ class LiveTrade:
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------------EXECUTE TRADE ORDERS-----------------------------------------------------------------------------
         print("-------------------------------------------------------------------------EXECUTE TRADE ORDERS-----------------------------------------------------------------------------")
-        # Create OrderIBKR Class
-        order_ibkr = OrderIBKR(ibkr_server=self.ibkr_server)
+        # Create LiveOrder Class
+        live_order = LiveOrder(ibkr_server=self.ibkr_server)
 
         # Fetch available capital
         print("Fetching available capital...")
@@ -48,7 +48,6 @@ class LiveTrade:
         ml_ret = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret.parquet.brotli')
         ml_trend = pd.read_parquet(get_live_stock() / 'trade_stock_ml_trend.parquet.brotli')
         port_iv = pd.read_parquet(get_live_stock() / 'trade_stock_port_iv.parquet.brotli')
-        port_im = pd.read_parquet(get_live_stock() / 'trade_stock_port_im.parquet.brotli')
         port_id = pd.read_parquet(get_live_stock() / 'trade_stock_port_id.parquet.brotli')
         port_ivm = pd.read_parquet(get_live_stock() / 'trade_stock_port_ivm.parquet.brotli')
         trend_mls = pd.read_parquet(get_live_stock() / 'trade_stock_trend_mls.parquet.brotli')
@@ -65,7 +64,7 @@ class LiveTrade:
         ml_trend_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli')
 
         # Merge data by 'date', 'ticker', 'type'
-        stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_im, port_id, port_ivm, trend_mls, mrev_etf, mrev_mkt], axis=0)
+        stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_id, port_ivm, trend_mls, mrev_etf, mrev_mkt], axis=0)
         stock_data = stock_data.groupby(level=['date', 'ticker', 'type']).sum()
         stock_data = stock_data.loc[stock_data.index.get_level_values('date') == self.current_date]
 
@@ -81,8 +80,8 @@ class LiveTrade:
         nan_tickers = []
         nan_num = 0
         # Subscribe the class method to the newOrderEvent
-        order_counter = OrderCounter()
-        self.ibkr_server.orderStatusEvent += order_counter.order_status_event_handler
+        live_callback = LiveCallback()
+        self.ibkr_server.orderStatusEvent += live_callback.order_status_event_handler
 
         # Execute Trade Orders
         for row in stock_data.itertuples():
@@ -107,11 +106,11 @@ class LiveTrade:
 
             # Create orders
             if type == 'long':
-                task = order_ibkr._execute_order(stock_price=stock_price, symbol=ticker, action='BUY', capital_per_stock=capital_per_stock, order_num=order_num, weight=weight)
+                task = live_order._execute_order(stock_price=stock_price, symbol=ticker, action='BUY', capital_per_stock=capital_per_stock, order_num=order_num, weight=weight)
                 tasks.append(task)
                 order_num += 1
             elif type == 'short':
-                task = order_ibkr._execute_order(stock_price=stock_price, symbol=ticker, action='SELL', capital_per_stock=capital_per_stock, order_num=order_num, weight=weight)
+                task = live_order._execute_order(stock_price=stock_price, symbol=ticker, action='SELL', capital_per_stock=capital_per_stock, order_num=order_num, weight=weight)
                 tasks.append(task)
                 order_num += 1
 
@@ -139,4 +138,4 @@ class LiveTrade:
         print(f"Skipped Orders: {nan_num}")
         print(f"    Cause: no live price data")
         print(f"    Symbols: {', '.join(nan_tickers)}")
-        order_counter.display_metric()
+        live_callback.display_metric()
