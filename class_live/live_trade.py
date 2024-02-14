@@ -79,6 +79,7 @@ class LiveTrade:
         order_num = 1
         nan_tickers = []
         nan_num = 0
+        zero_share = []
         # Subscribe the class method to the newOrderEvent
         live_callback = LiveCallback()
         self.ibkr_server.orderStatusEvent += live_callback.order_status_event_handler
@@ -103,6 +104,10 @@ class LiveTrade:
                 nan_num+=1
                 nan_tickers.append(ticker)
                 continue
+
+            # Check for zero share stocks (not enough capital)
+            if int(capital_per_stock / stock_price) == 0:
+                zero_share.append(ticker)
 
             # Create orders
             if type == 'long':
@@ -138,4 +143,7 @@ class LiveTrade:
         print(f"Skipped Orders: {nan_num}")
         print(f"    Cause: no live price data")
         print(f"    Symbols: {', '.join(nan_tickers)}")
+        print(f"Zero Share Orders: {len(zero_share)}")
+        print(f"    Cause: not enough capital to buy one share (buy 1 by default)")
+        print(f"    Symbols: {', '.join(zero_share)}")
         live_callback.display_metric()

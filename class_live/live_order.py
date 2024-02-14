@@ -42,10 +42,15 @@ class LiveOrder:
     async def _execute_order(self, stock_price, symbol, action, capital_per_stock, order_num, weight):
         print("-" * 60)
         print(f"Placing orders for {action} position on: {symbol}")
+        zero_share = 0
         stock = await self._get_contract(symbol)
 
         # Retrieve whole number of shares
         num_share = int(capital_per_stock / stock_price)
+
+        # Buy 1 share if num_share rounds to 0
+        if num_share == 0:
+            num_share = 1
 
         # Placing MOC order
         moc_order = self._create_moc_order(action, num_share)

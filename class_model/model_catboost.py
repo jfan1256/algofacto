@@ -50,7 +50,6 @@ class ModelCatboost(ModelTrain):
         lookahead (int): Lookahead period to predict for
         trend (int): Size of rolling window to calculate trend (for price movement predictions)
         opt (str): Type of training optimization ('ewo' or 'wfo')
-        weight (float): Weight for sample weight training
         outlier (bool): Handle outlier data in label data or not
         early (bool): Train with early stopping or not
         train_len (int): Train length for model training

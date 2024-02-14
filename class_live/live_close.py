@@ -104,5 +104,5 @@ class LiveClose:
 
         # Display Order Counts
         print("----------------------------------------------------------------------ORDER METRIC------------------------------------------------------------------------------------------")
-        print(f"Total stocks to trade: {len(stock_data)}")
+        print(f"Total stocks to close: {len(stock_data)}")
         live_callback.display_metric()
