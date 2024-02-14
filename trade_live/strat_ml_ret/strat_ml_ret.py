@@ -90,7 +90,7 @@ class StratMLRet(Strategy):
         model_name = f'lightgbm_{format_end}'
         tune = ['optuna', 30]
 
-        alpha = ModelLightgbm(live=live, model_name=model_name, end=self.current_date, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0,
+        alpha = ModelLightgbm(live=live, model_name=model_name, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0,
                               incr=True, opt='wfo', weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

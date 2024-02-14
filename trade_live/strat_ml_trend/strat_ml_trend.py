@@ -73,8 +73,8 @@ class StratMLTrend(Strategy):
         model_name = f'randomforest_{format_end}'
         tune = 'default'
 
-        alpha = ModelRandomforest(live=live, model_name=model_name, end=self.current_date, tuning=tune, plot_loss=False, plot_hist=False, pred='sign', stock='permno',
-                                  lookahead=1, trend=1, opt='ewo', weight=False, outlier=False, train_len=504, valid_len=21, test_len=21, **randomforest_params)
+        alpha = ModelRandomforest(live=live, model_name=model_name, tuning=tune, plot_loss=False, plot_hist=False, pred='sign', stock='permno',
+                                  lookahead=1, trend=1, opt='ewo', outlier=False, train_len=504, valid_len=21, test_len=21, **randomforest_params)
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------GENERAL-------------------------------------------------------------------------------------------

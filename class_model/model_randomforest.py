@@ -19,8 +19,7 @@ class ModelRandomforest(ModelTrain):
     def __init__(self, 
                  live: bool = None, 
                  model_name: str = None, 
-                 end: str = None, 
-                 tuning: [str, int] = None, 
+                 tuning: [str, int] = None,
                  plot_loss: bool = False, 
                  plot_hist: bool = False, 
                  pred: str = 'price',
@@ -38,7 +37,6 @@ class ModelRandomforest(ModelTrain):
         '''
         live (bool): Get historical data or live data
         model_name (str): Model name
-        end (str: YYYY-MM-DD): Final date for model training
         tuning (str): Type of parameter to use (i.e., default, optuna, etc.)
         plot_loss (bool): Plot training and validation curve after each window training or not
         plot_hist (bool): Plot actual returns and predicted returns after each window training or not
@@ -54,11 +52,10 @@ class ModelRandomforest(ModelTrain):
         kwargs (dict): Model parameters to feed into model
         '''
 
-        super().__init__(live, model_name, end, tuning, pred, stock, lookahead, trend, opt, outlier, None, train_len, **kwargs)
+        super().__init__(live, model_name, tuning, pred, stock, lookahead, trend, opt, outlier, None, train_len, **kwargs)
         self.data = None
         self.live = live
         self.model_name = model_name
-        self.end = end
         self.categorical = []
         self.tuning = tuning
         self.plot_loss = plot_loss

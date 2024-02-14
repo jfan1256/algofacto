@@ -15,7 +15,6 @@ class ModelTrain:
     def __init__(self,
                  live: bool = None,
                  model_name: str = None,
-                 end: str = None,
                  tuning: [str, int] = None,
                  pred: str = 'price',
                  stock: str = None,
@@ -30,7 +29,6 @@ class ModelTrain:
         '''
         live (bool): Get historical data or live data
         model_name (str): Model name (lightgbm, randomforest, or catboost)
-        end (str: YYYY-MM-DD): Final date for model training
         tuning (str): Type of parameter to use (i.e., default, optuna, etc.)
         pred (str): Predict for price returns or price movement
         stock (str): Name of index for stocks ('permno' or 'ticker')
@@ -47,7 +45,6 @@ class ModelTrain:
         self.data = None
         self.live = live
         self.model_name = model_name
-        self.end = end
         self.categorical = []
         self.tuning = tuning
         self.pred = pred

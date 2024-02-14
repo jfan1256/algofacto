@@ -61,35 +61,35 @@ def build():
     strat_mrev_etf = StratMrevETF(allocate=strat_crit['mrev_etf']['allocate'], current_date=current_date, start_date=strat_crit['mrev_etf']['start_backtest'], threshold=strat_crit['mrev_etf']['threshold'], window_epsil=168, sbo=0.85, sso=0.85, sbc=0.25, ssc=0.25)
     strat_mrev_mkt = StratMrevMkt(allocate=strat_crit['mrev_mkt']['allocate'], current_date=current_date, start_date=strat_crit['mrev_mkt']['start_backtest'], threshold=strat_crit['mrev_mkt']['threshold'], window_epsil=168, sbo=0.85, sso=0.85, sbc=0.25, ssc=0.25)
 
-    # Create Live Create
-    live_retrieve = LiveCreate(current_date=current_date, threshold=data_crit['threshold'], set_length=data_crit['age'], update_crsp_price=data_crit['annual_update'], start_data=data_crit['start_date'], start_factor=data_crit['start_date'])
+    # # Create Live Create
+    # live_retrieve = LiveCreate(current_date=current_date, threshold=data_crit['threshold'], set_length=data_crit['age'], update_crsp_price=data_crit['annual_update'], start_data=data_crit['start_date'], start_factor=data_crit['start_date'])
+    #
+    # # Retrieve live data
+    # live_retrieve.exec_data()
+    # # Create factor data
+    # live_retrieve.exec_factor()
+    # # Get adj factor data
+    # live_retrieve.exec_adj_factor()
 
-    # Retrieve live data
-    live_retrieve.exec_data()
-    # Create factor data
-    live_retrieve.exec_factor()
-    # Get adj factor data
-    live_retrieve.exec_adj_factor()
-
-    # Execute model training and predicting for StratMLTrend
-    start_ml_trend.exec_backtest()
-    start_ml_trend.exec_live()
+    # # Execute model training and predicting for StratMLTrend
+    # start_ml_trend.exec_backtest()
+    # start_ml_trend.exec_live()
     # Execute model training and predicting for StratMLRet
     strat_ml_ret.exec_backtest()
-    strat_ml_ret.exec_live()
-
-    # Backtest StratPortIV
-    strat_port_iv.exec_backtest()
-    # Backtest StratPortID
-    strat_port_id.exec_backtest()
-    # Backtest StratPortIVM
-    strat_port_ivm.exec_backtest()
-    # Backtest StratTrendMLS
-    strat_trend_mls.exec_backtest()
-    # Backtest StratMrevETF
-    strat_mrev_etf.exec_backtest()
-    # Backtest StratMrevMkt
-    strat_mrev_mkt.exec_backtest()
+    # strat_ml_ret.exec_live()
+    #
+    # # Backtest StratPortIV
+    # strat_port_iv.exec_backtest()
+    # # Backtest StratPortID
+    # strat_port_id.exec_backtest()
+    # # Backtest StratPortIVM
+    # strat_port_ivm.exec_backtest()
+    # # Backtest StratTrendMLS
+    # strat_trend_mls.exec_backtest()
+    # # Backtest StratMrevETF
+    # strat_mrev_etf.exec_backtest()
+    # # Backtest StratMrevMkt
+    # strat_mrev_mkt.exec_backtest()
 
     # Log Time
     print("-"*180)
@@ -224,6 +224,7 @@ def monitor():
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------TIME TO MAKE MONEY--------------------------------------------------------------------------------
+build()
 # Build
 schedule.every().monday.at("00:01").do(build)
 schedule.every().tuesday.at("00:01").do(build)
