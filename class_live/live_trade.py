@@ -63,10 +63,23 @@ class LiveTrade:
         ml_trend_re_data = pd.read_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli')
         ml_trend_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli')
 
-        # Merge data by 'date', 'ticker', 'type'
+        # Merge data by 'date', 'ticker', 'type' to calculate total weight per type per stock
         stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_id, port_ivm, trend_mls, mrev_etf, mrev_mkt], axis=0)
         stock_data = stock_data.groupby(level=['date', 'ticker', 'type']).sum()
         stock_data = stock_data.loc[stock_data.index.get_level_values('date') == self.current_date]
+
+        # Convert 'type' into positive and negative weights (long and short)
+        stock_data['signed_weight'] = np.where(stock_data.index.get_level_values('type') == 'long', stock_data['weight'], -stock_data['weight'])
+        # Sum signed weights by 'date' and 'ticker'
+        net_weights = stock_data.groupby(['date', 'ticker'])['signed_weight'].sum()
+        # Determine the 'type' based on the sign of the net weight
+        net_weights = net_weights.reset_index()
+        net_weights['type'] = np.where(net_weights['signed_weight'] > 0, 'long', 'short')
+        # Assign absolute values to the new weight column
+        net_weights['weight'] = net_weights['signed_weight'].abs()
+        del net_weights['signed_weight']
+        # Create final stock_data dataframe with net weights across tickers (ensures that no stock enters both a long and short position)
+        stock_data = net_weights.set_index(['date', 'ticker', 'type'])
 
         # Merge price data
         permno_data = permno_data.reset_index().set_index(['ticker', 'date'])
