@@ -167,7 +167,34 @@ class LiveMonitor:
 
         # Merge all data
         strat_data = pd.concat([strat_ml_ret, strat_ml_trend, strat_mrev_etf, strat_mrev_mkt, strat_port_iv, strat_port_id, strat_port_ivm, strat_trend_mls], axis=0)
-        strat_data = strat_data.sort_index(level=['date'])
+
+        # Extract ticker and price (get a unique price for each unique {date, ticker} index pair)
+        strat_price = strat_data[['Close']].copy(deep=True)
+        strat_price = strat_price.loc[~strat_price.index.duplicated(keep='last')]
+
+        # Merge data by 'date', 'ticker', 'type' to calculate total weight per type per stock
+        strat_data = strat_data.reset_index().set_index(['date', 'ticker', 'type'])
+        strat_data = strat_data[['weight']]
+        strat_data = strat_data.groupby(level=['date', 'ticker', 'type']).sum()
+
+        # Convert 'type' into positive and negative weights (long and short)
+        strat_data['signed_weight'] = np.where(strat_data.index.get_level_values('type') == 'long', strat_data['weight'], -strat_data['weight'])
+        # Sum signed weights by 'date' and 'ticker'
+        net_weights = strat_data.groupby(['date', 'ticker'])['signed_weight'].sum()
+        # Determine the 'type' based on the sign of the net weight
+        net_weights = net_weights.reset_index()
+        net_weights['type'] = np.where(net_weights['signed_weight'] > 0, 'long', 'short')
+        # Assign absolute values to the new weight column
+        net_weights['weight'] = net_weights['signed_weight'].abs()
+        del net_weights['signed_weight']
+        # Create final strat_data dataframe with net weights across tickers (ensures that no stock enters both a long and short position)
+        strat_data = net_weights.set_index(['date', 'ticker', 'type'])
+
+        # Reset strat_data index to be ('date', 'ticker')
+        strat_data = strat_data.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
+
+        # Add price back to strat_data
+        strat_data = strat_data.merge(strat_price, left_index=True, right_index=True, how='left')
 
         # Export Data
         strat_data.to_parquet(self.output_path / 'data_strat.parquet.brotli', compression='brotli')
