@@ -46,9 +46,9 @@ class LiveClose:
         port_iv = pd.read_parquet(get_live() / 'data_port_iv_store.parquet.brotli')
         port_id = pd.read_parquet(get_live() / 'data_port_id_store.parquet.brotli')
         port_ivm = pd.read_parquet(get_live() / 'data_port_ivm_store.parquet.brotli')
-        trend_mls = pd.read_parquet(get_live() / 'data_port_trend_mls_store.parquet.brotli')
-        mrev_etf = pd.read_parquet(get_live() / 'data_port_mrev_etf_store.parquet.brotli')
-        mrev_mkt = pd.read_parquet(get_live() / 'data_port_mrev_etf_store.parquet.brotli')
+        trend_mls = pd.read_parquet(get_live() / 'data_trend_mls_store.parquet.brotli')
+        mrev_etf = pd.read_parquet(get_live() / 'data_mrev_etf_store.parquet.brotli')
+        mrev_mkt = pd.read_parquet(get_live() / 'data_mrev_etf_store.parquet.brotli')
 
         # Merge data by 'date', 'ticker', 'type'
         stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_id, port_ivm, trend_mls, mrev_etf, mrev_mkt], axis=0)
@@ -57,7 +57,7 @@ class LiveClose:
         # Get yesterday's date stocks
         all_dates = stock_data.index.get_level_values('date').unique()
         all_dates = sorted(all_dates)
-        yesterday_date = all_dates[-2]
+        yesterday_date = all_dates[-1]
         stock_data = stock_data.loc[stock_data.index.get_level_values('date') == yesterday_date]
 
         # Params (Note: IBKR has an Order Limit of 50 per second)
@@ -105,4 +105,7 @@ class LiveClose:
         # Display Order Counts
         print("----------------------------------------------------------------------ORDER METRIC------------------------------------------------------------------------------------------")
         print(f"Total stocks to close: {len(stock_data)}")
+        print(f"Skipped Orders: {len(live_order.skip_close)}")
+        print(f"    Cause: no position, which means there was an error in execution the prior day (most likely because IBKR could not find security to execute the trade)")
+        print(f"    Symbols: {', '.join(live_order.skip_close)}")
         live_callback.display_metric()

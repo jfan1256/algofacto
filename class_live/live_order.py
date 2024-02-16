@@ -5,6 +5,7 @@ class LiveOrder:
                  ibkr_server):
 
         self.ibkr_server = ibkr_server
+        self.skip_close = []
 
     # Execute MOC order
     @staticmethod
@@ -75,11 +76,17 @@ class LiveOrder:
 
         # Placing MOC order
         if instant == False:
-            moc_order = self._create_moc_order(action, abs(position.position))
-            print(f"Close: Placing MOC order to {action}: {abs(position.position)} of {symbol}")
-            self.ibkr_server.placeOrder(stock, moc_order)
-            print(f"Order Number: {order_num}")
-            print("-" * 60)
+            # Check if there is a position
+            if position is not None and position.position is not None:
+                moc_order = self._create_moc_order(action, abs(position.position))
+                print(f"Close: Placing MOC order to {action}: {abs(position.position)} of {symbol}")
+                self.ibkr_server.placeOrder(stock, moc_order)
+                print(f"Order Number: {order_num}")
+                print("-" * 60)
+            else:
+                self.skip_close.append(symbol)
+                print(f"Position object is None, cannot place MOC order for {symbol}")
+                print("-" * 60)
         else:
             # Placing Market order for immediate execution
             market_order = self._create_market_order(action, abs(position.position))

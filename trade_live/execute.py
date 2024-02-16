@@ -134,44 +134,44 @@ def trade():
     live_close = LiveClose(ibkr_server=ibkr_server, current_date=current_date, capital=ibkr_crit['capital'])
     live_trade = LiveTrade(ibkr_server=ibkr_server, current_date=current_date, capital=ibkr_crit['capital'], settle_period=ibkr_crit['settle_period'])
 
-    # Create Strategies
-    strat_port_iv = StratPortIV(allocate=strat_crit['port_iv']['allocate'], current_date=current_date, start_date=strat_crit['port_iv']['start_backtest'], threshold=strat_crit['port_iv']['threshold'], num_stocks=strat_crit['port_iv']['per_side'][0], window_port=5)
-    strat_port_id = StratPortID(allocate=strat_crit['port_id']['allocate'], current_date=current_date, start_date=strat_crit['port_id']['start_backtest'], threshold=strat_crit['port_id']['threshold'], num_stocks=strat_crit['port_id']['per_side'][0], window_port=5)
-    strat_port_ivm = StratPortIVM(allocate=strat_crit['port_ivm']['allocate'], current_date=current_date, start_date=strat_crit['port_ivm']['start_backtest'], threshold=strat_crit['port_ivm']['threshold'], num_stocks=strat_crit['port_ivm']['per_side'][0], window_port=5)
-    strat_trend_mls = StratTrendMLS(allocate=strat_crit['trend_mls']['allocate'], current_date=current_date, start_date=strat_crit['trend_mls']['start_backtest'], threshold=strat_crit['trend_mls']['threshold'], num_stocks=strat_crit['trend_mls']['per_side'][0], window_hedge=60, window_port=252)
-    strat_mrev_etf = StratMrevETF(allocate=strat_crit['mrev_etf']['allocate'], current_date=current_date, start_date=strat_crit['mrev_etf']['start_backtest'], threshold=strat_crit['mrev_etf']['threshold'], window_epsil=168, sbo=0.85, sso=0.85, sbc=0.25, ssc=0.25)
-    strat_mrev_mkt = StratMrevMkt(allocate=strat_crit['mrev_mkt']['allocate'], current_date=current_date, start_date=strat_crit['mrev_mkt']['start_backtest'], threshold=strat_crit['mrev_mkt']['threshold'], window_epsil=168, sbo=0.85, sso=0.85, sbc=0.25, ssc=0.25)
-
-    # Retrieve live close prices
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(live_price.exec_live_price())
-
-    # Parallel Strategy Execution
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        # Load Strategies
-        exec_strategies = [
-            executor.submit(strat_port_iv.exec_live),
-            executor.submit(strat_port_id.exec_live),
-            executor.submit(strat_port_ivm.exec_live),
-            executor.submit(strat_trend_mls.exec_live),
-            executor.submit(strat_mrev_etf.exec_live),
-            executor.submit(strat_mrev_mkt.exec_live)
-        ]
-        # Wait for all strategies to execute
-        for future in concurrent.futures.as_completed(exec_strategies):
-            future.result()
+    # # Create Strategies
+    # strat_port_iv = StratPortIV(allocate=strat_crit['port_iv']['allocate'], current_date=current_date, start_date=strat_crit['port_iv']['start_backtest'], threshold=strat_crit['port_iv']['threshold'], num_stocks=strat_crit['port_iv']['per_side'][0], window_port=5)
+    # strat_port_id = StratPortID(allocate=strat_crit['port_id']['allocate'], current_date=current_date, start_date=strat_crit['port_id']['start_backtest'], threshold=strat_crit['port_id']['threshold'], num_stocks=strat_crit['port_id']['per_side'][0], window_port=5)
+    # strat_port_ivm = StratPortIVM(allocate=strat_crit['port_ivm']['allocate'], current_date=current_date, start_date=strat_crit['port_ivm']['start_backtest'], threshold=strat_crit['port_ivm']['threshold'], num_stocks=strat_crit['port_ivm']['per_side'][0], window_port=5)
+    # strat_trend_mls = StratTrendMLS(allocate=strat_crit['trend_mls']['allocate'], current_date=current_date, start_date=strat_crit['trend_mls']['start_backtest'], threshold=strat_crit['trend_mls']['threshold'], num_stocks=strat_crit['trend_mls']['per_side'][0], window_hedge=60, window_port=252)
+    # strat_mrev_etf = StratMrevETF(allocate=strat_crit['mrev_etf']['allocate'], current_date=current_date, start_date=strat_crit['mrev_etf']['start_backtest'], threshold=strat_crit['mrev_etf']['threshold'], window_epsil=168, sbo=0.85, sso=0.85, sbc=0.25, ssc=0.25)
+    # strat_mrev_mkt = StratMrevMkt(allocate=strat_crit['mrev_mkt']['allocate'], current_date=current_date, start_date=strat_crit['mrev_mkt']['start_backtest'], threshold=strat_crit['mrev_mkt']['threshold'], window_epsil=168, sbo=0.85, sso=0.85, sbc=0.25, ssc=0.25)
+    #
+    # # Retrieve live close prices
+    # loop = asyncio.get_event_loop()
+    # loop.run_until_complete(live_price.exec_live_price())
+    #
+    # # Parallel Strategy Execution
+    # with concurrent.futures.ThreadPoolExecutor() as executor:
+    #     # Load Strategies
+    #     exec_strategies = [
+    #         executor.submit(strat_port_iv.exec_live),
+    #         executor.submit(strat_port_id.exec_live),
+    #         executor.submit(strat_port_ivm.exec_live),
+    #         executor.submit(strat_trend_mls.exec_live),
+    #         executor.submit(strat_mrev_etf.exec_live),
+    #         executor.submit(strat_mrev_mkt.exec_live)
+    #     ]
+    #     # Wait for all strategies to execute
+    #     for future in concurrent.futures.as_completed(exec_strategies):
+    #         future.result()
 
     # Close trades from previous day
     if ibkr_crit['first_day'] == "False":
         loop = asyncio.get_event_loop()
         loop.run_until_complete(live_close.exec_close())
 
-    # Execute new trades for today
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(live_trade.exec_trade())
-
-    # Store live price and live stock data
-    live_price.exec_live_store()
+    # # Execute new trades for today
+    # loop = asyncio.get_event_loop()
+    # loop.run_until_complete(live_trade.exec_trade())
+    #
+    # # Store live price and live stock data
+    # live_price.exec_live_store()
 
     # Log Time
     print("-" * 180)
@@ -226,6 +226,7 @@ def monitor():
     # Monitor All Strategies
     mont_all.exec_monitor_all()
 
+trade()
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------TIME TO MAKE MONEY--------------------------------------------------------------------------------
 # Build
