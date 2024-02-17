@@ -138,7 +138,7 @@ class LiveMonitor:
         # Calculate int shares
         strat_data['share'] = (strat_data['monetary_value'] / strat_data['Close']).apply(np.floor)
         # Replace any 0 values with 1
-        strat_data['shares'] = np.where(strat_data['shares'] == 0, 1, strat_data['shares'])
+        strat_data['share'] = np.where(strat_data['share'] == 0, 1, strat_data['share'])
         del strat_data['monetary_value']
 
         # Calculate actual capital deployed (after int shares shares)
