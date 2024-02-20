@@ -1,5 +1,5 @@
 {
   "capital": 250000,
-  "first_day": "False",
+  "trade": true,
   "settle_period": 1
 }

@@ -142,36 +142,37 @@ def trade():
     strat_mrev_etf = StratMrevETF(allocate=strat_crit['mrev_etf']['allocate'], current_date=current_date, start_date=strat_crit['mrev_etf']['start_backtest'], threshold=strat_crit['mrev_etf']['threshold'], window_epsil=168, sbo=0.85, sso=0.85, sbc=0.25, ssc=0.25)
     strat_mrev_mkt = StratMrevMkt(allocate=strat_crit['mrev_mkt']['allocate'], current_date=current_date, start_date=strat_crit['mrev_mkt']['start_backtest'], threshold=strat_crit['mrev_mkt']['threshold'], window_epsil=168, sbo=0.85, sso=0.85, sbc=0.25, ssc=0.25)
 
-    # Retrieve live close prices
+    # Close trades from previous day (will skip if today is start of trading period)
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(live_price.exec_live_price())
+    loop.run_until_complete(live_close.exec_close())
 
-    # Parallel Strategy Execution
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        # Load Strategies
-        exec_strategies = [
-            executor.submit(strat_port_iv.exec_live),
-            executor.submit(strat_port_id.exec_live),
-            executor.submit(strat_port_ivm.exec_live),
-            executor.submit(strat_trend_mls.exec_live),
-            executor.submit(strat_mrev_etf.exec_live),
-            executor.submit(strat_mrev_mkt.exec_live)
-        ]
-        # Wait for all strategies to execute
-        for future in concurrent.futures.as_completed(exec_strategies):
-            future.result()
-
-    # Close trades from previous day
-    if ibkr_crit['first_day'] == "False":
+    # Execute strategy for today if specified
+    if ibkr_crit["trade"]:
+        # Retrieve live close prices
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(live_close.exec_close())
+        loop.run_until_complete(live_price.exec_live_price())
 
-    # Execute new trades for today
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(live_trade.exec_trade())
+        # Parallel Strategy Execution
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            # Load Strategies
+            exec_strategies = [
+                executor.submit(strat_port_iv.exec_live),
+                executor.submit(strat_port_id.exec_live),
+                executor.submit(strat_port_ivm.exec_live),
+                executor.submit(strat_trend_mls.exec_live),
+                executor.submit(strat_mrev_etf.exec_live),
+                executor.submit(strat_mrev_mkt.exec_live)
+            ]
+            # Wait for all strategies to execute
+            for future in concurrent.futures.as_completed(exec_strategies):
+                future.result()
 
-    # Store live price and live stock data
-    live_price.exec_live_store()
+        # Execute new trades
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(live_trade.exec_trade())
+
+        # Store live price and live stock data
+        live_price.exec_live_store()
 
     # Log Time
     print("-" * 180)
@@ -188,7 +189,6 @@ def monitor():
     '''
     Note: Specify monitor criteria in mont_crit.json:
                - rolling_window (list[int]): List of rolling windows for Dynamic Alpha Test (rolling window)
-               - full_sample (str: "True" or "False"): Full Sample Alpha Test or not
 
           monitor() should be executed at 4:00 PM EST Weekly on Friday
     '''

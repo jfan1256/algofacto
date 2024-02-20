@@ -112,7 +112,7 @@ class LiveCreate:
         live_data = LiveData(live=live, start_date=self.start_data, current_date=self.current_date)
 
         # Get Data
-        if self.update_crsp_price == "True":
+        if self.update_crsp_price:
             live_data.create_crsp_price(self.threshold, self.set_length)
         live_data.create_link_table()
         live_data.create_compustat_quarterly()
