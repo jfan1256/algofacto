@@ -185,7 +185,11 @@ def trade():
     # Disconnect
     ibkr_server.disconnect()
     loop.close()
-    sys.exit(0)
+
+    # Exit script if not Friday
+    current_day = datetime.now().weekday()
+    if current_day != 4:
+        sys.exit(0)
 
 def monitor():
     '''
@@ -227,6 +231,9 @@ def monitor():
 
     # Monitor All Strategies
     mont_all.exec_monitor_all()
+
+    # Disconnect
+    sys.exit(0)
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------TIME TO MAKE MONEY--------------------------------------------------------------------------------
