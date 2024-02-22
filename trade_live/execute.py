@@ -1,3 +1,4 @@
+import sys
 import asyncio
 import concurrent.futures
 import schedule
@@ -184,6 +185,7 @@ def trade():
     # Disconnect
     ibkr_server.disconnect()
     loop.close()
+    sys.exit(0)
 
 def monitor():
     '''
