@@ -339,7 +339,7 @@ class LiveMonitor:
                     content = f'<div class="content-container">{str(left_content)}{str(right_content)}</div>'
 
                     combined_report_content += f'<div class="report-section">'
-                    combined_report_content += f'<div class="report-title">Report: {subdir} - qs_report.html</div>\n'
+                    combined_report_content += f'<div class="report-title">{"Strategy" + subdir.replace("strat_", " ").replace("_", " ").title()}</div>\n'
                     combined_report_content += content
                     combined_report_content += '</div>\n'
 
@@ -354,7 +354,7 @@ class LiveMonitor:
                     content = f'<div class="content-container">{str(left_content)}{str(right_content)}</div>'
 
                     combined_share_report_content += f'<div class="report-section">'
-                    combined_share_report_content += f'<div class="report-title">Report: {subdir} - qs_share_report.html</div>\n'
+                    combined_share_report_content += f'<div class="report-title">{"Strategy" + subdir.replace("strat_", " ").replace("_", " ").title()}</div>\n'
                     combined_share_report_content += content
                     combined_share_report_content += '</div>\n'
 
