@@ -217,7 +217,7 @@ def monitor():
     mont_trend_mls = LiveMonitor(capital=ibkr_crit['capital'], strat_name='StratTrendMLS', strat_file='data_trend_mls_store.parquet.brotli', allocate=strat_crit['trend_mls']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_trend_mls')
     mont_mrev_etf = LiveMonitor(capital=ibkr_crit['capital'], strat_name='StratMrevETF', strat_file='data_mrev_etf_store.parquet.brotli', allocate=strat_crit['mrev_etf']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_etf')
     mont_mrev_mkt = LiveMonitor(capital=ibkr_crit['capital'], strat_name='StratMrevMkt', strat_file='data_mrev_mkt_store.parquet.brotli', allocate=strat_crit['mrev_mkt']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_mkt')
-    mont_all = LiveMonitor(output_path=get_live_monitor() / 'strat_all')
+    mont_all = LiveMonitor(alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_all')
 
     # Monitor Strategies
     mont_ml_ret.exec_monitor_strat()
@@ -237,6 +237,7 @@ def monitor():
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------TIME TO MAKE MONEY--------------------------------------------------------------------------------
+monitor()
 # Build
 schedule.every().monday.at("00:01").do(build)
 schedule.every().tuesday.at("00:01").do(build)

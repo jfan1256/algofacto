@@ -1,6 +1,9 @@
-from core.operation import *
-
+import os
 import quantstats as qs
+
+from bs4 import BeautifulSoup
+
+from core.operation import *
 
 class LiveMonitor:
     def __init__(self,
@@ -29,16 +32,13 @@ class LiveMonitor:
 
     # Execute alpha report
     @staticmethod
-    def _rolling_full_alpha(strat_ret, windows, name, path):
+    def _rolling_full_alpha(strat_ret, spy, windows, name, path):
         # Read in risk-free rate
         risk_free = pd.read_parquet(get_parquet(True) / 'data_rf.parquet.brotli')
         strat_ret.columns = ['strat_ret']
         strat_ret = strat_ret.merge(risk_free, left_index=True, right_index=True, how='left')
+        strat_ret['RF'] = strat_ret['RF'].ffill()
         strat_ret['strat_ret'] -= strat_ret['RF']
-
-        # Read in SPY data and adjust it with Risk-free rate
-        spy = get_spy(start_date=strat_ret.index.min().strftime('%Y-%m-%d'), end_date=strat_ret.index.max().strftime('%Y-%m-%d'))
-        spy.columns = ['spy_ret']
         strat_ret = strat_ret.merge(spy, left_index=True, right_index=True, how='left')
         strat_ret['spy_ret'] -= strat_ret['RF']
 
@@ -57,7 +57,7 @@ class LiveMonitor:
             strat_ret[f'p_value_alpha_{window}'] = rolling_results.pvalues['const']
 
         # Create plots
-        total_rows = 3 * (len(windows) + 1)  # Extra rows for full OLS results
+        total_rows = 3 * (len(windows) + 1)
         fig = make_subplots(rows=total_rows, cols=1,
                             subplot_titles=[f"{metric} (Window: {window})" for window in windows for metric in ['Alpha', 'Beta', 'P-Value of Alpha']] + ['Full Alpha', 'Full Beta', 'Full P-Value of Alpha'])
 
@@ -130,6 +130,8 @@ class LiveMonitor:
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------PREPARE DATA---------------------------------------------------------------------------------------
         # Merge to dataframes
+        strat_price.index = strat_price.index.map(lambda x: (pd.to_datetime(x[0]), x[1]))
+        strat_weight.index = strat_weight.index.map(lambda x: (pd.to_datetime(x[0]), x[1]))
         strat_data = pd.merge(strat_price, strat_weight, left_index=True, right_index=True, how='left')
 
         # Get monetary value per stock
@@ -156,8 +158,8 @@ class LiveMonitor:
         strat_data['weight'] = strat_data['weight'] / self.allocate
 
         # Create returns and shift it by -1 for alignment of weights
-        strat_data = create_return(strat_data, [1])
-        strat_data['RET_01'] = strat_data.groupby('ticker')['RET_01'].shift(-1).reset_index(level=0, drop=True)
+        strat_data['RET_01'] = strat_data.groupby('ticker').Close.pct_change(1)
+        strat_data['RET_01'] = strat_data.groupby('ticker')['RET_01'].shift(-1)
 
         # Change short weights to negative
         strat_data.loc[strat_data['type'] == 'short', 'weight_share'] = strat_data.loc[strat_data['type'] == 'short', 'weight_share'] * -1
@@ -168,14 +170,22 @@ class LiveMonitor:
         daily_strat_ret = strat_data.groupby('date').apply(lambda x: (x['RET_01'] * x['weight']).sum())
 
         # Export qs report
-        qs.reports.html(daily_strat_share_ret, 'SPY', output=self.output_path / 'qs_share_report.html')
-        qs.reports.html(daily_strat_ret, 'SPY', output=self.output_path / 'qs_report.html')
+        start_date = (daily_strat_ret.index.min() - pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+        end_date = (daily_strat_ret.index.max() + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+        spy = get_spy(start_date=start_date, end_date=end_date)['spyRet']
+        day_zero = daily_strat_share_ret.index[0] - pd.Timedelta(days=1)
+        daily_strat_share_ret = pd.concat([pd.Series([1e-4], index=[day_zero]), daily_strat_share_ret])
+        daily_strat_ret = pd.concat([pd.Series([1e-4], index=[day_zero]), daily_strat_ret])
+        spy = pd.concat([pd.Series([1e-4], index=[day_zero]), spy])
+        spy = spy.to_frame('spy_ret')
+        qs.reports.html(daily_strat_share_ret, spy, output=self.output_path / 'qs_share_report.html')
+        qs.reports.html(daily_strat_ret, spy, output=self.output_path / 'qs_report.html')
 
         # Export CAPM statistical test
         daily_strat_share_ret_df = daily_strat_share_ret.to_frame()
         daily_strat_df = daily_strat_ret.to_frame()
-        self._rolling_full_alpha(strat_ret=daily_strat_share_ret_df, windows=self.alpha_windows, name='alpha_share_report', path=self.output_path)
-        self._rolling_full_alpha(strat_ret=daily_strat_df, windows=self.alpha_windows, name='alpha_report', path=self.output_path)
+        self._rolling_full_alpha(strat_ret=daily_strat_share_ret_df, spy=spy, windows=self.alpha_windows, name='alpha_share_report', path=self.output_path)
+        self._rolling_full_alpha(strat_ret=daily_strat_df, spy=spy, windows=self.alpha_windows, name='alpha_report', path=self.output_path)
 
     # Monitor Total Portfolio (make sure to run this after you have monitored all strategies first)
     def exec_monitor_all(self):
@@ -239,30 +249,123 @@ class LiveMonitor:
         strat_data.to_parquet(self.output_path / 'data_strat.parquet.brotli', compression='brotli')
 
         # Create returns and shift it by -1 for alignment of weights
-        strat_share_data = create_return(strat_share_data, [1])
-        strat_share_data['RET_01'] = strat_share_data.groupby('ticker')['RET_01'].shift(-1).reset_index(level=0, drop=True)
-        strat_data = create_return(strat_data, [1])
-        strat_data['RET_01'] = strat_data.groupby('ticker')['RET_01'].shift(-1).reset_index(level=0, drop=True)
+        strat_share_data['RET_01'] = strat_share_data.groupby('ticker').Close.pct_change(1)
+        strat_share_data['RET_01'] = strat_share_data.groupby('ticker')['RET_01'].shift(-1)
+        strat_data['RET_01'] = strat_data.groupby('ticker').Close.pct_change(1)
+        strat_data['RET_01'] = strat_data.groupby('ticker')['RET_01'].shift(-1)
 
         # Change short weights to negative
         strat_share_data.loc[strat_share_data['type'] == 'short', 'weight_share'] = strat_share_data.loc[strat_share_data['type'] == 'short', 'weight_share'] * -1
         strat_data.loc[strat_data['type'] == 'short', 'weight'] = strat_data.loc[strat_data['type'] == 'short', 'weight'] * -1
 
         # Get daily strategy returns
-        daily_strat_ret_share = strat_share_data.groupby('date').apply(lambda x: (x['RET_01'] * x['weight_share']).sum())
+        daily_strat_share_ret = strat_share_data.groupby('date').apply(lambda x: (x['RET_01'] * x['weight_share']).sum())
         daily_strat_ret = strat_data.groupby('date').apply(lambda x: (x['RET_01'] * x['weight']).sum())
 
         # Export qs report
-        qs.reports.html(daily_strat_ret_share, 'SPY', output=self.output_path / 'qs_share_report.html')
-        qs.reports.html(daily_strat_ret, 'SPY', output=self.output_path / 'qs_report.html')
+        start_date = (daily_strat_ret.index.min() - pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+        end_date = (daily_strat_ret.index.max() + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+        spy = get_spy(start_date=start_date, end_date=end_date)['spyRet']
+        day_zero = daily_strat_share_ret.index[0] - pd.Timedelta(days=1)
+        daily_strat_share_ret = pd.concat([pd.Series([1e-4], index=[day_zero]), daily_strat_share_ret])
+        daily_strat_ret = pd.concat([pd.Series([1e-4], index=[day_zero]), daily_strat_ret])
+        spy = pd.concat([pd.Series([1e-4], index=[day_zero]), spy])
+        spy = spy.to_frame('spy_ret')
+        qs.reports.html(daily_strat_share_ret, spy, output=self.output_path / 'qs_share_report.html')
+        qs.reports.html(daily_strat_ret, spy, output=self.output_path / 'qs_report.html')
 
         # Export CAPM statistical test
-        daily_strat_share_df = daily_strat_ret_share.to_frame()
+        daily_strat_share_ret_df = daily_strat_share_ret.to_frame()
         daily_strat_df = daily_strat_ret.to_frame()
-        self._rolling_full_alpha(strat_ret=daily_strat_share_df, windows=self.alpha_windows, name='alpha_share_report', path=self.output_path)
-        self._rolling_full_alpha(strat_ret=daily_strat_df, windows=self.alpha_windows, name='alpha_share', path=self.output_path)
+        self._rolling_full_alpha(strat_ret=daily_strat_share_ret_df, spy=spy, windows=self.alpha_windows, name='alpha_share_report', path=self.output_path)
+        self._rolling_full_alpha(strat_ret=daily_strat_df, spy=spy, windows=self.alpha_windows, name='alpha_share', path=self.output_path)
 
+        # Updated CSS for flexbox layout
+        html_header = """
+        <html>
+        <head>
+            <style>
+                .report-section {
+                    border: 3px solid #000;
+                    margin: 50px 50px;
+                }
+                .report-title {
+                    background-color: #d4ebf2;
+                    padding: 10px;
+                    font-size: 20px;
+                    font-weight: bold;
+                    border-bottom: 2px solid #000;
+                }
+                .content-container { 
+                    display: flex;
+                }
+                #left, #right {
+                    margin: 10px;
+                }
+                #left { 
+                    flex: 2;
+                    max-height: 1000px; 
+                    overflow: auto; 
+                }
+                #right { 
+                    flex: 1.5; 
+                    width: 100%;
+                    max-height: 1000px; 
+                    overflow: auto;
+                    display: flex;
+                    flex-direction: column;
+                }
+            </style>
+        </head>
+        <body>
+        """
 
+        subdirectories = ['strat_all', 'strat_ml_ret', 'strat_ml_trend', 'strat_mrev_etf',
+                          'strat_mrev_mkt', 'strat_port_id', 'strat_port_iv', 'strat_port_ivm',
+                          'strat_trend_mls']
 
+        combined_report_content = ""
+        combined_share_report_content = ""
 
+        for subdir in subdirectories:
+            # Handle qs_report.html
+            report_path = os.path.join(get_live_monitor(), subdir, "qs_report.html")
+            if os.path.exists(report_path):
+                with open(report_path, 'r', encoding='utf-8') as file:
+                    soup = BeautifulSoup(file, 'html.parser')
+                    # Wrap the existing content inside a div with class 'content-container'
+                    left_content = soup.find(id='left')
+                    right_content = soup.find(id='right')
+                    content = f'<div class="content-container">{str(left_content)}{str(right_content)}</div>'
 
+                    combined_report_content += f'<div class="report-section">'
+                    combined_report_content += f'<div class="report-title">Report: {subdir} - qs_report.html</div>\n'
+                    combined_report_content += content
+                    combined_report_content += '</div>\n'
+
+            # Handle qs_share_report.html
+            share_report_path = os.path.join(get_live_monitor(), subdir, "qs_share_report.html")
+            if os.path.exists(share_report_path):
+                with open(share_report_path, 'r', encoding='utf-8') as file:
+                    soup = BeautifulSoup(file, 'html.parser')
+                    # Wrap the existing content inside a div with class 'content-container'
+                    left_content = soup.find(id='left')
+                    right_content = soup.find(id='right')
+                    content = f'<div class="content-container">{str(left_content)}{str(right_content)}</div>'
+
+                    combined_share_report_content += f'<div class="report-section">'
+                    combined_share_report_content += f'<div class="report-title">Report: {subdir} - qs_share_report.html</div>\n'
+                    combined_share_report_content += content
+                    combined_share_report_content += '</div>\n'
+
+        combined_report_final = html_header + combined_report_content + "</body></html>"
+        combined_share_report_final = html_header + combined_share_report_content + "</body></html>"
+
+        # Write the combined reports to separate HTML files
+        combined_report_path = os.path.join(self.output_path, 'all_report.html')
+        with open(combined_report_path, 'w', encoding='utf-8') as combined_file:
+            combined_file.write(combined_report_final)
+
+        combined_share_report_path = os.path.join(self.output_path, 'all_share_report.html')
+        with open(combined_share_report_path, 'w', encoding='utf-8') as combined_share_file:
+            combined_share_file.write(combined_share_report_final)
