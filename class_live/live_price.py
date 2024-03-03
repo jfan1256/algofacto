@@ -96,16 +96,16 @@ class LivePrice:
         mrev_mkt_hedge_ticker = ['SPY', 'MDY', 'VEA', 'EEM', 'VNQ', 'DBC']
 
         # Trend MLS Commodity Ticker
-        trend_mls_com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
+        trend_mls_com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP']
 
         # Trend MLS Bond Ticker
-        trend_mls_bond_ticker = ['LQD', 'HYG', 'TLT', 'SHY', 'EMB', 'BNDX', 'VCSH', 'MUB', 'VTEB']
+        trend_mls_bond_ticker = ['LQD', 'HYG', 'TLT', 'BNDX', 'MUB']
 
         # ML Trend Real Estate Ticker
-        ml_trend_re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT', 'REZ']
+        ml_trend_re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT']
 
         # ML Trend Bond Ticker
-        ml_trend_bond_ticker = ['LQD', 'HYG', 'TLT', 'SHY', 'EMB', 'BNDX', 'VCSH', 'MUB', 'VTEB']
+        ml_trend_bond_ticker = ['LQD', 'HYG', 'TLT', 'BNDX', 'MUB']
 
         # Combine all tickers
         all_stocks = permno_ticker + mrev_etf_hedge_ticker + mrev_mkt_hedge_ticker + trend_mls_com_ticker + trend_mls_bond_ticker + ml_trend_re_ticker + ml_trend_bond_ticker
