@@ -456,7 +456,7 @@ def get_data_fmp(ticker_list, start, current_date):
         else:
             print(f"Skipped {ticker} - No data available")
 
-    if frames:  # Only proceed if there are frames to concatenate
+    if frames:
         price = pd.concat(frames)
         price['date'] = pd.to_datetime(price['date'], errors='coerce')
         price = price.set_index(['ticker', 'date'])
@@ -473,6 +473,53 @@ def get_data_fmp(ticker_list, start, current_date):
         return price.sort_index(level=['ticker', 'date'])
     else:
         print("No data available for any ticker.")
+        return None
+
+# Get fundamental data per ticker from start to current_date
+def get_fund_fmp(ticker_list, start, current_date):
+    frames = []
+
+    # Endpoints to fetch data from
+    endpoints = {
+        'cash_flow': "https://financialmodelingprep.com/api/v3/cash-flow-statement/",
+        'balance_sheet': "https://financialmodelingprep.com/api/v3/balance-sheet-statement/",
+        'income_statement': "https://financialmodelingprep.com/api/v3/income-statement/"
+    }
+
+    for ticker in tqdm(ticker_list, desc="Fetching data", unit="ticker"):
+        temp_frames = []
+
+        for key, url_base in endpoints.items():
+            url = f"{url_base}{ticker}?period=quarter&from={start}&to={current_date}&apikey={api_key}"
+            response = requests.get(url)
+            data = response.json()
+
+            # Check if there's data in the response
+            if data:
+                df = pd.DataFrame(data)
+                df['ticker'] = ticker
+                temp_frames.append(df)
+            else:
+                print(f"Skipped {ticker} - No {key} data available")
+
+        # Merge dataframes horizontally for the same ticker if data is available
+        if temp_frames:
+            df_merged = pd.merge(temp_frames[0], temp_frames[1], on=['date', 'symbol'], how='inner').merge(temp_frames[2], on=['date', 'symbol'], how='inner')
+            columns_to_drop = [col for col in df_merged.columns if col.endswith('_y') or col.endswith('_z')]
+            df_merged = df_merged.drop(columns=columns_to_drop)
+            df_merged.columns = [col[:-2] if col.endswith('_x') else col for col in df_merged.columns]
+            df_merged = df_merged.dropna(subset=['symbol'])
+            frames.append(df_merged)
+
+    if frames:
+        # Concatenate all tickers' dataframes vertically
+        financials = pd.concat(frames)
+        financials = financials.drop(columns=['ticker', 'link', 'finalLink', 'reportedCurrency', 'cik', 'fillingDate', 'acceptedDate', 'calendarYear', 'period'], axis=1)
+        financials = financials.rename(columns={'symbol':'ticker'})
+        financials.date = pd.to_datetime(financials.date)
+        return financials.set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+    else:
+        print("No financial data available for any ticker.")
         return None
 
 # Get all stock news per ticker from fmp
@@ -552,7 +599,7 @@ def get_dividend_fmp(ticker_list, start, current_date):
         else:
             print(f"Skipped {ticker} - No data available")
 
-    if frames:  # Only proceed if there are frames to concatenate
+    if frames:
         dividend = pd.concat(frames)
         dividend['date'] = pd.to_datetime(dividend['date'], errors='coerce')
         dividend = dividend.set_index(['ticker', 'date'])
