@@ -49,7 +49,7 @@ class LiveTrade:
         ml_trend = pd.read_parquet(get_live_stock() / 'trade_stock_ml_trend.parquet.brotli')
         port_iv = pd.read_parquet(get_live_stock() / 'trade_stock_port_iv.parquet.brotli')
         port_id = pd.read_parquet(get_live_stock() / 'trade_stock_port_id.parquet.brotli')
-        port_ivm = pd.read_parquet(get_live_stock() / 'trade_stock_port_ivm.parquet.brotli')
+        port_im = pd.read_parquet(get_live_stock() / 'trade_stock_port_im.parquet.brotli')
         trend_mls = pd.read_parquet(get_live_stock() / 'trade_stock_trend_mls.parquet.brotli')
         mrev_etf = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_etf.parquet.brotli')
         mrev_mkt = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_mkt.parquet.brotli')
@@ -64,7 +64,7 @@ class LiveTrade:
         ml_trend_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli')
 
         # Merge data by 'date', 'ticker', 'type' to calculate total weight per type per stock
-        stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_id, port_ivm, trend_mls, mrev_etf, mrev_mkt], axis=0)
+        stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_id, port_im, trend_mls, mrev_etf, mrev_mkt], axis=0)
         stock_data = stock_data.groupby(level=['date', 'ticker', 'type']).sum()
         stock_data = stock_data.loc[stock_data.index.get_level_values('date') == self.current_date]
 

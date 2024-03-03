@@ -46,7 +46,7 @@ class LiveClose:
             ml_trend = pd.read_parquet(get_live() / 'data_ml_trend_store.parquet.brotli')
             port_iv = pd.read_parquet(get_live() / 'data_port_iv_store.parquet.brotli')
             port_id = pd.read_parquet(get_live() / 'data_port_id_store.parquet.brotli')
-            port_ivm = pd.read_parquet(get_live() / 'data_port_ivm_store.parquet.brotli')
+            port_im = pd.read_parquet(get_live() / 'data_port_im_store.parquet.brotli')
             trend_mls = pd.read_parquet(get_live() / 'data_trend_mls_store.parquet.brotli')
             mrev_etf = pd.read_parquet(get_live() / 'data_mrev_etf_store.parquet.brotli')
             mrev_mkt = pd.read_parquet(get_live() / 'data_mrev_etf_store.parquet.brotli')
@@ -55,7 +55,7 @@ class LiveClose:
             return
 
         # Merge data by 'date', 'ticker', 'type'
-        stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_id, port_ivm, trend_mls, mrev_etf, mrev_mkt], axis=0)
+        stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_id, port_im, trend_mls, mrev_etf, mrev_mkt], axis=0)
         stock_data = stock_data.groupby(level=['date', 'ticker', 'type']).sum()
 
         # Get yesterday's date stocks

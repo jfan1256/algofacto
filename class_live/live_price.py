@@ -99,13 +99,13 @@ class LivePrice:
         trend_mls_com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
 
         # Trend MLS Bond Ticker
-        trend_mls_bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF']
+        trend_mls_bond_ticker = ['LQD', 'HYG', 'TLT', 'SHY', 'EMB', 'BNDX', 'VCSH', 'MUB', 'VTEB']
 
         # ML Trend Real Estate Ticker
         ml_trend_re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT', 'REZ']
 
         # ML Trend Bond Ticker
-        ml_trend_bond_ticker = ['HYG', 'JNK', 'LQD', 'EMB', 'SHY', 'TLT', 'SPTL', 'IGSB', 'SPAB']
+        ml_trend_bond_ticker = ['LQD', 'HYG', 'TLT', 'SHY', 'EMB', 'BNDX', 'VCSH', 'MUB', 'VTEB']
 
         # Combine all tickers
         all_stocks = permno_ticker + mrev_etf_hedge_ticker + mrev_mkt_hedge_ticker + trend_mls_com_ticker + trend_mls_bond_ticker + ml_trend_re_ticker + ml_trend_bond_ticker
@@ -227,7 +227,7 @@ class LivePrice:
         ml_trend = pd.read_parquet(get_live_stock() / 'trade_stock_ml_trend.parquet.brotli')
         port_iv = pd.read_parquet(get_live_stock() / 'trade_stock_port_iv.parquet.brotli')
         port_id = pd.read_parquet(get_live_stock() / 'trade_stock_port_id.parquet.brotli')
-        port_ivm = pd.read_parquet(get_live_stock() / 'trade_stock_port_ivm.parquet.brotli')
+        port_im = pd.read_parquet(get_live_stock() / 'trade_stock_port_im.parquet.brotli')
         trend_mls = pd.read_parquet(get_live_stock() / 'trade_stock_trend_mls.parquet.brotli')
         mrev_mkt = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_mkt.parquet.brotli')
         mrev_etf = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_etf.parquet.brotli')
@@ -246,7 +246,7 @@ class LivePrice:
         add_store(data=ml_trend, filename=get_live() / 'data_ml_trend_store.parquet.brotli')
         add_store(data=port_iv, filename=get_live() / 'data_port_iv_store.parquet.brotli')
         add_store(data=port_id, filename=get_live() / 'data_port_id_store.parquet.brotli')
-        add_store(data=port_ivm, filename=get_live() / 'data_port_ivm_store.parquet.brotli')
+        add_store(data=port_im, filename=get_live() / 'data_port_im_store.parquet.brotli')
         add_store(data=trend_mls, filename=get_live() / 'data_trend_mls_store.parquet.brotli')
         add_store(data=mrev_mkt, filename=get_live() / 'data_mrev_mkt_store.parquet.brotli')
         add_store(data=mrev_etf, filename=get_live() / 'data_mrev_etf_store.parquet.brotli')

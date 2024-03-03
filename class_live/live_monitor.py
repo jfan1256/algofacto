@@ -95,7 +95,7 @@ class LiveMonitor:
         # Reset index to just be ('date', 'ticker')
         strat_weight = strat_weight.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
 
-        if self.strat_name in ['StratMLRet', 'StratPortIV', 'StratPortID', 'StratPortIVM']:
+        if self.strat_name in ['StratMLRet', 'StratPortIV', 'StratPortID', 'StratPortIM']:
             strat_price = pd.read_parquet(get_live() / 'data_permno_store.parquet.brotli')
             strat_price = strat_price.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
         elif self.strat_name in ['StratMrevETF']:
@@ -199,11 +199,11 @@ class LiveMonitor:
         strat_mrev_mkt = pd.read_parquet(get_live_monitor() / 'strat_mrev_mkt' / 'data_strat.parquet.brotli')
         strat_port_iv = pd.read_parquet(get_live_monitor() / 'strat_port_iv' / 'data_strat.parquet.brotli')
         strat_port_id = pd.read_parquet(get_live_monitor() / 'strat_port_id' / 'data_strat.parquet.brotli')
-        strat_port_ivm = pd.read_parquet(get_live_monitor() / 'strat_port_ivm' / 'data_strat.parquet.brotli')
+        strat_port_im = pd.read_parquet(get_live_monitor() / 'strat_port_im' / 'data_strat.parquet.brotli')
         strat_trend_mls = pd.read_parquet(get_live_monitor() / 'strat_trend_mls' / 'data_strat.parquet.brotli')
 
         # Merge all data
-        total_strat_data = pd.concat([strat_ml_ret, strat_ml_trend, strat_mrev_etf, strat_mrev_mkt, strat_port_iv, strat_port_id, strat_port_ivm, strat_trend_mls], axis=0)
+        total_strat_data = pd.concat([strat_ml_ret, strat_ml_trend, strat_mrev_etf, strat_mrev_mkt, strat_port_iv, strat_port_id, strat_port_im, strat_trend_mls], axis=0)
 
         # Extract ticker and price (get a unique price for each unique {date, ticker} index pair)
         strat_price = total_strat_data[['Close']].copy(deep=True)
@@ -321,7 +321,7 @@ class LiveMonitor:
         """
 
         subdirectories = ['strat_all', 'strat_ml_ret', 'strat_ml_trend', 'strat_mrev_etf',
-                          'strat_mrev_mkt', 'strat_port_id', 'strat_port_iv', 'strat_port_ivm',
+                          'strat_mrev_mkt', 'strat_port_id', 'strat_port_iv', 'strat_port_im',
                           'strat_trend_mls']
 
         combined_report_content = ""
