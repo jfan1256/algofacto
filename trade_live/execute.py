@@ -1,4 +1,3 @@
-import sys
 import asyncio
 import concurrent.futures
 import schedule
@@ -209,15 +208,15 @@ def monitor():
     ibkr_crit = json.load(open(get_config() / 'ibkr_crit.json'))
     
     # Create Monitors
-    mont_ml_ret = LiveMonitor(capital=ibkr_crit['capital'], strat_name='StratMLRet', strat_file='data_ml_ret_store.parquet.brotli', allocate=strat_crit['ml_ret']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_ret')
-    mont_ml_trend = LiveMonitor(capital=ibkr_crit['capital'], strat_name='StratMLTrend', strat_file='data_ml_trend_store.parquet.brotli', allocate=strat_crit['ml_trend']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_trend')
-    mont_port_iv = LiveMonitor(capital=ibkr_crit['capital'], strat_name='StratPortIV', strat_file='data_port_iv_store.parquet.brotli', allocate=strat_crit['port_iv']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_iv')
-    mont_port_id = LiveMonitor(capital=ibkr_crit['capital'], strat_name='StratPortID', strat_file='data_port_id_store.parquet.brotli', allocate=strat_crit['port_id']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_id')
-    mont_port_im = LiveMonitor(capital=ibkr_crit['capital'], strat_name='StratPortIM', strat_file='data_port_im_store.parquet.brotli', allocate=strat_crit['port_im']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_im')
-    mont_trend_mls = LiveMonitor(capital=ibkr_crit['capital'], strat_name='StratTrendMLS', strat_file='data_trend_mls_store.parquet.brotli', allocate=strat_crit['trend_mls']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_trend_mls')
-    mont_mrev_etf = LiveMonitor(capital=ibkr_crit['capital'], strat_name='StratMrevETF', strat_file='data_mrev_etf_store.parquet.brotli', allocate=strat_crit['mrev_etf']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_etf')
-    mont_mrev_mkt = LiveMonitor(capital=ibkr_crit['capital'], strat_name='StratMrevMkt', strat_file='data_mrev_mkt_store.parquet.brotli', allocate=strat_crit['mrev_mkt']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_mkt')
-    mont_all = LiveMonitor(alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_all')
+    mont_ml_ret = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratMLRet', strat_file='data_ml_ret_store.parquet.brotli', allocate=strat_crit['ml_ret']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_ret')
+    mont_ml_trend = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratMLTrend', strat_file='data_ml_trend_store.parquet.brotli', allocate=strat_crit['ml_trend']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_trend')
+    mont_port_iv = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratPortIV', strat_file='data_port_iv_store.parquet.brotli', allocate=strat_crit['port_iv']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_iv')
+    mont_port_id = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratPortID', strat_file='data_port_id_store.parquet.brotli', allocate=strat_crit['port_id']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_id')
+    mont_port_im = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratPortIM', strat_file='data_port_im_store.parquet.brotli', allocate=strat_crit['port_im']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_im')
+    mont_trend_mls = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratTrendMLS', strat_file='data_trend_mls_store.parquet.brotli', allocate=strat_crit['trend_mls']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_trend_mls')
+    mont_mrev_etf = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratMrevETF', strat_file='data_mrev_etf_store.parquet.brotli', allocate=strat_crit['mrev_etf']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_etf')
+    mont_mrev_mkt = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratMrevMkt', strat_file='data_mrev_mkt_store.parquet.brotli', allocate=strat_crit['mrev_mkt']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_mrev_mkt')
+    mont_all = LiveMonitor(start_date=mont_crit['start_date'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_all')
 
     # Monitor Strategies
     mont_ml_ret.exec_monitor_strat()

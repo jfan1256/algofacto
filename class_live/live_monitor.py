@@ -7,6 +7,7 @@ from core.operation import *
 
 class LiveMonitor:
     def __init__(self,
+                 start_date=None,
                  capital=None,
                  strat_name=None,
                  strat_file=None,
@@ -15,6 +16,7 @@ class LiveMonitor:
                  output_path=None):
 
         '''
+        start_date (YYYY-MM-DD): Start date to monitor portfolio
         capital (int): Total capital for portfolio
         strat_name (str): Name of strategy (use class name)
         strat_csv (Path): CSV path to strategy's stock
@@ -23,6 +25,7 @@ class LiveMonitor:
         output_path (Path): Output path of results
         '''
 
+        self.start_date = start_date
         self.capital = capital
         self.strat_name = strat_name
         self.strat_file = strat_file
@@ -129,6 +132,10 @@ class LiveMonitor:
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------PREPARE DATA---------------------------------------------------------------------------------------
+        # Set start_date
+        strat_price = set_timeframe(data=strat_price, start_date=self.start_date, end_date=strat_price.index.get_level_values('date').max())
+        strat_weight = set_timeframe(data=strat_weight, start_date=self.start_date, end_date=strat_weight.index.get_level_values('date').max())
+
         # Merge to dataframes
         strat_price.index = strat_price.index.map(lambda x: (pd.to_datetime(x[0]), x[1]))
         strat_weight.index = strat_weight.index.map(lambda x: (pd.to_datetime(x[0]), x[1]))
