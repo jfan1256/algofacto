@@ -51,13 +51,11 @@ def reset():
 
         # Remove data in live_monitor
         elif item=='live_monitor':
-            for item in os.listdir(item_path):
-                item_path = os.path.join(item_path, item)
-                if os.path.isdir(item_path) and item.startswith('strat_'):
-                    for file in os.listdir(item_path):
-                        file_path = os.path.join(item_path, file)
-                        if os.path.isfile(file_path) and file.endswith('.parquet.brotli'):
-                            os.remove(file_path)
+            for subdir in os.listdir(item_path):
+                sub_dir_path = os.path.join(item, subdir)
+                for file in os.listdir(sub_dir_path):
+                    monitor_path = os.path.join(sub_dir_path, file)
+                    os.remove(monitor_path)
 
         # Remove data in directories that start with 'strat_'
         elif item.startswith('strat_'):
