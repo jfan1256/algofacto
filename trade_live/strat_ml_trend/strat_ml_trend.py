@@ -491,11 +491,11 @@ class StratMLTrend(Strategy):
         # -----------------------------------------------------------------------------------CREATE HEDGE--------------------------------------------------------------------------------
         print("------------------------------------------------------------------------------CREATE HEDGE-------------------------------------------------------------------------------")
         # Real Estate
-        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_model, num_stocks=15)
-        re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT', 'REZ']
+        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_model, num_stocks=10, growth_weight=[0.60, 0.40], recess_weight=[0.40, 0.60])
+        re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT']
         re = trend_helper._get_ret(re_ticker)
         # Bonds
-        bond_ticker = ['HYG', 'JNK', 'LQD', 'EMB', 'SHY', 'TLT', 'SPTL', 'IGSB', 'SPAB']
+        bond_ticker = ['LQD', 'HYG', 'TLT', 'BNDX', 'MUB']
         bond = trend_helper._get_ret(bond_ticker)
 
         # Create portfolio
@@ -507,7 +507,7 @@ class StratMLTrend(Strategy):
         bond_re_port['weighted_ret'] = bond_re_port['RET_01'] * bond_re_port['norm_inv_vol']
         hedge_ret = bond_re_port.groupby('date')['weighted_ret'].sum()
         hedge_ret = hedge_ret.to_frame()
-        hedge_ret.columns = ['bond_comm_ret']
+        hedge_ret.columns = ['bond_re_ret']
 
         # Date Index
         date_index = hedge_ret.index
@@ -579,11 +579,11 @@ class StratMLTrend(Strategy):
         # Total portfolio allocation weights
         macro_buy_df = macro_buy_df.loc[macro_buy_df.index.get_level_values('date') == macro_buy_df.index.get_level_values('date').unique().max()]
         if macro_buy_df.values[0]:
-            trend_factor = 0.5
-            hedge_factor = 0.5
+            trend_factor = 0.60
+            hedge_factor = 0.40
         else:
-            trend_factor = 0.25
-            hedge_factor = 0.75
+            trend_factor = 0.40
+            hedge_factor = 0.60
 
         # Retrieve stocks to long/short tomorrow (only get 'ticker') and hedge stocks
         latest_bond_re_port = bond_re_port.loc[bond_re_port.index.get_level_values('date') == bond_re_port.index.get_level_values('date').unique().max()]

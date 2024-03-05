@@ -7,6 +7,7 @@ from core.operation import *
 
 class LiveMonitor:
     def __init__(self,
+                 portfolio=None,
                  start_date=None,
                  capital=None,
                  strat_name=None,
@@ -16,6 +17,7 @@ class LiveMonitor:
                  output_path=None):
 
         '''
+        portfolio (list): List of portfolio strategy class names
         start_date (YYYY-MM-DD): Start date to monitor portfolio
         capital (int): Total capital for portfolio
         strat_name (str): Name of strategy (use class name)
@@ -25,6 +27,7 @@ class LiveMonitor:
         output_path (Path): Output path of results
         '''
 
+        self.portfolio = portfolio
         self.start_date = start_date
         self.capital = capital
         self.strat_name = strat_name
@@ -118,9 +121,9 @@ class LiveMonitor:
             strat_price = strat_price.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
             bond_price = pd.read_parquet(get_live() / 'data_trend_mls_bond_store.parquet.brotli')
             bond_price = bond_price.swaplevel()
-            com_price = pd.read_parquet(get_live() / 'data_trend_mls_com_store.parquet.brotli')
-            com_price = com_price.swaplevel()
-            strat_price = pd.concat([strat_price, bond_price, com_price], axis=0).sort_index(level=['date', 'ticker'])
+            re_price = pd.read_parquet(get_live() / 'data_trend_mls_re_store.parquet.brotli')
+            re_price = re_price.swaplevel()
+            strat_price = pd.concat([strat_price, bond_price, re_price], axis=0).sort_index(level=['date', 'ticker'])
         elif self.strat_name in ['StratMLTrend']:
             strat_price = pd.read_parquet(get_live() / 'data_permno_store.parquet.brotli')
             strat_price = strat_price.reset_index().set_index(['date', 'ticker']).sort_index(level=['date', 'ticker'])
@@ -200,17 +203,42 @@ class LiveMonitor:
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------------MONITOR ALL------------------------------------------------------------------------------------------
         # Load in data
-        strat_ml_ret = pd.read_parquet(get_live_monitor() / 'strat_ml_ret' / 'data_strat.parquet.brotli')
-        strat_ml_trend = pd.read_parquet(get_live_monitor() / 'strat_ml_trend' / 'data_strat.parquet.brotli')
-        strat_mrev_etf = pd.read_parquet(get_live_monitor() / 'strat_mrev_etf' / 'data_strat.parquet.brotli')
-        strat_mrev_mkt = pd.read_parquet(get_live_monitor() / 'strat_mrev_mkt' / 'data_strat.parquet.brotli')
-        strat_port_iv = pd.read_parquet(get_live_monitor() / 'strat_port_iv' / 'data_strat.parquet.brotli')
-        strat_port_id = pd.read_parquet(get_live_monitor() / 'strat_port_id' / 'data_strat.parquet.brotli')
-        strat_port_im = pd.read_parquet(get_live_monitor() / 'strat_port_im' / 'data_strat.parquet.brotli')
-        strat_trend_mls = pd.read_parquet(get_live_monitor() / 'strat_trend_mls' / 'data_strat.parquet.brotli')
+        strat_collect = []
+
+        if 'StratMLRet' in self.portfolio:
+            strat_ml_ret = pd.read_parquet(get_live_monitor() / 'strat_ml_ret' / 'data_strat.parquet.brotli')
+            strat_collect = strat_collect + strat_ml_ret
+
+        if 'StratMLTrend' in self.portfolio:
+            strat_ml_trend = pd.read_parquet(get_live_monitor() / 'strat_ml_trend' / 'data_strat.parquet.brotli')
+            strat_collect = strat_collect + strat_ml_trend
+
+        if 'StratMrevETF' in self.portfolio:
+            strat_mrev_etf = pd.read_parquet(get_live_monitor() / 'strat_mrev_etf' / 'data_strat.parquet.brotli')
+            strat_collect = strat_collect + strat_mrev_etf
+
+        if 'StratMrevMkt' in self.portfolio:
+            strat_mrev_mkt = pd.read_parquet(get_live_monitor() / 'strat_mrev_mkt' / 'data_strat.parquet.brotli')
+            strat_collect = strat_collect + strat_mrev_mkt
+
+        if 'StratPortIV' in self.portfolio:
+            strat_port_iv = pd.read_parquet(get_live_monitor() / 'strat_port_iv' / 'data_strat.parquet.brotli')
+            strat_collect = strat_collect + strat_port_iv
+
+        if 'StratPortID' in self.portfolio:
+            strat_port_id = pd.read_parquet(get_live_monitor() / 'strat_port_id' / 'data_strat.parquet.brotli')
+            strat_collect = strat_collect + strat_port_id
+
+        if 'StratPortIM' in self.portfolio:
+            strat_port_im = pd.read_parquet(get_live_monitor() / 'strat_port_im' / 'data_strat.parquet.brotli')
+            strat_collect = strat_collect + strat_port_im
+
+        if 'StratTrendMLS' in self.portfolio:
+            strat_trend_mls = pd.read_parquet(get_live_monitor() / 'strat_trend_mls' / 'data_strat.parquet.brotli')
+            strat_collect = strat_collect + strat_trend_mls
 
         # Merge all data
-        total_strat_data = pd.concat([strat_ml_ret, strat_ml_trend, strat_mrev_etf, strat_mrev_mkt, strat_port_iv, strat_port_id, strat_port_im, strat_trend_mls], axis=0)
+        total_strat_data = pd.concat(strat_collect, axis=0)
 
         # Extract ticker and price (get a unique price for each unique {date, ticker} index pair)
         strat_price = total_strat_data[['Close']].copy(deep=True)

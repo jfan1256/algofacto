@@ -46,7 +46,7 @@ class StratTrendMLS(Strategy):
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
         # Create Trend Helper Class
-        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_date, num_stocks=self.num_stocks)
+        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_date, num_stocks=self.num_stocks, growth_weight=[0.60, 0.40], recess_weight=[0.40, 0.60])
 
         # Params
         live = True
@@ -61,34 +61,34 @@ class StratTrendMLS(Strategy):
         price = price.merge(market, left_index=True, right_index=True, how='left')
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # --------------------------------------------------------------------CREATE BOND+COMMODITY PORT-------------------------------------------------------------------------------
-        print("---------------------------------------------------------------CREATE BOND+COMMODITY PORT-------------------------------------------------------------------------------")
-        # Commodities
-        com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
-        com = trend_helper._get_ret(com_ticker)
-        com.to_parquet(get_strat_trend_mls() / 'data' / 'data_com.parquet.brotli', compression='brotli')
+        # --------------------------------------------------------------------CREATE BOND+REAL ESTATE PORT-----------------------------------------------------------------------------
+        print("---------------------------------------------------------------CREATE BOND+REAL ESTATE PORT-----------------------------------------------------------------------------")
+        # Real Estate
+        re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT']
+        re = trend_helper._get_ret(re_ticker)
+        re.to_parquet(get_strat_trend_mls() / 'data' / 'data_re.parquet.brotli', compression='brotli')
 
         # Bonds
-        bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF']
+        bond_ticker = ['LQD', 'HYG', 'TLT', 'BNDX', 'MUB']
         bond = trend_helper._get_ret(bond_ticker)
         bond.to_parquet(get_strat_trend_mls() / 'data' / 'data_bond.parquet.brotli', compression='brotli')
 
         # Create portfolio
-        bond_com_port = pd.concat([bond, com], axis=0)
-        bond_com_port['vol'] = bond_com_port.groupby('ticker')['RET_01'].transform(lambda x: x.rolling(self.window_hedge).std().shift(1))
-        bond_com_port['inv_vol'] = 1 / bond_com_port['vol']
-        bond_com_port['norm_inv_vol'] = bond_com_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
-        bond_com_port['RET_01'] = bond_com_port['RET_01'].groupby('ticker').shift(-1)
-        bond_com_port['weighted_ret'] = bond_com_port['RET_01'] * bond_com_port['norm_inv_vol']
-        bond_com_port = bond_com_port.groupby('date')['weighted_ret'].sum()
-        bond_com_port = bond_com_port.to_frame()
-        bond_com_port.columns = ['bond_comm_ret']
+        bond_re_port = pd.concat([bond, re], axis=0)
+        bond_re_port['vol'] = bond_re_port.groupby('ticker')['RET_01'].transform(lambda x: x.rolling(self.window_hedge).std().shift(1))
+        bond_re_port['inv_vol'] = 1 / bond_re_port['vol']
+        bond_re_port['norm_inv_vol'] = bond_re_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
+        bond_re_port['RET_01'] = bond_re_port['RET_01'].groupby('ticker').shift(-1)
+        bond_re_port['weighted_ret'] = bond_re_port['RET_01'] * bond_re_port['norm_inv_vol']
+        bond_re_port = bond_re_port.groupby('date')['weighted_ret'].sum()
+        bond_re_port = bond_re_port.to_frame()
+        bond_re_port.columns = ['bond_re_ret']
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------GET MACRO DATA-------------------------------------------------------------------------------------
         print("---------------------------------------------------------------------GET MACRO DATA-------------------------------------------------------------------------------------")
         # Date Index
-        date_index = bond_com_port.index
+        date_index = bond_re_port.index
         date_index = date_index.to_frame().drop('date', axis=1).reset_index()
 
         # 5-Year Inflation Rate
@@ -179,7 +179,7 @@ class StratTrendMLS(Strategy):
         trend_ret.columns = ['inv_vol_ret']
 
         # Combine trend portfolio + hedge portfolio
-        total_ret = pd.merge(trend_ret, bond_com_port, left_index=True, right_index=True, how='left')
+        total_ret = pd.merge(trend_ret, bond_re_port, left_index=True, right_index=True, how='left')
         total_ret = total_ret.merge(macro_buy_df, left_index=True, right_index=True, how='left')
         col1, col2 = total_ret.columns[0], total_ret.columns[1]
         total_ret['total_ret'] = total_ret.apply(trend_helper._calc_total_port, args=(col1, col2), axis=1)
@@ -195,7 +195,7 @@ class StratTrendMLS(Strategy):
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------DATA--------------------------------------------------------------------------------------------
         # Create Trend Helper Class
-        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_date, num_stocks=self.num_stocks)
+        trend_helper = TrendHelper(current_date=self.current_date, start_date=self.start_date, num_stocks=self.num_stocks, growth_weight=[0.60, 0.40], recess_weight=[0.40, 0.60])
 
         # Params
         live = True
@@ -204,9 +204,9 @@ class StratTrendMLS(Strategy):
         historical_price = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli')
         historical_price = historical_price.loc[historical_price.index.get_level_values('date') != self.current_date]
         live_price = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
-        historical_com = pd.read_parquet(get_strat_trend_mls() / 'data' / 'data_com.parquet.brotli', columns=['Close'])
-        historical_com = historical_com.loc[historical_com.index.get_level_values('date') != self.current_date]
-        live_com = pd.read_parquet(get_live_price() / 'data_trend_mls_com_live.parquet.brotli')
+        historical_re = pd.read_parquet(get_strat_trend_mls() / 'data' / 'data_re.parquet.brotli', columns=['Close'])
+        historical_re = historical_re.loc[historical_re.index.get_level_values('date') != self.current_date]
+        live_re = pd.read_parquet(get_live_price() / 'data_trend_mls_re_live.parquet.brotli')
         historical_bond = pd.read_parquet(get_strat_trend_mls() / 'data' / 'data_bond.parquet.brotli', columns=['Close'])
         historical_bond = historical_bond.loc[historical_bond.index.get_level_values('date') != self.current_date]
         live_bond = pd.read_parquet(get_live_price() / 'data_trend_mls_bond_live.parquet.brotli')
@@ -214,31 +214,31 @@ class StratTrendMLS(Strategy):
 
         # Merge historical dataset and live dataset
         price = pd.concat([historical_price, live_price], axis=0)
-        com = pd.concat([historical_com, live_com], axis=0)
+        re = pd.concat([historical_re, live_re], axis=0)
         bond = pd.concat([historical_bond, live_bond], axis=0)
 
         # Create returns
         price = create_return(price, [1])
         price = price.merge(market, left_index=True, right_index=True, how='left')
         price['market_cap'] = price.groupby('permno')['market_cap'].ffill()
-        com = create_return(com, [1])
+        re = create_return(re, [1])
         bond = create_return(bond, [1])
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # --------------------------------------------------------------------CREATE BOND+COMMODITY PORT-------------------------------------------------------------------------------
-        print("---------------------------------------------------------------CREATE BOND+COMMODITY PORT-------------------------------------------------------------------------------")
+        # --------------------------------------------------------------------CREATE BOND+REAL ESTATE PORT-----------------------------------------------------------------------------
+        print("---------------------------------------------------------------CREATE BOND+REAL ESTATE PORT-----------------------------------------------------------------------------")
         # Create portfolio
-        bond_com_port = pd.concat([bond, com], axis=0)
-        window_bond_com_port = window_data(data=bond_com_port, date=self.current_date, window=self.window_hedge*2)
-        window_bond_com_port['vol'] = window_bond_com_port.groupby('ticker')['RET_01'].transform(lambda x: x.rolling(self.window_hedge).std().shift(1))
-        window_bond_com_port['inv_vol'] = 1 / window_bond_com_port['vol']
-        window_bond_com_port['weight'] = window_bond_com_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
+        bond_re_port = pd.concat([bond, re], axis=0)
+        window_bond_re_port = window_data(data=bond_re_port, date=self.current_date, window=self.window_hedge * 2)
+        window_bond_re_port['vol'] = window_bond_re_port.groupby('ticker')['RET_01'].transform(lambda x: x.rolling(self.window_hedge).std().shift(1))
+        window_bond_re_port['inv_vol'] = 1 / window_bond_re_port['vol']
+        window_bond_re_port['weight'] = window_bond_re_port.groupby('date')['inv_vol'].apply(lambda x: x / x.sum()).reset_index(level=0, drop=True)
 
         # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------GET MACRO DATA-------------------------------------------------------------------------------------
         print("---------------------------------------------------------------------GET MACRO DATA-------------------------------------------------------------------------------------")
         # Date Index
-        date_index = window_bond_com_port.drop(window_bond_com_port.columns, axis=1)
+        date_index = window_bond_re_port.drop(window_bond_re_port.columns, axis=1)
 
         # 5-Year Inflation Rate
         inflation = pd.read_parquet(get_strat_trend_mls() / 'data' / 'data_if.parquet.brotli')
@@ -309,11 +309,11 @@ class StratTrendMLS(Strategy):
         # Total portfolio allocation weights
         macro_buy_df = macro_buy_df.loc[macro_buy_df.index.get_level_values('date') == self.current_date]
         if macro_buy_df.values[0]:
-            trend_factor = 0.5
-            hedge_factor = 0.5
+            trend_factor = 0.60
+            hedge_factor = 0.40
         else:
-            trend_factor = 0.25
-            hedge_factor = 0.75
+            trend_factor = 0.40
+            hedge_factor = 0.60
 
 
         # Get long weights and tickers from trend portfolio and hedge portfolio
@@ -324,11 +324,11 @@ class StratTrendMLS(Strategy):
             trend_factor = 0.0
             hedge_factor = 1.0
 
-        latest_bond_com_port = window_bond_com_port.loc[window_bond_com_port.index.get_level_values('date') == self.current_date]
+        latest_bond_re_port = window_bond_re_port.loc[window_bond_re_port.index.get_level_values('date') == self.current_date]
         trend_ticker = latest_trend_port['ticker'].tolist()
         trend_weight = (latest_trend_port['weight'] * trend_factor * self.allocate).tolist()
-        hedge_ticker = latest_bond_com_port.index.get_level_values('ticker').unique().tolist()
-        hedge_weight = (latest_bond_com_port['weight'] * hedge_factor * self.allocate).tolist()
+        hedge_ticker = latest_bond_re_port.index.get_level_values('ticker').unique().tolist()
+        hedge_weight = (latest_bond_re_port['weight'] * hedge_factor * self.allocate).tolist()
         long_ticker = trend_ticker + hedge_ticker
         long_weight = trend_weight + hedge_weight
 

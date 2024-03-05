@@ -77,6 +77,7 @@ from class_live.live_data import LiveData
 
 class LiveCreate:
     def __init__(self,
+                 portfolio,
                  threshold,
                  set_length,
                  update_crsp_price,
@@ -85,6 +86,7 @@ class LiveCreate:
                  start_factor):
         
         '''
+        portfolio (list): List of portfolio strategy class names
         threshold (int): Market cap threshold for preprocessing stocks
         set_length (int): Number of years required for stock to be considered for trading
         update_crsp_price (str): Used to determine whether to update CRSP Price Dataset (should only be done at the start of every new year)
@@ -93,6 +95,7 @@ class LiveCreate:
         start_facdtor (str: YYYY-MM-DD): Start data fore factor creation
         '''
 
+        self.portfolio = portfolio
         self.threshold = threshold
         self.set_length = set_length
         self.update_crsp_price = update_crsp_price
@@ -267,38 +270,59 @@ class LiveCreate:
         latest_data = latest_data.merge(all_ticker, left_index=True, right_index=True, how='left')
         permno_ticker = latest_data.ticker.tolist()
 
-        # MREV ETF Ticker
-        mrev_etf_ticker_hedge = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
-
-        # MREV Market Ticker
-        mrev_mkt_ticker_hedge = ['SPY', 'MDY', 'VEA', 'EEM', 'VNQ', 'DBC']
-
-        # Trend MLS Commodity Ticker
-        trend_mls_com_ticker = ['GLD', 'SLV', 'PDBC', 'USO', 'AMLP', 'XOP']
-
-        # Trend MLS Bond Ticker
-        trend_mls_bond_ticker = ['BND', 'AGG', 'BNDX', 'VCIT', 'MUB', 'VCSH', 'BSV', 'VTEB', 'IEF']
-
-        # ML Trend Real Estate Ticker
-        ml_trend_re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT', 'REZ']
-
-        # ML Trend Bond Ticker
-        ml_trend_bond_ticker = ['HYG', 'JNK', 'LQD', 'EMB', 'SHY', 'TLT', 'SPTL', 'IGSB', 'SPAB']
-
         # Get Adjustment Factors
         adj_permno = get_adj_factor_fmp(permno_ticker, latest_date)
-        adj_mrev_etf_hedge = get_adj_factor_fmp(mrev_etf_ticker_hedge, latest_date)
-        adj_mrev_mkt_hedge = get_adj_factor_fmp(mrev_mkt_ticker_hedge, latest_date)
-        adj_trend_mls_com = get_adj_factor_fmp(trend_mls_com_ticker, latest_date)
-        adj_trend_mls_bond = get_adj_factor_fmp(trend_mls_bond_ticker, latest_date)
-        adj_ml_trend_re = get_adj_factor_fmp(ml_trend_re_ticker, latest_date)
-        adj_ml_trend_bond = get_adj_factor_fmp(ml_trend_bond_ticker, latest_date)
 
         # Export Data
         adj_permno.to_parquet(get_adj() / 'data_adj_permno_live.parquet.brotli', compression='brotli')
-        adj_mrev_etf_hedge.to_parquet(get_adj() / 'data_adj_mrev_etf_hedge_live.parquet.brotli', compression='brotli')
-        adj_mrev_mkt_hedge.to_parquet(get_adj() / 'data_adj_mrev_mkt_hedge_live.parquet.brotli', compression='brotli')
-        adj_trend_mls_com.to_parquet(get_adj() / 'data_adj_trend_mls_com_live.parquet.brotli', compression='brotli')
-        adj_trend_mls_bond.to_parquet(get_adj() / 'data_adj_trend_mls_bond_live.parquet.brotli', compression='brotli')
-        adj_ml_trend_re.to_parquet(get_adj() / 'data_adj_ml_trend_re_live.parquet.brotli', compression='brotli')
-        adj_ml_trend_bond.to_parquet(get_adj() / 'data_adj_ml_trend_bond_live.parquet.brotli', compression='brotli')
+
+        # Ticker
+        if 'StratMrevETF':
+            # MREV ETF Ticker
+            mrev_etf_ticker_hedge = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
+
+            # Get Adjustment Factors
+            adj_mrev_etf_hedge = get_adj_factor_fmp(mrev_etf_ticker_hedge, latest_date)
+
+            # Export Data
+            adj_mrev_etf_hedge.to_parquet(get_adj() / 'data_adj_mrev_etf_hedge_live.parquet.brotli', compression='brotli')
+
+        if 'StratMrevMkt':
+            # MREV Market Ticker
+            mrev_mkt_ticker_hedge = ['SPY', 'MDY', 'VEA', 'EEM', 'VNQ', 'DBC']
+
+            # Get Adjustment Factors
+            adj_mrev_mkt_hedge = get_adj_factor_fmp(mrev_mkt_ticker_hedge, latest_date)
+
+            # Export Data
+            adj_mrev_mkt_hedge.to_parquet(get_adj() / 'data_adj_mrev_mkt_hedge_live.parquet.brotli', compression='brotli')
+
+        if 'StratTrendMLS':
+            # Trend MLS Real Estate Ticker
+            trend_mls_re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT']
+
+            # Trend MLS Bond Ticker
+            trend_mls_bond_ticker = ['LQD', 'HYG', 'TLT', 'BNDX', 'MUB']
+
+            # Get Adjustment Factors
+            adj_trend_mls_re = get_adj_factor_fmp(trend_mls_re_ticker, latest_date)
+            adj_trend_mls_bond = get_adj_factor_fmp(trend_mls_bond_ticker, latest_date)
+
+            # Export Data
+            adj_trend_mls_re.to_parquet(get_adj() / 'data_adj_trend_mls_re_live.parquet.brotli', compression='brotli')
+            adj_trend_mls_bond.to_parquet(get_adj() / 'data_adj_trend_mls_bond_live.parquet.brotli', compression='brotli')
+
+        if 'StratMLTrend':
+            # ML Trend Real Estate Ticker
+            ml_trend_re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT']
+
+            # ML Trend Bond Ticker
+            ml_trend_bond_ticker = ['LQD', 'HYG', 'TLT', 'BNDX', 'MUB']
+
+            # Get Adjustment Factors
+            adj_ml_trend_re = get_adj_factor_fmp(ml_trend_re_ticker, latest_date)
+            adj_ml_trend_bond = get_adj_factor_fmp(ml_trend_bond_ticker, latest_date)
+
+            # Export Data
+            adj_ml_trend_re.to_parquet(get_adj() / 'data_adj_ml_trend_re_live.parquet.brotli', compression='brotli')
+            adj_ml_trend_bond.to_parquet(get_adj() / 'data_adj_ml_trend_bond_live.parquet.brotli', compression='brotli')

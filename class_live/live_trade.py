@@ -7,18 +7,21 @@ from class_live.live_order import LiveOrder
 
 class LiveTrade:
     def __init__(self,
+                 portfolio,
                  ibkr_server=None,
                  current_date=None,
                  capital=None,
                  settle_period=None):
 
         '''
+        portfolio (list): List of portfolio strategy class names
         ibkr_server (ib_sync server): IBKR IB Sync server
         current_date (str: YYYY-MM-DD): Current date (this will be used as the end date for model training)
         capital (int): Total capital to trade (this is not equal to portfolio cash)
         settle_period (int): IBKR Settlement Period (time it takes cash to settle after buy/sell for reuse)
         '''
 
+        self.portfolio = portfolio
         self.ibkr_server = ibkr_server
         self.current_date = current_date
         self.capital = capital
@@ -44,27 +47,75 @@ class LiveTrade:
                 print(f"Allocated capital (Settlement): ${settle_capital}")
                 break
 
-        # Get Stock Data
-        ml_ret = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret.parquet.brotli')
-        ml_trend = pd.read_parquet(get_live_stock() / 'trade_stock_ml_trend.parquet.brotli')
-        port_iv = pd.read_parquet(get_live_stock() / 'trade_stock_port_iv.parquet.brotli')
-        port_id = pd.read_parquet(get_live_stock() / 'trade_stock_port_id.parquet.brotli')
-        port_im = pd.read_parquet(get_live_stock() / 'trade_stock_port_im.parquet.brotli')
-        trend_mls = pd.read_parquet(get_live_stock() / 'trade_stock_trend_mls.parquet.brotli')
-        mrev_etf = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_etf.parquet.brotli')
-        mrev_mkt = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_mkt.parquet.brotli')
-
         # Load Live Price
         permno_data = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
-        mrev_etf_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli')
-        mrev_mkt_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_mkt_hedge_live.parquet.brotli')
-        trend_mls_com_data = pd.read_parquet(get_live_price() / 'data_trend_mls_com_live.parquet.brotli')
-        trend_mls_bond_data = pd.read_parquet(get_live_price() / 'data_trend_mls_bond_live.parquet.brotli')
-        ml_trend_re_data = pd.read_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli')
-        ml_trend_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli')
+        permno_data = permno_data.reset_index().set_index(['ticker', 'date'])
+
+        # All price
+        stock_collect = []
+        price_collect = [permno_data]
+
+        # Get Stock Data
+        if 'StratMrevETF' in self.portfolio:
+            # Load Live Price
+            mrev_etf_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli')
+            price_collect = price_collect + mrev_etf_hedge_data
+
+            # Load Live Stock
+            mrev_etf = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_etf.parquet.brotli')
+            stock_collect = stock_collect + mrev_etf
+
+        if 'StratMrevMkt' in self.portfolio:
+            # Load Live Price
+            mrev_mkt_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_mkt_hedge_live.parquet.brotli')
+            price_collect = price_collect + mrev_mkt_hedge_data
+
+            # Load Live Stock
+            mrev_mkt = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_mkt.parquet.brotli')
+            stock_collect = stock_collect + mrev_mkt
+
+        if 'StratTrendMLS' in self.portfolio:
+            # Load Live Price
+            trend_mls_re_data = pd.read_parquet(get_live_price() / 'data_trend_mls_re_live.parquet.brotli')
+            trend_mls_bond_data = pd.read_parquet(get_live_price() / 'data_trend_mls_bond_live.parquet.brotli')
+            price_collect = price_collect + trend_mls_re_data + trend_mls_bond_data
+
+            # Load Live Stock
+            trend_mls = pd.read_parquet(get_live_stock() / 'trade_stock_trend_mls.parquet.brotli')
+            stock_collect = stock_collect + trend_mls
+
+        if 'StratMLTrend' in self.portfolio:
+            # Load Live Price
+            ml_trend_re_data = pd.read_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli')
+            ml_trend_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli')
+            price_collect = price_collect + ml_trend_re_data + ml_trend_bond_data
+
+            # Load Live Stock
+            ml_trend = pd.read_parquet(get_live_stock() / 'trade_stock_ml_trend.parquet.brotli')
+            stock_collect = stock_collect + ml_trend
+
+        if 'StratMLRet' in self.portfolio:
+            # Load Live Stock
+            ml_ret = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret.parquet.brotli')
+            stock_collect = stock_collect + ml_ret
+
+        if 'StratPortIV' in self.portfolio:
+            # Load Live Stock
+            port_iv = pd.read_parquet(get_live_stock() / 'trade_stock_port_iv.parquet.brotli')
+            stock_collect = stock_collect + port_iv
+
+        if 'StratPortID' in self.portfolio:
+            # Load Live Stock
+            port_id = pd.read_parquet(get_live_stock() / 'trade_stock_port_id.parquet.brotli')
+            stock_collect = stock_collect + port_id
+
+        if 'StratPortIM' in self.portfolio:
+            # Load Live Stock
+            port_im = pd.read_parquet(get_live_stock() / 'trade_stock_port_im.parquet.brotli')
+            stock_collect = stock_collect + port_im
 
         # Merge data by 'date', 'ticker', 'type' to calculate total weight per type per stock
-        stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_id, port_im, trend_mls, mrev_etf, mrev_mkt], axis=0)
+        stock_data = pd.concat(stock_collect, axis=0)
         stock_data = stock_data.groupby(level=['date', 'ticker', 'type']).sum()
         stock_data = stock_data.loc[stock_data.index.get_level_values('date') == self.current_date]
 
@@ -82,8 +133,7 @@ class LiveTrade:
         stock_data = net_weights.set_index(['date', 'ticker', 'type'])
 
         # Merge price data
-        permno_data = permno_data.reset_index().set_index(['ticker', 'date'])
-        price_data = pd.concat([permno_data, mrev_etf_hedge_data, mrev_mkt_hedge_data, trend_mls_bond_data, trend_mls_com_data, ml_trend_re_data, ml_trend_bond_data], axis=0)
+        price_data = pd.concat(price_collect, axis=0)
         price_data = price_data.loc[~price_data.index.duplicated(keep='last')]
 
         # Params (Note: IBKR has an Order Limit of 50 per second)
