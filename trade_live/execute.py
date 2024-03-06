@@ -135,7 +135,7 @@ def trade():
     print("Connected to IBKR TWS Workstation")
 
     # Create close executioner
-    live_close = LiveClose(ibkr_server=ibkr_server, current_date=current_date, capital=ibkr_crit['capital'])
+    live_close = LiveClose(portfolio=strat_crit['portfolio'], ibkr_server=ibkr_server, current_date=current_date, capital=ibkr_crit['capital'])
 
     # Close trades from previous day (will skip if today is start of trading period)
     loop = asyncio.get_event_loop()

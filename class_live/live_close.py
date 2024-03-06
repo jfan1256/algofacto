@@ -7,17 +7,20 @@ from class_live.live_callback import LiveCallback
 
 class LiveClose:
     def __init__(self,
+                 portfolio=None,
                  ibkr_server=None,
                  current_date=None,
                  capital=None
                  ):
 
         '''
+        portfolio (list): List of portfolio strategy class names
         ibkr_server (ib_sync server): IBKR IB Sync server
         current_date (str: YYYY-MM-DD): Current date (this will be used as the end date for model training)
         capital (int): Total capital to trade (this is not equal to portfolio cash)
         '''
 
+        self.portfolio = portfolio
         self.ibkr_server = ibkr_server
         self.current_date = current_date
         self.capital = capital
@@ -41,21 +44,38 @@ class LiveClose:
                 break
 
         # Get Stock Data
+        stock_data = []
         try:
-            ml_ret = pd.read_parquet(get_live() / 'data_ml_ret_store.parquet.brotli')
-            ml_trend = pd.read_parquet(get_live() / 'data_ml_trend_store.parquet.brotli')
-            port_iv = pd.read_parquet(get_live() / 'data_port_iv_store.parquet.brotli')
-            port_id = pd.read_parquet(get_live() / 'data_port_id_store.parquet.brotli')
-            port_im = pd.read_parquet(get_live() / 'data_port_im_store.parquet.brotli')
-            trend_mls = pd.read_parquet(get_live() / 'data_trend_mls_store.parquet.brotli')
-            mrev_etf = pd.read_parquet(get_live() / 'data_mrev_etf_store.parquet.brotli')
-            mrev_mkt = pd.read_parquet(get_live() / 'data_mrev_etf_store.parquet.brotli')
+            if 'StratMLRet' in self.portfolio:
+                ml_ret = pd.read_parquet(get_live() / 'data_ml_ret_store.parquet.brotli')
+                stock_data.append(ml_ret)
+            if 'StratMLTrend' in self.portfolio:
+                ml_trend = pd.read_parquet(get_live() / 'data_ml_trend_store.parquet.brotli')
+                stock_data.append(ml_trend)
+            if 'StratPortIV' in self.portfolio:
+                port_iv = pd.read_parquet(get_live() / 'data_port_iv_store.parquet.brotli')
+                stock_data.append(port_iv)
+            if 'StratPortID' in self.portfolio:
+                port_id = pd.read_parquet(get_live() / 'data_port_id_store.parquet.brotli')
+                stock_data.append(port_id)
+            if 'StratPortIM' in self.portfolio:
+                port_im = pd.read_parquet(get_live() / 'data_port_im_store.parquet.brotli')
+                stock_data.append(port_im)
+            if 'StratTrendMLS' in self.portfolio:
+                trend_mls = pd.read_parquet(get_live() / 'data_trend_mls_store.parquet.brotli')
+                stock_data.append(trend_mls)
+            if 'StratMrevETF' in self.portfolio:
+                mrev_etf = pd.read_parquet(get_live() / 'data_mrev_etf_store.parquet.brotli')
+                stock_data.append(mrev_etf)
+            if 'StratMrevMkt' in self.portfolio:
+                mrev_mkt = pd.read_parquet(get_live() / 'data_mrev_etf_store.parquet.brotli')
+                stock_data.append(mrev_mkt)
         except:
             print("No trades to be closed, which means today is the first day trading")
             return
 
         # Merge data by 'date', 'ticker', 'type'
-        stock_data = pd.concat([ml_ret, ml_trend, port_iv, port_id, port_im, trend_mls, mrev_etf, mrev_mkt], axis=0)
+        stock_data = pd.concat(stock_data, axis=0)
         stock_data = stock_data.groupby(level=['date', 'ticker', 'type']).sum()
 
         # Get yesterday's date stocks
