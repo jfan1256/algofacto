@@ -279,13 +279,13 @@ class LiveCreate:
         # Ticker
         if 'StratMrevETF':
             # MREV ETF Ticker
-            mrev_etf_ticker_hedge = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
+            port_id_etf_ticker = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
 
             # Get Adjustment Factors
-            adj_mrev_etf_hedge = get_adj_factor_fmp(mrev_etf_ticker_hedge, latest_date)
+            adj_port_id_etf = get_adj_factor_fmp(port_id_etf_ticker, latest_date)
 
             # Export Data
-            adj_mrev_etf_hedge.to_parquet(get_adj() / 'data_adj_mrev_etf_hedge_live.parquet.brotli', compression='brotli')
+            adj_port_id_etf.to_parquet(get_adj() / 'data_adj_mrev_etf_hedge_live.parquet.brotli', compression='brotli')
 
         if 'StratMrevMkt':
             # MREV Market Ticker
@@ -326,3 +326,14 @@ class LiveCreate:
             # Export Data
             adj_ml_trend_re.to_parquet(get_adj() / 'data_adj_ml_trend_re_live.parquet.brotli', compression='brotli')
             adj_ml_trend_bond.to_parquet(get_adj() / 'data_adj_ml_trend_bond_live.parquet.brotli', compression='brotli')
+
+        # Ticker
+        if 'StratPortID':
+            # Port ID ETF Ticker
+            port_id_etf_ticker = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
+
+            # Get Adjustment Factors
+            adj_port_id_etf = get_adj_factor_fmp(port_id_etf_ticker, latest_date)
+
+            # Export Data
+            adj_port_id_etf.to_parquet(get_adj() / 'data_adj_port_id_etf_live.parquet.brotli', compression='brotli')

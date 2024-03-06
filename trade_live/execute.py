@@ -146,9 +146,6 @@ def trade():
         # Create price executioner
         live_price = LivePrice(portfolio=strat_crit['portfolio'], ibkr_server=ibkr_server, current_date=current_date)
 
-        # Create trade executioner
-        live_trade = LiveTrade(portfolio=strat_crit['portfolio'], ibkr_server=ibkr_server, current_date=current_date, capital=ibkr_crit['capital'], settle_period=ibkr_crit['settle_period'])
-
         # Retrieve live close prices
         loop = asyncio.get_event_loop()
         loop.run_until_complete(live_price.exec_live_price())
@@ -186,6 +183,9 @@ def trade():
             # Wait for all strategies to execute
             for future in concurrent.futures.as_completed(exec_strategies):
                 future.result()
+
+        # Create trade executioner
+        live_trade = LiveTrade(portfolio=strat_crit['portfolio'], ibkr_server=ibkr_server, current_date=current_date, capital=ibkr_crit['capital'], settle_period=ibkr_crit['settle_period'])
 
         # Execute new trades
         loop = asyncio.get_event_loop()

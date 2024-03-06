@@ -53,66 +53,70 @@ class LiveTrade:
 
         # All price
         stock_collect = []
+        price_collect = []
+        price_collect.append(permno_data)
         price_collect = [permno_data]
 
         # Get Stock Data
         if 'StratMrevETF' in self.portfolio:
             # Load Live Price
             mrev_etf_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli')
-            price_collect = price_collect + mrev_etf_hedge_data
+            price_collect.append(mrev_etf_hedge_data)
 
             # Load Live Stock
             mrev_etf = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_etf.parquet.brotli')
-            stock_collect = stock_collect + mrev_etf
+            stock_collect.append(mrev_etf)
 
         if 'StratMrevMkt' in self.portfolio:
             # Load Live Price
             mrev_mkt_hedge_data = pd.read_parquet(get_live_price() / 'data_mrev_mkt_hedge_live.parquet.brotli')
-            price_collect = price_collect + mrev_mkt_hedge_data
+            price_collect.append(mrev_mkt_hedge_data)
 
             # Load Live Stock
             mrev_mkt = pd.read_parquet(get_live_stock() / 'trade_stock_mrev_mkt.parquet.brotli')
-            stock_collect = stock_collect + mrev_mkt
+            stock_collect.append(mrev_mkt)
 
         if 'StratTrendMLS' in self.portfolio:
             # Load Live Price
             trend_mls_re_data = pd.read_parquet(get_live_price() / 'data_trend_mls_re_live.parquet.brotli')
             trend_mls_bond_data = pd.read_parquet(get_live_price() / 'data_trend_mls_bond_live.parquet.brotli')
-            price_collect = price_collect + trend_mls_re_data + trend_mls_bond_data
+            price_collect.append(trend_mls_bond_data)
+            price_collect.append(trend_mls_re_data)
 
             # Load Live Stock
             trend_mls = pd.read_parquet(get_live_stock() / 'trade_stock_trend_mls.parquet.brotli')
-            stock_collect = stock_collect + trend_mls
+            stock_collect.append(trend_mls)
 
         if 'StratMLTrend' in self.portfolio:
             # Load Live Price
             ml_trend_re_data = pd.read_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli')
             ml_trend_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli')
-            price_collect = price_collect + ml_trend_re_data + ml_trend_bond_data
+            price_collect.append(ml_trend_re_data)
+            price_collect.append(ml_trend_bond_data)
 
             # Load Live Stock
             ml_trend = pd.read_parquet(get_live_stock() / 'trade_stock_ml_trend.parquet.brotli')
-            stock_collect = stock_collect + ml_trend
+            stock_collect.append(ml_trend)
 
         if 'StratMLRet' in self.portfolio:
             # Load Live Stock
             ml_ret = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret.parquet.brotli')
-            stock_collect = stock_collect + ml_ret
+            stock_collect.append(ml_ret)
 
         if 'StratPortIV' in self.portfolio:
             # Load Live Stock
             port_iv = pd.read_parquet(get_live_stock() / 'trade_stock_port_iv.parquet.brotli')
-            stock_collect = stock_collect + port_iv
+            stock_collect.append(port_iv)
 
         if 'StratPortID' in self.portfolio:
             # Load Live Stock
             port_id = pd.read_parquet(get_live_stock() / 'trade_stock_port_id.parquet.brotli')
-            stock_collect = stock_collect + port_id
+            stock_collect.append(port_id)
 
         if 'StratPortIM' in self.portfolio:
             # Load Live Stock
             port_im = pd.read_parquet(get_live_stock() / 'trade_stock_port_im.parquet.brotli')
-            stock_collect = stock_collect + port_im
+            stock_collect.append(port_im)
 
         # Merge data by 'date', 'ticker', 'type' to calculate total weight per type per stock
         stock_data = pd.concat(stock_collect, axis=0)

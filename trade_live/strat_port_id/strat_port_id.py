@@ -36,6 +36,18 @@ class StratPortID(Strategy):
         live = True
         stock = read_stock(get_large(live) / 'permno_live.csv')
 
+        # Params
+        hedge_ticker = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
+
+        # Load in hedge dataset
+        hedge_ret = get_data_fmp(ticker_list=hedge_ticker, start=self.start_date, current_date=self.current_date)
+        hedge_ret = hedge_ret[['Open', 'High', 'Low', 'Volume', 'Adj Close']]
+        hedge_ret = hedge_ret.rename(columns={'Adj Close': 'Close'})
+        hedge_ret = hedge_ret.loc[~hedge_ret.index.duplicated(keep='first')]
+
+        # Export hedge dataset
+        hedge_ret.to_parquet(get_strat_port_id() / 'data' / 'data_hedge.parquet.brotli', compression='brotli')
+
         # Load in datasets
         historical_price = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli')
         market = pd.read_parquet(get_parquet(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
@@ -106,9 +118,9 @@ class StratPortID(Strategy):
         # Smart Beta Sector
         def compute_sb_sector(data):
             # Load sector dataset
-            historical_sector = pd.read_parquet(get_strat_mrev_etf() / 'data' / 'data_hedge.parquet.brotli', columns=['Close'])
+            historical_sector = pd.read_parquet(get_strat_port_id() / 'data' / 'data_hedge.parquet.brotli', columns=['Close'])
             historical_sector = historical_sector.loc[historical_sector.index.get_level_values('date') != self.current_date]
-            live_sector = pd.read_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli')
+            live_sector = pd.read_parquet(get_live_price() / 'data_port_id_etf_live.parquet.brotli')
             # Merge historical dataset and live dataset
             sector = pd.concat([historical_sector, live_sector], axis=0)
             # Create returns

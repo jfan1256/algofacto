@@ -207,35 +207,35 @@ class LiveMonitor:
 
         if 'StratMLRet' in self.portfolio:
             strat_ml_ret = pd.read_parquet(get_live_monitor() / 'strat_ml_ret' / 'data_strat.parquet.brotli')
-            strat_collect = strat_collect + strat_ml_ret
+            strat_collect.append(strat_ml_ret)
 
         if 'StratMLTrend' in self.portfolio:
             strat_ml_trend = pd.read_parquet(get_live_monitor() / 'strat_ml_trend' / 'data_strat.parquet.brotli')
-            strat_collect = strat_collect + strat_ml_trend
+            strat_collect.append(strat_ml_trend)
 
         if 'StratMrevETF' in self.portfolio:
             strat_mrev_etf = pd.read_parquet(get_live_monitor() / 'strat_mrev_etf' / 'data_strat.parquet.brotli')
-            strat_collect = strat_collect + strat_mrev_etf
+            strat_collect.append(strat_mrev_etf)
 
         if 'StratMrevMkt' in self.portfolio:
             strat_mrev_mkt = pd.read_parquet(get_live_monitor() / 'strat_mrev_mkt' / 'data_strat.parquet.brotli')
-            strat_collect = strat_collect + strat_mrev_mkt
+            strat_collect.append(strat_mrev_mkt)
 
         if 'StratPortIV' in self.portfolio:
             strat_port_iv = pd.read_parquet(get_live_monitor() / 'strat_port_iv' / 'data_strat.parquet.brotli')
-            strat_collect = strat_collect + strat_port_iv
+            strat_collect.append(strat_port_iv)
 
         if 'StratPortID' in self.portfolio:
             strat_port_id = pd.read_parquet(get_live_monitor() / 'strat_port_id' / 'data_strat.parquet.brotli')
-            strat_collect = strat_collect + strat_port_id
+            strat_collect.append(strat_port_id)
 
         if 'StratPortIM' in self.portfolio:
             strat_port_im = pd.read_parquet(get_live_monitor() / 'strat_port_im' / 'data_strat.parquet.brotli')
-            strat_collect = strat_collect + strat_port_im
+            strat_collect.append(strat_port_im)
 
         if 'StratTrendMLS' in self.portfolio:
             strat_trend_mls = pd.read_parquet(get_live_monitor() / 'strat_trend_mls' / 'data_strat.parquet.brotli')
-            strat_collect = strat_collect + strat_trend_mls
+            strat_collect.append(strat_trend_mls)
 
         # Merge all data
         total_strat_data = pd.concat(strat_collect, axis=0)

@@ -129,6 +129,12 @@ class LivePrice:
             # Append tickers
             all_stocks = all_stocks + ml_trend_re_ticker + ml_trend_bond_ticker
 
+        if 'StratPortID' in self.portfolio:
+            # Port ID ETF Ticker
+            port_id_etf_ticker = ['XLY', 'XLP', 'XLE', 'XLF', 'XLV', 'XLI', 'XLB', 'XLK', 'XLU']
+            # Append tickers
+            all_stocks = all_stocks + port_id_etf_ticker
+
         # Get stock prices in batches (or else it will hit ticker request rate limit ~ 250 request per 5 seconds)
         batch_size = 75
         symbol_price_tuples = await self._get_prices_in_batches(all_stocks, batch_size)
@@ -163,14 +169,14 @@ class LivePrice:
 
         if 'StratMrevETF' in self.portfolio:
             # Extract tickers
-            mrev_etf_hedge_data = all_price_data[all_price_data['ticker'].isin(mrev_etf_hedge_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
-            mrev_etf_hedge_data = mrev_etf_hedge_data[~mrev_etf_hedge_data.index.duplicated(keep='last')]
+            port_id_etf_data = all_price_data[all_price_data['ticker'].isin(mrev_etf_hedge_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+            port_id_etf_data = port_id_etf_data[~port_id_etf_data.index.duplicated(keep='last')]
 
             # Adjust close
-            mrev_etf_hedge_data = adj_close(mrev_etf_hedge_data, get_adj() / 'data_adj_mrev_etf_hedge_live.parquet.brotli')
+            port_id_etf_data = adj_close(port_id_etf_data, get_adj() / 'data_adj_mrev_etf_hedge_live.parquet.brotli')
 
             # Export data
-            mrev_etf_hedge_data.to_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli', compression='brotli')
+            port_id_etf_data.to_parquet(get_live_price() / 'data_mrev_etf_hedge_live.parquet.brotli', compression='brotli')
 
         if 'StratMrevMkt' in self.portfolio:
             # Extract tickers
@@ -212,6 +218,17 @@ class LivePrice:
             # Export data
             ml_trend_re_data.to_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli', compression='brotli')
             ml_trend_bond_data.to_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli', compression='brotli')
+
+        if 'StratPortID' in self.portfolio:
+            # Extract tickers
+            port_id_etf_data = all_price_data[all_price_data['ticker'].isin(port_id_etf_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+            port_id_etf_data = port_id_etf_data[~port_id_etf_data.index.duplicated(keep='last')]
+
+            # Adjust close
+            port_id_etf_data = adj_close(port_id_etf_data, get_adj() / 'data_adj_port_id_etf_live.parquet.brotli')
+
+            # Export data
+            port_id_etf_data.to_parquet(get_live_price() / 'data_port_id_etf_live.parquet.brotli', compression='brotli')
 
     # Store live price and live stock data in a recurring dataset
     def exec_live_store(self):
