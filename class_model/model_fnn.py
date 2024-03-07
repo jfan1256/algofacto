@@ -1,27 +1,28 @@
 from class_model.model_train import ModelTrain
 from core.operation import *
 
+from keras.models import Sequential
+from keras.layers import Dense, BatchNormalization, LeakyReLU
+from keras.optimizers import Adam
+from keras.callbacks import EarlyStopping
+from keras.optimizers.schedules.learning_rate_schedule import ExponentialDecay
 from itertools import product
 from scipy.stats import spearmanr
 from datetime import timedelta
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.metrics import accuracy_score
 
 import os
 import time
-import matplotlib.pyplot as plt
 
 import warnings
 
 warnings.filterwarnings('ignore')
 
-class ModelRandomforest(ModelTrain):
+class ModelFNN(ModelTrain):
     def __init__(self, 
                  live: bool = None, 
                  model_name: str = None, 
                  tuning: [str, int] = None,
-                 plot_loss: bool = False, 
-                 plot_hist: bool = False, 
+                 plot_hist: bool = False,
                  pred: str = 'price',
                  stock: str = None, 
                  lookahead: int = 1, 
@@ -38,7 +39,6 @@ class ModelRandomforest(ModelTrain):
         live (bool): Get historical data or live data
         model_name (str): Model name
         tuning (str): Type of parameter to use (i.e., default, optuna, etc.)
-        plot_loss (bool): Plot training and validation curve after each window training or not
         plot_hist (bool): Plot actual returns and predicted returns after each window training or not
         pred (str): Predict for price returns or price movement
         stock (str): Name of index for stocks ('permno' or 'ticker')
@@ -58,7 +58,6 @@ class ModelRandomforest(ModelTrain):
         self.model_name = model_name
         self.categorical = []
         self.tuning = tuning
-        self.plot_loss = plot_loss
         self.plot_hist = plot_hist
         self.pred = pred
         self.stock = stock
@@ -81,7 +80,7 @@ class ModelRandomforest(ModelTrain):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------EXECUTION CODE-------------------------------------------------------------------------------
     # Model Training Execution
-    def randomforest(self, export_key, param_name_train, param_val_train, base_params, data_train, ret, factors, metric_cols):
+    def fnn(self, export_key, param_name_train, param_val_train, base_params, data_train, ret, factors, metric_cols):
         # Get the parameters
         params = dict(zip(param_name_train, param_val_train))
         params.update(base_params)
@@ -101,6 +100,22 @@ class ModelRandomforest(ModelTrain):
         # Execute training
         print("Train model......")
         print("-" * 60)
+
+        model = Sequential([
+            Dense(16, input_dim=len(factors)),
+            LeakyReLU(alpha=0.03),
+            BatchNormalization(),
+            Dense(8),
+            LeakyReLU(alpha=0.03),
+            BatchNormalization(),
+            Dense(1)
+        ])
+
+        lr_schedule = ExponentialDecay(initial_learning_rate=params['learning_rate'], decay_steps=10000, decay_rate=0.9)
+        optimizer = Adam(learning_rate=lr_schedule)
+        model.compile(optimizer=optimizer, loss='mean_squared_error')
+        early_stopping = EarlyStopping(monitor='val_loss', patience=2, verbose=1, mode='min', restore_best_weights=True)
+
         # Iterate over wfo periods
         for i, (train_idx, test_idx) in enumerate(opt):
             start_train = data_train.index.get_level_values('date')[train_idx].min().strftime('%Y-%m-%d')
@@ -110,40 +125,27 @@ class ModelRandomforest(ModelTrain):
             print(f'Training from {start_train} to {end_train} || Testing from {start_test} to {end_test}:')
 
             # Select train subset save last self.valid_len for validation
-            rf_train = data_train.iloc[train_idx[:-self.valid_len]]
-            rf_val = data_train.iloc[train_idx[-self.valid_len:]]
-            # Split into Train/Validation
-            X_train = rf_train.drop(ret, axis=1)
-            y_train = rf_train[ret]
-            X_val = rf_val.drop(ret, axis=1)
-            y_val = rf_val[ret]
+            fnn_train = data_train.iloc[train_idx[:-self.valid_len]]
+            fnn_val = data_train.iloc[train_idx[-self.valid_len:]]
+            X_train = fnn_train.drop(ret, axis=1)
+            y_train = fnn_train[ret]
+            X_val = fnn_val.drop(ret, axis=1)
+            y_val = fnn_val[ret]
+
+            # Convert to numpy
+            X_train = X_train.values
+            y_train = y_train.values
+            X_val = X_val.values
+            y_val = y_val.values
+
             # Early stop on RMSE or AUC
             print('Start training......')
             track_early_stopping = time.time()
             if self.pred == 'price':
-                model = RandomForestRegressor(**params)
-            elif self.pred == 'sign':
-                model = RandomForestClassifier(**params)
-            # Train model
-            model.fit(X_train, y_train)
+                model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=params['epochs'], batch_size=params['batch_size'], verbose=1, callbacks=[early_stopping])
 
             # Print training time
             print('Train time:', round(time.time() - track_early_stopping, 2), 'seconds')
-
-            # Evaluate model performance on validation set
-            train_score = model.score(X_train, y_train)
-            val_score = model.score(X_val, y_val)
-            print(f'Train Score: {train_score}, Validation Score: {val_score}')
-
-            # Plotting feature importance if self.plot_loss is True
-            if self.plot_loss:
-                importances = model.feature_importances_
-                indices = np.argsort(importances)
-                plt.title('Feature Importances')
-                plt.barh(range(len(indices)), importances[indices], color='b', align='center')
-                plt.yticks(range(len(indices)), [X_train.columns[i] for i in indices])
-                plt.xlabel('Relative Importance')
-                plt.show()
 
             # Capture predictions
             test_set = data_train.iloc[test_idx, :]
@@ -153,10 +155,7 @@ class ModelRandomforest(ModelTrain):
             print('Predicting......')
             if self.pred == 'price':
                 # Get the model predictions
-                test_pred_ret = model.predict(test_factors)
-            elif self.pred == 'sign':
-                # Get the model predictions
-                test_pred_ret = model.predict_proba(test_factors)[:, 1]
+                test_pred_ret = model.predict(test_factors.values).flatten()
 
             # Create a DataFrame for predictions
             pred_col_name = '0'
@@ -180,10 +179,6 @@ class ModelRandomforest(ModelTrain):
             # Spearman Rank Correlation
             ic_by_day = by_day.apply(lambda x: spearmanr(x[ret], x['0'])[0]).to_frame('0')
             daily_ic_mean = ic_by_day.mean().tolist()
-        elif self.pred == 'sign':
-            # Accuracy Score
-            as_by_day = by_day.apply(lambda x: accuracy_score(x[ret], x['0'].map(lambda p: 1 if p > 0.5 else 0))).to_frame('0')
-            daily_as_mean = as_by_day.mean().tolist()
 
         # Record training time for this model training period
         t = time.time() - track_wfo
@@ -196,12 +191,6 @@ class ModelRandomforest(ModelTrain):
             msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {ic_by_day.mean().max(): 6.2%}'
             ic_by_day.columns = ic_by_day.columns.map(str)
             ic_by_day.assign(**params).to_parquet(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
-        elif self.pred == 'sign':
-            metrics = pd.Series(list(param_val_train) + [t] + daily_as_mean, index=metric_cols)
-            metrics = metrics.to_frame().T
-            msg = f'\t{format_time(T)} ({t:3.0f} seconds) | daily_metric max: {as_by_day.mean().max(): 6.2%}'
-            as_by_day.columns = as_by_day.columns.map(str)
-            as_by_day.assign(**params).to_parquet(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'daily_metric.parquet.brotli', compression='brotli')
 
         # Print params
         for metric_name in param_name_train:
@@ -219,9 +208,6 @@ class ModelRandomforest(ModelTrain):
             if self.pred == 'price':
                 objective_value = ic_by_day.mean().max()
                 return objective_value
-            elif self.pred == 'sign':
-                objective_value = as_by_day.mean().max()
-                return objective_value
 
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -------------------------------------------------------------------------------INHERITED FUNCTION------------------------------------------------------------------------------
@@ -230,9 +216,9 @@ class ModelRandomforest(ModelTrain):
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ----------------------------------------------------------------------TUNING PARAMETERS----------------------------------------------------------------------------------------
         # Base params used for training
-        base_params = {'n_jobs': -1, 'random_state': 42}
+        base_params = {'random_state': 42}
     
-        # Get parameters
+        # Get parameters and set num_iterations used for prediction
         params = self._get_parameters(self)
         param_names = list(params.keys())
         # This will be used for the metric dataset during training
@@ -248,8 +234,6 @@ class ModelRandomforest(ModelTrain):
     
         # Get start date and end date for train data
         data_train = self.data.loc[:, factors + ret]
-        # Fillna with -9999 because Random Forest cannot handle NAN values
-        data_train = data_train.fillna(-9999)
         start_date_train = str(data_train.index.get_level_values('date').unique()[0].date())
         end_date_train = str(data_train.index.get_level_values('date').unique()[-1].date())
         # Print the start date and end date for train period
@@ -267,7 +251,7 @@ class ModelRandomforest(ModelTrain):
             # Create the directory
             os.makedirs(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
             # Train model and return the optimization metric for optuna
-            return self.randomforest(key, param_names, param_vals, base_params, data_train, ret, factors, metric_cols)
+            return self.fnn(key, param_names, param_vals, base_params, data_train, ret, factors, metric_cols)
         elif self.tuning[0] == 'gridsearch':
             # Get and create all possible combinations of params
             cv_params = list(product(*params.values()))
@@ -283,7 +267,7 @@ class ModelRandomforest(ModelTrain):
                 # Create the directory
                 os.makedirs(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                 # Train model
-                self.randomforest(key, param_names, param_vals, base_params, data_train, ret, factors, metric_cols)
+                self.fnn(key, param_names, param_vals, base_params, data_train, ret, factors, metric_cols)
         elif self.tuning == 'default':
             # Get param values and print the key (formatted params)
             param_vals = list(params.values())
@@ -292,7 +276,7 @@ class ModelRandomforest(ModelTrain):
             # Create the directory
             os.makedirs(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
             # Train model
-            self.randomforest(key, param_names, param_vals, base_params, data_train, ret, factors, metric_cols)
+            self.fnn(key, param_names, param_vals, base_params, data_train, ret, factors, metric_cols)
         elif self.tuning == 'best':
             # Get list of best params
             for param_set in params:
@@ -303,4 +287,4 @@ class ModelRandomforest(ModelTrain):
                 # Create the directory
                 os.makedirs(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                 # Train model
-                self.randomforest(key, param_names, param_vals, base_params, data_train, ret, factors, metric_cols)
+                self.fnn(key, param_names, param_vals, base_params, data_train, ret, factors, metric_cols)
