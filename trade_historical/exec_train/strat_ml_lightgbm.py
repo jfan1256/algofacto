@@ -9,7 +9,7 @@ save = False
 start_model = '2008-01-01'
 current_date = '2023-01-01'
 normalize = 'rank_normalize'
-model_name = 'lightgbm_trial_226'
+model_name = 'lightgbm_trial_227'
 tune = 'default'
 
 if live:

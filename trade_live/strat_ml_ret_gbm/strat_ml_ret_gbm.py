@@ -132,6 +132,52 @@ class StratMLRetGBM(Strategy):
         del ind_mom
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # -----------------------------------------------------------------------------OPEN ASSET----------------------------------------------------------------------------------------
+        net_debt_finance = ModelPrep(live=live, factor_name='factor_net_debt_finance', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        alpha.add_factor(net_debt_finance, normalize=normalize)
+        del net_debt_finance
+
+        chtax = ModelPrep(live=live, factor_name='factor_chtax', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        alpha.add_factor(chtax, normalize=normalize)
+        del chtax
+
+        asset_growth = ModelPrep(live=live, factor_name='factor_asset_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        alpha.add_factor(asset_growth, normalize=normalize)
+        del asset_growth
+        
+        noa = ModelPrep(live=live, factor_name='factor_noa', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        alpha.add_factor(noa, normalize=normalize)
+        del noa
+
+        invest_ppe = ModelPrep(live=live, factor_name='factor_invest_ppe_inv', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        alpha.add_factor(invest_ppe, normalize=normalize)
+        del invest_ppe
+
+        inv_growth = ModelPrep(live=live, factor_name='factor_inv_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        alpha.add_factor(inv_growth, normalize=normalize)
+        del inv_growth
+
+        comp_debt = ModelPrep(live=live, factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        alpha.add_factor(comp_debt, normalize=normalize)
+        del comp_debt
+
+        cheq = ModelPrep(live=live, factor_name='factor_cheq', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        alpha.add_factor(cheq, normalize=normalize)
+        del cheq
+
+        xfin = ModelPrep(live=live, factor_name='factor_xfin', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        alpha.add_factor(xfin, normalize=normalize)
+        del xfin
+
+        emmult = ModelPrep(live=live, factor_name='factor_emmult', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        alpha.add_factor(emmult, normalize=normalize)
+        del emmult
+
+        accrual = ModelPrep(live=live, factor_name='factor_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        alpha.add_factor(accrual, normalize=normalize)
+        del accrual
+
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------CLUSTER-------------------------------------------------------------------------------------------
         clust_ret = ModelPrep(live=live, factor_name='factor_clust_ret', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(clust_ret, categorical=True)
