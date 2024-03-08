@@ -31,8 +31,7 @@ class ModelLightgbm(ModelTrain):
                  trend: int = 0, 
                  incr: bool = False, 
                  opt: str = None, 
-                 weight: bool = False, 
-                 outlier: bool = False, 
+                 outlier: bool = False,
                  early: bool = True,
                  pretrain_len: Optional[int] = None, 
                  train_len: int = None, 
@@ -54,7 +53,6 @@ class ModelLightgbm(ModelTrain):
         trend (int): Size of rolling window to calculate trend (for price movement predictions)
         incr (bool): Perform incremental training or not
         opt (str): Type of training optimization ('ewo' or 'wfo')
-        weight (float): Weight for sample weight training
         outlier (bool): Handle outlier data in label data or not
         early (bool): Train with early stopping or not
         pretrain_len (int): Pretrain length for model training
@@ -79,7 +77,6 @@ class ModelLightgbm(ModelTrain):
         self.trend = trend
         self.incr = incr
         self.opt = opt
-        self.weight = weight
         self.outlier = outlier
         self.early = early
         self.pretrain_len = pretrain_len
@@ -184,7 +181,7 @@ class ModelLightgbm(ModelTrain):
     # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # ----------------------------------------------------------------------------------EXECUTION CODE-------------------------------------------------------------------------------
     # Model Training Execution
-    def lightgbm(self, export_key, param_name_train, param_val_train, base_params, data_pretrain, pretrain_idx, lgb_data_pretrain, data_train, lgb_data_train, ret, num_iterations, metric_cols):
+    def lightgbm(self, export_key, param_name_train, param_val_train, base_params, data_pretrain, pretrain_idx, data_train, ret, num_iterations, metric_cols):
         # Get the parameters
         params = dict(zip(param_name_train, param_val_train))
         params.update(base_params)
@@ -201,7 +198,15 @@ class ModelLightgbm(ModelTrain):
             start_train = data_pretrain.index.get_level_values('date')[pretrain_idx].min().strftime('%Y-%m-%d')
             end_train = data_pretrain.index.get_level_values('date')[pretrain_idx].max().strftime('%Y-%m-%d')
             print(f'Pretraining from {start_train} --> {end_train}:')
-            lgb_pretrain = lgb_data_pretrain.subset(used_indices=pretrain_idx.tolist()).construct()
+
+            # Create binary dataset for pretrain and train
+            pretrain_indices_for_dataset = pretrain_idx
+            pretrain_data_subset = data_pretrain.iloc[pretrain_indices_for_dataset]
+            lgb_pretrain = lgb.Dataset(data=pretrain_data_subset.drop(ret, axis=1),
+                                    label=pretrain_data_subset[ret],
+                                    categorical_feature=self.categorical,
+                                    free_raw_data=True,
+                                    params={'device_type': 'gpu', 'data_random_seed': 42})
             prev_model = lgb.train(params=params, train_set=lgb_pretrain, num_boost_round=1000)
 
         # Creates the indices for wfo or ewo
@@ -223,12 +228,27 @@ class ModelLightgbm(ModelTrain):
             start_test = data_train.index.get_level_values('date')[test_idx].min().strftime('%Y-%m-%d')
             end_test = data_train.index.get_level_values('date')[test_idx].max().strftime('%Y-%m-%d')
             print(f'Training from {start_train} --> {end_train} || Testing from {start_test} --> {end_test}:')
+
             # If early stopping is set to True
             if self.early:
                 # Select train subset save last self.valid_len for validation
-                lgb_train = lgb_data_train.subset(used_indices=train_idx.tolist()[:-self.valid_len]).construct()
-                lgb_val = lgb_data_train.subset(used_indices=train_idx.tolist()[-self.valid_len:]).construct()
+                train_indices_for_dataset = train_idx[:-self.valid_len]
+                training_data_subset = data_train.iloc[train_indices_for_dataset]
+                lgb_train = lgb.Dataset(data=training_data_subset.drop(ret, axis=1),
+                                        label=training_data_subset[ret],
+                                        categorical_feature=self.categorical,
+                                        free_raw_data=True,
+                                        params={'device_type': 'gpu', 'data_random_seed': 42})
+                validation_indices_for_dataset = train_idx[-self.valid_len:]
+                validation_data_subset = data_train.iloc[validation_indices_for_dataset]
+                lgb_val = lgb.Dataset(data=validation_data_subset.drop(ret, axis=1),
+                                      label=validation_data_subset[ret],
+                                      categorical_feature=self.categorical,
+                                      free_raw_data=True,
+                                      params={'device_type': 'gpu', 'data_random_seed': 42})
+
                 lgb_early_stop = lgb.early_stopping(100)
+
                 # Early stop on MSE or binary_logloss
                 print('Start training......')
                 track_training = time.time()
@@ -238,9 +258,6 @@ class ModelLightgbm(ModelTrain):
                         # Pretrain the model
                         model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000,
                                           callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
-                        """# Retrain on entire dataset with less num_boost_round
-                        whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
-                        model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)"""
                         # Store this model for next fold
                         prev_model = model
                     else:
@@ -248,31 +265,29 @@ class ModelLightgbm(ModelTrain):
                             # First model to be trained
                             model = lgb.train(params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000,
                                               callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
-                            """# Retrain on entire dataset with less num_boost_round
-                            whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
-                            model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)"""
                             # Store this model for next fold
                             prev_model = model
                         else:
                             # Model to be trained after the first model
                             model = lgb.train(init_model=prev_model, params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000,
                                               callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
-                            """# Retrain on entire dataset with less num_boost_round
-                            whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
-                            model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)"""
                             # Store this model for next fold
                             prev_model = model
 
                 else:
                     # No incremental training
                     model = lgb.train(params=params, train_set=lgb_train, valid_sets=[lgb_train, lgb_val], num_boost_round=1000, callbacks=[lgb_early_stop, lgb.record_evaluation(evals)])
-                    """# Retrain on entire dataset with less num_boost_round
-                    whole_set = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
-                    model = lgb.train(init_model=model, params=params, train_set=whole_set, num_boost_round=150)"""
             else:
                 # No early stop training
                 # Select train subset
-                lgb_train = lgb_data_train.subset(used_indices=train_idx.tolist()).construct()
+                train_indices_for_dataset = train_idx
+                training_data_subset = data_train.iloc[train_indices_for_dataset]
+                lgb_train = lgb.Dataset(data=training_data_subset.drop(ret, axis=1),
+                                        label=training_data_subset[ret],
+                                        categorical_feature=self.categorical,
+                                        free_raw_data=True,
+                                        params={'device_type': 'gpu', 'data_random_seed': 42})
+
                 print('Start training......')
                 track_training = time.time()
                 if self.incr:
@@ -413,7 +428,8 @@ class ModelLightgbm(ModelTrain):
         # ----------------------------------------------------------------------TUNING PARAMETERS----------------------------------------------------------------------------------------
         # Base params used for training
         if self.pred == 'price':
-            base_params = dict(boosting='gbdt', device_type='gpu', gpu_platform_id=1, gpu_device_id=0, verbose=-1, gpu_use_dp=True, objective='regression', metric='mse', seed=42)
+            # base_params = dict(boosting='gbdt', device_type='cpu', num_threads=1, force_col_wise=True, deterministic=True, verbose=-1, objective='regression', metric='mse', seed=42, bagging_seed=42, feature_fraction_seed=42, drop_seed=42)
+            base_params = dict(boosting='gbdt', device_type='gpu', gpu_platform_id=1, gpu_device_id=0, verbose=-1, gpu_use_dp=True, num_threads=1, force_col_wise=True, objective='regression', metric='mse', seed=42, bagging_seed=42, feature_fraction_seed=42, drop_seed=42)
         elif self.pred == 'sign':
             base_params = dict(boosting='gbdt', device_type='gpu', gpu_platform_id=1, gpu_device_id=0, verbose=-1, gpu_use_dp=True, objective='binary', metric='binary_logloss', seed=42)
 
@@ -456,48 +472,15 @@ class ModelLightgbm(ModelTrain):
             print("Train: " + str(start_date_train) + " --> " + str(end_date_train))
             print("-" * 60)
             data_train = set_timeframe(self.data.loc[:, factors + ret], start_date_train, end_date_train)
-            # Create binary dataset for pretrain and train
-            lgb_data_pretrain = lgb.Dataset(data=data_pretrain.drop(ret, axis=1),
-                                            label=data_pretrain[ret], categorical_feature=self.categorical,
-                                            free_raw_data=False, params={'device_type': 'gpu'})
-            lgb_data_train = lgb.Dataset(data=data_train.drop(ret, axis=1), label=data_train[ret],
-                                         categorical_feature=self.categorical, free_raw_data=False, params={'device_type': 'gpu'})
-
-            # Set sample weights for training if self.weight is True
-            if self.weight:
-                # Emphasize extreme returns (model focuses more on these anomalies)
-                threshold = 0.001
-                weight_pretrain = data_pretrain[ret[0]].map(lambda x: 1 if abs(x) > threshold else 0.1).values
-                weight_train = data_train[ret[0]].map(lambda x: 1 if abs(x) > threshold else 0.1).values
-                # Emphasize negative returns (model focuses more on these negative returns)
-                """weight_pretrain = data_pretrain[ret[0]].map(lambda x: 1 if x < 0 else 0.1).values
-                weight_train = data_train[ret[0]].map(lambda x: 1 if x < 0 else 0.1).values"""
-                # Set the weight
-                lgb_data_pretrain.set_weight(weight_pretrain)
-                lgb_data_train.set_weight(weight_train)
-
         else:
             # Print the start date and end date for train period
+            data_pretrain, data_pretrain, pretrain_idx, lgb_data_pretrain = None, None, None, None
             data_train = self.data.loc[:, factors + ret]
             start_date_train = str(data_train.index.get_level_values('date').unique()[0].date())
             end_date_train = str(data_train.index.get_level_values('date').unique()[-1].date())
             print("-" * 60)
             print("Train: " + str(start_date_train) + " --> " + str(end_date_train))
             print("-" * 60)
-
-            # Create binary dataset for pretrain and train
-            lgb_data_train = lgb.Dataset(data=data_train.drop(ret, axis=1), label=data_train[ret],
-                                         categorical_feature=self.categorical, free_raw_data=False, params={'device_type': 'gpu'})
-
-            # Set sample weights for training if self.weight is True
-            if self.weight:
-                # Emphasize extreme returns (model focuses more on these anomalies)
-                threshold = 0.001
-                weight_train = data_train[ret[0]].map(lambda x: 1 if abs(x) > threshold else 0.1).values
-                # Emphasize negative returns (model focuses more on these negative returns)
-                """weight_train = data_train[ret[0]].map(lambda x: 1 if x < 0 else 0.1).values"""
-                # Set the weight
-                lgb_data_train.set_weight(weight_train)
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # --------------------------------------------------------------------------TRAINING MODEL---------------------------------------------------------------------------------------
@@ -513,7 +496,7 @@ class ModelLightgbm(ModelTrain):
             # Create the directory
             os.makedirs(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
             # Train model and return the optimization metric for optuna
-            return self.lightgbm(key, param_names, param_vals, base_params, data_pretrain, pretrain_idx, lgb_data_pretrain, data_train, lgb_data_train, ret, num_iterations, metric_cols)
+            return self.lightgbm(key, param_names, param_vals, base_params, data_pretrain, pretrain_idx, data_train, ret, num_iterations, metric_cols)
         elif self.tuning[0] == 'gridsearch':
             # Get and create all possible combinations of params
             cv_params = list(product(*params.values()))
@@ -529,7 +512,7 @@ class ModelLightgbm(ModelTrain):
                 # Create the directory
                 os.makedirs(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                 # Train model
-                self.lightgbm(key, param_names, param_vals, base_params, data_pretrain, pretrain_idx, lgb_data_pretrain, data_train, lgb_data_train, ret, num_iterations, metric_cols)
+                self.lightgbm(key, param_names, param_vals, base_params, data_pretrain, pretrain_idx, data_train, ret, num_iterations, metric_cols)
         elif self.tuning == 'default':
             # Get param values and print the key (formatted params)
             param_vals = list(params.values())
@@ -538,7 +521,7 @@ class ModelLightgbm(ModelTrain):
             # Create the directory
             os.makedirs(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
             # Train model
-            self.lightgbm(key, param_names, param_vals, base_params, data_pretrain, pretrain_idx, lgb_data_pretrain, data_train, lgb_data_train, ret, num_iterations, metric_cols)
+            self.lightgbm(key, param_names, param_vals, base_params, data_pretrain, pretrain_idx, data_train, ret, num_iterations, metric_cols)
         elif self.tuning == 'best':
             # Get list of best params
             for param_set in params:
@@ -549,4 +532,4 @@ class ModelLightgbm(ModelTrain):
                 # Create the directory
                 os.makedirs(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
                 # Train model
-                self.lightgbm(key, param_names, param_vals, base_params, data_pretrain, pretrain_idx, lgb_data_pretrain, data_train, lgb_data_train, ret, num_iterations, metric_cols)
+                self.lightgbm(key, param_names, param_vals, base_params, data_pretrain, pretrain_idx, data_train, ret, num_iterations, metric_cols)

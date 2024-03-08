@@ -91,7 +91,7 @@ class StratMLRetGBM(Strategy):
         tune = 'default'
 
         alpha = ModelLightgbm(live=live, model_name=model_name, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0,
-                              incr=True, opt='wfo', weight=False, outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
+                              incr=True, opt='wfo', outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------GENERAL-------------------------------------------------------------------------------------------
