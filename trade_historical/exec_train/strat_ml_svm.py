@@ -19,7 +19,7 @@ else:
     stock = read_stock(get_large(live) / 'permno_to_train_fund.csv')
 
 svm_params = {
-    'C':            {'optuna': ('loguniform', 0.1, 10.0),                'gridsearch': [0.1, 1, 10],             'default': 1.0},
+    'C':            {'optuna': ('loguniform', 0.1, 10.0),                'gridsearch': [0.1, 1, 10],             'default': 0.5},
     'kernel':       {'optuna': ('categorical', ['linear', 'rbf']),       'gridsearch': ['linear', 'rbf'],        'default': 'linear'},
     'gamma':        {'optuna': ('loguniform', 0.001, 1.0),               'gridsearch': ['scale', 'auto'],        'default': 'auto'}
 }

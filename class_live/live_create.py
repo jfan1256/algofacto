@@ -312,7 +312,7 @@ class LiveCreate:
             adj_trend_mls_re.to_parquet(get_adj() / 'data_adj_trend_mls_re_live.parquet.brotli', compression='brotli')
             adj_trend_mls_bond.to_parquet(get_adj() / 'data_adj_trend_mls_bond_live.parquet.brotli', compression='brotli')
 
-        if 'StratMLTrend':
+        if 'StratMLTrendRF':
             # ML Trend Real Estate Ticker
             ml_trend_re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT']
 
@@ -324,8 +324,8 @@ class LiveCreate:
             adj_ml_trend_bond = get_adj_factor_fmp(ml_trend_bond_ticker, latest_date)
 
             # Export Data
-            adj_ml_trend_re.to_parquet(get_adj() / 'data_adj_ml_trend_re_live.parquet.brotli', compression='brotli')
-            adj_ml_trend_bond.to_parquet(get_adj() / 'data_adj_ml_trend_bond_live.parquet.brotli', compression='brotli')
+            adj_ml_trend_re.to_parquet(get_adj() / 'data_adj_ml_trend_rf_re_live.parquet.brotli', compression='brotli')
+            adj_ml_trend_bond.to_parquet(get_adj() / 'data_adj_ml_trend_rf_bond_live.parquet.brotli', compression='brotli')
 
         # Ticker
         if 'StratPortID':

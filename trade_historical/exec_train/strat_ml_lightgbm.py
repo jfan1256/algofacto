@@ -9,7 +9,7 @@ save = False
 start_model = '2008-01-01'
 current_date = '2023-01-01'
 normalize = 'rank_normalize'
-model_name = 'lightgbm_trial_209'
+model_name = 'lightgbm_trial_210'
 tune = 'default'
 
 if live:
@@ -103,6 +103,14 @@ del ind
 ind_mom = ModelPrep(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 alpha.add_factor(ind_mom, normalize=normalize)
 del ind_mom
+
+# ind_mom_excess = ModelPrep(live=live, factor_name='factor_ind_mom_excess', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=True).prep()
+# alpha.add_factor(ind_mom_excess, normalize=normalize)
+# del ind_mom_excess
+
+# ind_vwr = ModelPrep(live=live, factor_name='factor_ind_vwr', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+# alpha.add_factor(ind_vwr, normalize=normalize)
+# del ind_vwr
 
 # ind_mom_fama = ModelPrep(live=live, factor_name='factor_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(ind_mom_fama, normalize=normalize)

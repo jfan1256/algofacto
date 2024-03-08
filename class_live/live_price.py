@@ -121,13 +121,13 @@ class LivePrice:
             # Append tickers
             all_stocks = all_stocks + trend_mls_re_ticker + trend_mls_bond_ticker
 
-        if 'StratMLTrend' in self.portfolio:
+        if 'StratMLTrendRF' in self.portfolio:
             # ML Trend Real Estate Ticker
-            ml_trend_re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT']
+            ml_trend_rf_re_ticker = ['VNQ', 'IYR', 'SCHH', 'RWR', 'USRT']
             # ML Trend Bond Ticker
-            ml_trend_bond_ticker = ['LQD', 'HYG', 'TLT', 'BNDX', 'MUB']
+            ml_trend_rf_bond_ticker = ['LQD', 'HYG', 'TLT', 'BNDX', 'MUB']
             # Append tickers
-            all_stocks = all_stocks + ml_trend_re_ticker + ml_trend_bond_ticker
+            all_stocks = all_stocks + ml_trend_rf_re_ticker + ml_trend_rf_bond_ticker
 
         if 'StratPortID' in self.portfolio:
             # Port ID ETF Ticker
@@ -204,20 +204,20 @@ class LivePrice:
             trend_mls_re_data.to_parquet(get_live_price() / 'data_trend_mls_re_live.parquet.brotli', compression='brotli')
             trend_mls_bond_data.to_parquet(get_live_price() / 'data_trend_mls_bond_live.parquet.brotli', compression='brotli')
 
-        if 'StratMLTrend' in self.portfolio:
+        if 'StratMLTrendRF' in self.portfolio:
             # Extract tickers
-            ml_trend_re_data = all_price_data[all_price_data['ticker'].isin(ml_trend_re_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
-            ml_trend_re_data = ml_trend_re_data[~ml_trend_re_data.index.duplicated(keep='last')]
-            ml_trend_bond_data = all_price_data[all_price_data['ticker'].isin(ml_trend_bond_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
-            ml_trend_bond_data = ml_trend_bond_data[~ml_trend_bond_data.index.duplicated(keep='last')]
+            ml_trend_rf_re_data = all_price_data[all_price_data['ticker'].isin(ml_trend_rf_re_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+            ml_trend_rf_re_data = ml_trend_rf_re_data[~ml_trend_rf_re_data.index.duplicated(keep='last')]
+            ml_trend_rf_bond_data = all_price_data[all_price_data['ticker'].isin(ml_trend_rf_bond_ticker)].set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+            ml_trend_rf_bond_data = ml_trend_rf_bond_data[~ml_trend_rf_bond_data.index.duplicated(keep='last')]
 
             # Adjust close
-            ml_trend_re_data = adj_close(ml_trend_re_data, get_adj() / 'data_adj_ml_trend_re_live.parquet.brotli')
-            ml_trend_bond_data = adj_close(ml_trend_bond_data, get_adj() / 'data_adj_ml_trend_bond_live.parquet.brotli')
+            ml_trend_rf_re_data = adj_close(ml_trend_rf_re_data, get_adj() / 'data_adj_ml_trend_rf_re_live.parquet.brotli')
+            ml_trend_rf_bond_data = adj_close(ml_trend_rf_bond_data, get_adj() / 'data_adj_ml_trend_rf_bond_live.parquet.brotli')
 
             # Export data
-            ml_trend_re_data.to_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli', compression='brotli')
-            ml_trend_bond_data.to_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli', compression='brotli')
+            ml_trend_rf_re_data.to_parquet(get_live_price() / 'data_ml_trend_rf_re_live.parquet.brotli', compression='brotli')
+            ml_trend_rf_bond_data.to_parquet(get_live_price() / 'data_ml_trend_rf_bond_live.parquet.brotli', compression='brotli')
 
         if 'StratPortID' in self.portfolio:
             # Extract tickers
@@ -288,25 +288,32 @@ class LivePrice:
             add_store(data=trend_mls_bond_data, filename=get_live() / 'data_trend_mls_bond_store.parquet.brotli')
             add_store(data=trend_mls, filename=get_live() / 'data_trend_mls_store.parquet.brotli')
 
-        if 'StratMLTrend' in self.portfolio:
+        if 'StratMLTrendRF' in self.portfolio:
             # Load Live Price
-            ml_trend_re_data = pd.read_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli')
-            ml_trend_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli')
+            ml_trend_rf_re_data = pd.read_parquet(get_live_price() / 'data_ml_trend_rf_re_live.parquet.brotli')
+            ml_trend_rf_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_rf_bond_live.parquet.brotli')
 
             # Load Live Stock
-            ml_trend = pd.read_parquet(get_live_stock() / 'trade_stock_ml_trend.parquet.brotli')
+            ml_trend = pd.read_parquet(get_live_stock() / 'trade_stock_ml_trend_rf.parquet.brotli')
 
             # Store data
-            add_store(data=ml_trend_re_data, filename=get_live() / 'data_ml_trend_re_store.parquet.brotli')
-            add_store(data=ml_trend_bond_data, filename=get_live() / 'data_ml_trend_bond_store.parquet.brotli')
-            add_store(data=ml_trend, filename=get_live() / 'data_ml_trend_store.parquet.brotli')
+            add_store(data=ml_trend_rf_re_data, filename=get_live() / 'data_ml_trend_rf_re_store.parquet.brotli')
+            add_store(data=ml_trend_rf_bond_data, filename=get_live() / 'data_ml_trend_rf_bond_store.parquet.brotli')
+            add_store(data=ml_trend, filename=get_live() / 'data_ml_trend_rf_store.parquet.brotli')
 
-        if 'StratMLRet' in self.portfolio:
+        if 'StratMLRetGBM' in self.portfolio:
             # Load Live Stock
-            ml_ret = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret.parquet.brotli')
+            ml_ret_gbm = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret_gbm.parquet.brotli')
 
             # Store data
-            add_store(data=ml_ret, filename=get_live() / 'data_ml_ret_store.parquet.brotli')
+            add_store(data=ml_ret_gbm, filename=get_live() / 'data_ml_ret_gbm_store.parquet.brotli')
+
+        if 'StratMLRetLR' in self.portfolio:
+            # Load Live Stock
+            ml_ret_lr = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret_lr.parquet.brotli')
+
+            # Store data
+            add_store(data=ml_ret_lr, filename=get_live() / 'data_ml_ret_lr_store.parquet.brotli')
 
         if 'StratPortIV' in self.portfolio:
             # Load Live Stock

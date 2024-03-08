@@ -11,7 +11,7 @@ start_model = '2010-01-01'
 current_date = '2023-01-01'
 normalize = 'rank_normalize'
 impute = 'cross_median'
-model_name = 'lr_trial_5'
+model_name = 'lr_trial_12'
 tune = 'default'
 
 if live:
@@ -21,13 +21,14 @@ else:
 
 lr_params = {
     'alpha':     {'optuna': ('suggest_float', 1e-5, 1),     'gridsearch': [1e-3, 1e-4, 1e-5],      'default': 0.01},
+    'l1_ratio':  {'optuna': ('suggest_float', 1e-5, 1),     'gridsearch': [1e-3, 1e-4, 1e-5],      'default': 0.005},
 }
 
 start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = ModelLRegression(live=live, model_name=model_name, tuning=tune, plot_hist=False, pred='price', stock='permno',
+alpha = ModelLRegression(live=live, model_name=model_name, tuning=tune, plot_hist=False, pred='price', model='elastic', stock='permno',
                          lookahead=1, trend=0, opt='ewo', outlier=False, train_len=504, valid_len=21, test_len=21, **lr_params)
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -72,12 +73,16 @@ del volume
 # alpha.add_factor(sign_volatility, categorical=True)
 # del sign_volatility
 #
+# fund_raw = ModelPrep(live=live, factor_name='factor_fund_q', group='permno', interval='D', kind='fundamental', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+# alpha.add_factor(fund_raw, categorical=True)
+# del fund_raw
+
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------PCA-----------------------------------------------------------------------------------------------
 load_ret = ModelPrep(live=live, factor_name='factor_load_ret', group='permno', interval='D', kind='loading', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 alpha.add_factor(load_ret, normalize=normalize, impute=impute)
 del load_ret
-#
+
 # load_volume = ModelPrep(live=live, factor_name='factor_load_volume', group='permno', interval='D', kind='loading', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(load_volume, normalize=normalize, impute=impute)
 # del load_volume
@@ -109,7 +114,7 @@ del load_ret
 ind_mom = ModelPrep(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 alpha.add_factor(ind_mom, normalize=normalize, impute=impute)
 del ind_mom
-#
+
 # ind_mom_fama = ModelPrep(live=live, factor_name='factor_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(ind_mom_fama, normalize=normalize, impute=impute)
 # del ind_mom_fama
@@ -147,14 +152,14 @@ del chtax
 asset_growth = ModelPrep(live=live, factor_name='factor_asset_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 alpha.add_factor(asset_growth, normalize=normalize, impute=impute)
 del asset_growth
-#
+
 # mom_season_short = ModelPrep(live=live, factor_name='factor_mom_season_short', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(mom_season_short, normalize=normalize, impute=impute)
 # del mom_season_short
-#
-# mom_season = ModelPrep(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
-# alpha.add_factor(mom_season, normalize=normalize, impute=impute)
-# del mom_season
+
+mom_season = ModelPrep(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+alpha.add_factor(mom_season, normalize=normalize, impute=impute)
+del mom_season
 #
 # noa = ModelPrep(live=live, factor_name='factor_noa', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(noa, normalize=normalize, impute=impute)
@@ -184,9 +189,9 @@ del inv_growth
 # alpha.add_factor(mom_season16, normalize=normalize, impute=impute)
 # del mom_season16
 #
-# comp_debt = ModelPrep(live=live, factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
-# alpha.add_factor(comp_debt, normalize=normalize, impute=impute)
-# del comp_debt
+comp_debt = ModelPrep(live=live, factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+alpha.add_factor(comp_debt, normalize=normalize, impute=impute)
+del comp_debt
 #
 # mom_vol = ModelPrep(live=live, factor_name='factor_mom_vol', group='permno', interval='D', kind='mom', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(mom_vol, categorical=True)
@@ -207,11 +212,11 @@ del inv_growth
 # emmult = ModelPrep(live=live, factor_name='factor_emmult', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(emmult, normalize=normalize, impute=impute)
 # del emmult
-#
-# accrual = ModelPrep(live=live, factor_name='factor_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
-# alpha.add_factor(accrual, normalize=normalize, impute=impute)
-# del accrual
-#
+
+accrual = ModelPrep(live=live, factor_name='factor_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+alpha.add_factor(accrual, normalize=normalize, impute=impute)
+del accrual
+
 # frontier = ModelPrep(live=live, factor_name='factor_frontier', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(frontier, normalize=normalize, impute=impute)
 # del frontier
@@ -282,9 +287,9 @@ del inv_growth
 #
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------BETAS---------------------------------------------------------------------------------------------
-sb_pca = ModelPrep(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
-alpha.add_factor(sb_pca, normalize=normalize, impute=impute)
-del sb_pca
+# sb_pca = ModelPrep(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+# alpha.add_factor(sb_pca, normalize=normalize, impute=impute)
+# del sb_pca
 
 # sb_sector = ModelPrep(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(sb_sector, normalize=normalize, impute=impute)

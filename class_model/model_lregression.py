@@ -1,8 +1,8 @@
 from class_model.model_train import ModelTrain
 from core.operation import *
 
-from sklearn.linear_model import Lasso, LogisticRegression, Ridge
-from sklearn.metrics import mean_squared_error, accuracy_score
+from sklearn.linear_model import Lasso, LogisticRegression, Ridge, ElasticNet
+from sklearn.metrics import accuracy_score
 from itertools import product
 from scipy.stats import spearmanr
 from datetime import timedelta
@@ -21,6 +21,7 @@ class ModelLRegression(ModelTrain):
                  tuning: [str, int] = None,
                  plot_hist: bool = False,
                  pred: str = 'price',
+                 model: str = 'elastic',
                  stock: str = None, 
                  lookahead: int = 1, 
                  trend: int = 0, 
@@ -38,6 +39,7 @@ class ModelLRegression(ModelTrain):
         tuning (str): Type of parameter to use (i.e., default, optuna, etc.)
         plot_hist (bool): Plot actual returns and predicted returns after each window training or not
         pred (str): Predict for price returns or price movement
+        model (str): Model to use (either 'lasso', 'ridge', or 'elastic' when pred = 'price')
         stock (str): Name of index for stocks ('permno' or 'ticker')
         lookahead (int): Lookahead period to predict for
         trend (int): Size of rolling window to calculate trend (for price movement predictions)
@@ -57,6 +59,7 @@ class ModelLRegression(ModelTrain):
         self.tuning = tuning
         self.plot_hist = plot_hist
         self.pred = pred
+        self.model = model
         self.stock = stock
         self.lookahead = lookahead
         self.trend = trend
@@ -106,21 +109,33 @@ class ModelLRegression(ModelTrain):
             print(f'Training from {start_train} to {end_train} || Testing from {start_test} to {end_test}:')
 
             # Select train subset save last self.valid_len for validation
-            lr_train = data_train.iloc[train_idx[:-self.valid_len]]
-            lr_val = data_train.iloc[train_idx[-self.valid_len:]]
-            # Split into Train/Validation
-            X_train = lr_train.drop(ret, axis=1)
-            y_train = lr_train[ret]
-            X_val = lr_val.drop(ret, axis=1)
-            y_val = lr_val[ret]
+            if self.valid_len != 0:
+                lr_train = data_train.iloc[train_idx[:-self.valid_len]]
+                lr_val = data_train.iloc[train_idx[-self.valid_len:]]
+
+                # Split into Train/Validation
+                X_train = lr_train.drop(ret, axis=1)
+                y_train = lr_train[ret]
+                X_val = lr_val.drop(ret, axis=1)
+                y_val = lr_val[ret]
+            else:
+                lr_train = data_train.iloc[train_idx]
+
+                # Split into Train/Validation
+                X_train = lr_train.drop(ret, axis=1)
+                y_train = lr_train[ret]
 
             # Early stop on RMSE or AUC
             print('Start training......')
             track_early_stopping = time.time()
-            if self.pred == 'price':
-                model = Ridge(alpha=params['alpha'])
+            if self.pred == 'price' and self.model == 'ridge':
+                model = Ridge(random_state=params['random_state'], alpha=params['alpha'])
+            elif self.pred == 'price' and self.model == 'elastic':
+                model = ElasticNet(random_state=params['random_state'], alpha=params['alpha'], l1_ratio=params['l1_ratio'])
+            elif self.pred == 'price' and self.model == 'lasso':
+                model = Lasso(random_state=params['random_state'], alpha=params['alpha'])
             elif self.pred == 'sign':
-                model = LogisticRegression(max_iter=1000)
+                model = LogisticRegression(random_state=params['random_state'], max_iter=1000)
 
             # Train model
             model.fit(X_train, y_train)
@@ -130,8 +145,10 @@ class ModelLRegression(ModelTrain):
 
             # Evaluate model performance on validation set
             train_score = model.score(X_train, y_train)
-            val_score = model.score(X_val, y_val)
-            print(f'Train Score: {train_score}, Validation Score: {val_score}')
+
+            if self.valid_len != 0:
+                val_score = model.score(X_val, y_val)
+                print(f'Train Score: {train_score}, Validation Score: {val_score}')
 
             # Capture predictions
             test_set = data_train.iloc[test_idx, :]

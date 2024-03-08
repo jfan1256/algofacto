@@ -46,12 +46,15 @@ class LiveClose:
         # Get Stock Data
         stock_data = []
         try:
-            if 'StratMLRet' in self.portfolio:
-                ml_ret = pd.read_parquet(get_live() / 'data_ml_ret_store.parquet.brotli')
-                stock_data.append(ml_ret)
-            if 'StratMLTrend' in self.portfolio:
-                ml_trend = pd.read_parquet(get_live() / 'data_ml_trend_store.parquet.brotli')
-                stock_data.append(ml_trend)
+            if 'StratMLRetGBM' in self.portfolio:
+                ml_ret_gbm = pd.read_parquet(get_live() / 'data_ml_ret_gbm_store.parquet.brotli')
+                stock_data.append(ml_ret_gbm)
+            if 'StratMLRetLR' in self.portfolio:
+                ml_ret_lr = pd.read_parquet(get_live() / 'data_ml_ret_lr_store.parquet.brotli')
+                stock_data.append(ml_ret_lr)
+            if 'StratMLTrendRF' in self.portfolio:
+                ml_trend_rf = pd.read_parquet(get_live() / 'data_ml_trend_rf_store.parquet.brotli')
+                stock_data.append(ml_trend_rf)
             if 'StratPortIV' in self.portfolio:
                 port_iv = pd.read_parquet(get_live() / 'data_port_iv_store.parquet.brotli')
                 stock_data.append(port_iv)

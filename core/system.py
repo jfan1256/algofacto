@@ -54,19 +54,23 @@ def get_adj():
 
 # Get ml result directory (historical or live)
 def get_ml_result(live, model_name) -> Path:
-    if live and ('lightgbm' in model_name or 'catboost' in model_name):
-        return get_live_trade() / 'strat_ml_ret' / 'result'
+    if live and ('lightgbm' in model_name):
+        return get_live_trade() / 'strat_ml_ret_gbm' / 'result'
+    elif live and ('lregression' in model_name):
+        return get_live_trade() / 'strat_ml_ret_lr' / 'result'
     elif live and ('randomforest' in model_name):
-        return get_live_trade() / 'strat_ml_trend' / 'result'
+        return get_live_trade() / 'strat_ml_trend_rf' / 'result'
     else:
         return get_historical_trade() / 'result'
 
 # Get ml report directory (historical or live)
 def get_ml_report(live, model_name) -> Path:
-    if live and ('lightgbm' in model_name or 'catboost' in model_name):
-        return get_live_trade() / 'strat_ml_ret' / 'report'
+    if live and ('lightgbm' in model_name):
+        return get_live_trade() / 'strat_ml_ret_gbm' / 'report'
+    elif live and ('lregression' in model_name):
+        return get_live_trade() / 'strat_ml_ret_lr' / 'report'
     elif live and ('randomforest' in model_name):
-        return get_live_trade() / 'strat_ml_trend' / 'report'
+        return get_live_trade() / 'strat_ml_trend_rf' / 'report'
     else:
         return get_historical_trade() / 'report'
 

@@ -236,6 +236,7 @@ class ModelSVM(ModelTrain):
     
         # Get start date and end date for train data
         data_train = self.data.loc[:, factors + ret]
+        data_train = data_train.fillna(-9999)
         start_date_train = str(data_train.index.get_level_values('date').unique()[0].date())
         end_date_train = str(data_train.index.get_level_values('date').unique()[-1].date())
         # Print the start date and end date for train period

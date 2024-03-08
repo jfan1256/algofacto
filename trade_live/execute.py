@@ -12,8 +12,9 @@ from class_live.live_close import LiveClose
 from class_live.live_trade import LiveTrade
 from class_live.live_monitor import LiveMonitor
 
-from trade_live.strat_ml_trend.strat_ml_trend import StratMLTrend
-from trade_live.strat_ml_ret.strat_ml_ret import StratMLRet
+from trade_live.strat_ml_trend_rf.strat_ml_trend_rf import StratMLTrendRF
+from trade_live.strat_ml_ret_gbm.strat_ml_ret_gbm import StratMLRetGBM
+from trade_live.strat_ml_ret_lr.strat_ml_ret_lr import StratMLRetLR
 from trade_live.strat_port_iv.strat_port_iv import StratPortIV
 from trade_live.strat_port_id.strat_port_id import StratPortID
 from trade_live.strat_port_im.strat_port_im import StratPortIM
@@ -62,15 +63,20 @@ def build():
     live_retrieve.exec_adj_factor()
 
     # Backtest strategies
-    if 'StratMLTrend' in strat_crit['portfolio']:
-        start_ml_trend = StratMLTrend(allocate=strat_crit['ml_trend']['allocate'], current_date=current_date, start_model=strat_crit['ml_trend']['start_backtest'], threshold=strat_crit['ml_trend']['threshold'], num_stocks=strat_crit['ml_trend']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=1)
-        start_ml_trend.exec_backtest()
-        start_ml_trend.exec_live()
+    if 'StratMLTrendRF' in strat_crit['portfolio']:
+        start_ml_trend_rf = StratMLTrendRF(allocate=strat_crit['ml_trend_rf']['allocate'], current_date=current_date, start_model=strat_crit['ml_trend_rf']['start_backtest'], threshold=strat_crit['ml_trend_rf']['threshold'], num_stocks=strat_crit['ml_trend_rf']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=1)
+        start_ml_trend_rf.exec_backtest()
+        start_ml_trend_rf.exec_live()
 
-    if 'StratMLRet' in strat_crit['portfolio']:
-        strat_ml_ret = StratMLRet(allocate=strat_crit['ml_ret']['allocate'], current_date=current_date, start_model=strat_crit['ml_ret']['start_backtest'], threshold=strat_crit['ml_ret']['threshold'], num_stocks=strat_crit['ml_ret']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=10)
-        strat_ml_ret.exec_backtest()
-        strat_ml_ret.exec_live()
+    if 'StratMLRetGBM' in strat_crit['portfolio']:
+        strat_ml_ret_gbm = StratMLRetGBM(allocate=strat_crit['ml_ret_gbm']['allocate'], current_date=current_date, start_model=strat_crit['ml_ret_gbm']['start_backtest'], threshold=strat_crit['ml_ret_gbm']['threshold'], num_stocks=strat_crit['ml_ret_gbm']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=1)
+        strat_ml_ret_gbm.exec_backtest()
+        strat_ml_ret_gbm.exec_live()
+
+    if 'StratMLRetLR' in strat_crit['portfolio']:
+        strat_ml_ret_lr = StratMLRetLR(allocate=strat_crit['ml_ret_lr']['allocate'], current_date=current_date, start_model=strat_crit['ml_ret_lr']['start_backtest'], threshold=strat_crit['ml_ret_lr']['threshold'], num_stocks=strat_crit['ml_ret_lr']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=1)
+        strat_ml_ret_lr.exec_backtest()
+        strat_ml_ret_lr.exec_live()
 
     if 'StratPortIV' in strat_crit['portfolio']:
         strat_port_iv = StratPortIV(allocate=strat_crit['port_iv']['allocate'], current_date=current_date, start_date=strat_crit['port_iv']['start_backtest'], threshold=strat_crit['port_iv']['threshold'], num_stocks=strat_crit['port_iv']['per_side'][0], window_port=7)
@@ -228,13 +234,17 @@ def monitor():
     ibkr_crit = json.load(open(get_config() / 'ibkr_crit.json'))
 
     # Monitor strategies
-    if 'StratMLTrend' in strat_crit['portfolio']:
-        mont_ml_trend = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratMLTrend', strat_file='data_ml_trend_store.parquet.brotli', allocate=strat_crit['ml_trend']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_trend')
-        mont_ml_trend.exec_monitor_strat()
+    if 'StratMLTrendRF' in strat_crit['portfolio']:
+        mont_ml_trend_rf = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratMLTrendRF', strat_file='data_ml_trend_rf_store.parquet.brotli', allocate=strat_crit['ml_trend_rf']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_trend_rf')
+        mont_ml_trend_rf.exec_monitor_strat()
 
-    if 'StratMLRet' in strat_crit['portfolio']:
-        mont_ml_ret = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratMLRet', strat_file='data_ml_ret_store.parquet.brotli', allocate=strat_crit['ml_ret']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_ret')
-        mont_ml_ret.exec_monitor_strat()
+    if 'StratMLRetGBM' in strat_crit['portfolio']:
+        mont_ml_ret_gbm = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratMLRetGBM', strat_file='data_ml_ret_gbm_store.parquet.brotli', allocate=strat_crit['ml_ret_gbm']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_ret_gbm')
+        mont_ml_ret_gbm.exec_monitor_strat()
+
+    if 'StratMLRetLR' in strat_crit['portfolio']:
+        mont_ml_ret_lr = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratMLRetLR', strat_file='data_ml_ret_lr_store.parquet.brotli', allocate=strat_crit['ml_ret_lr']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_ml_ret_lr')
+        mont_ml_ret_lr.exec_monitor_strat()
 
     if 'StratPortIV' in strat_crit['portfolio']:
         mont_port_iv = LiveMonitor(start_date=mont_crit['start_date'], capital=ibkr_crit['capital'], strat_name='StratPortIV', strat_file='data_port_iv_store.parquet.brotli', allocate=strat_crit['port_iv']['allocate'], alpha_windows=mont_crit['rolling_window'], output_path=get_live_monitor() / 'strat_port_iv')

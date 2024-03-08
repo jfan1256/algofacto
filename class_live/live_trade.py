@@ -87,21 +87,26 @@ class LiveTrade:
             trend_mls = pd.read_parquet(get_live_stock() / 'trade_stock_trend_mls.parquet.brotli')
             stock_collect.append(trend_mls)
 
-        if 'StratMLTrend' in self.portfolio:
+        if 'StratMLTrendRF' in self.portfolio:
             # Load Live Price
-            ml_trend_re_data = pd.read_parquet(get_live_price() / 'data_ml_trend_re_live.parquet.brotli')
-            ml_trend_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_bond_live.parquet.brotli')
-            price_collect.append(ml_trend_re_data)
-            price_collect.append(ml_trend_bond_data)
+            ml_trend_rf_re_data = pd.read_parquet(get_live_price() / 'data_ml_trend_rf_re_live.parquet.brotli')
+            ml_trend_rf_bond_data = pd.read_parquet(get_live_price() / 'data_ml_trend_rf_bond_live.parquet.brotli')
+            price_collect.append(ml_trend_rf_re_data)
+            price_collect.append(ml_trend_rf_bond_data)
 
             # Load Live Stock
-            ml_trend = pd.read_parquet(get_live_stock() / 'trade_stock_ml_trend.parquet.brotli')
+            ml_trend = pd.read_parquet(get_live_stock() / 'trade_stock_ml_rf_trend.parquet.brotli')
             stock_collect.append(ml_trend)
 
-        if 'StratMLRet' in self.portfolio:
+        if 'StratMLRetGBM' in self.portfolio:
             # Load Live Stock
-            ml_ret = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret.parquet.brotli')
-            stock_collect.append(ml_ret)
+            ml_ret_gbm = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret_gbm.parquet.brotli')
+            stock_collect.append(ml_ret_gbm)
+
+        if 'StratMLRetLR' in self.portfolio:
+            # Load Live Stock
+            ml_ret_lr = pd.read_parquet(get_live_stock() / 'trade_stock_ml_ret_lr.parquet.brotli')
+            stock_collect.append(ml_ret_lr)
 
         if 'StratPortIV' in self.portfolio:
             # Load Live Stock
