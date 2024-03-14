@@ -443,7 +443,8 @@ class ModelLightgbm(ModelTrain):
             param_names = list(params.keys())
 
         # Num iterations
-        num_iterations = [500]
+        num_iterations = [150, 200, 300, 400, 500, 750, 1000]
+        # num_iterations = [500]
         # This will be used for the metric dataset during training
         metric_cols = (param_names + ['time'] + ["daily_metric_" + str(n) for n in num_iterations])
 

@@ -79,8 +79,6 @@ class ModelPrep:
             date_data = get_stocks_data(date_data, self.stock)
             self.data = pd.merge(date_data, self.data, left_index=True, right_index=True, how='left')
             self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
-            # Forward Fill by a maximum of 93 days
-            # self.data = self.data.groupby(self.group).fillna(method='ffill', limit=93)
             # Forward Fill
             self.data = self.data.groupby(self.group).ffill()
             # If self.kind is set to 'fundamental', then calculate moving average

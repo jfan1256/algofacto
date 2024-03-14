@@ -238,6 +238,17 @@ def daily_to_monthly(data):
     data = data.groupby('permno').apply(by_month)
     return data
 
+# Filter Market Cap
+def filter_market_cap(data, group, threshold):
+    def filter(group):
+        total_dates = len(group)
+        threshold_dates = group[group['market_cap'] > threshold].shape[0]
+        if threshold_dates / total_dates > 0.50:
+            return group
+        else:
+            return None
+    return data.groupby(group).apply(filter).dropna(how='all').reset_index(level=0, drop=True)
+
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------PARALLELIZED ROLLING OPERATIONS--------------------------------------------------------------------
 # Rolling Kmean
@@ -471,6 +482,36 @@ def get_data_fmp(ticker_list, start, current_date):
             'volume': 'Volume'
         })
         return price.sort_index(level=['ticker', 'date'])
+    else:
+        print("No data available for any ticker.")
+        return None
+
+# Get market cap data per ticker from start to current_date
+def get_market_cap_fmp(ticker_list, start, current_date):
+    frames = []
+
+    for ticker in tqdm(ticker_list, desc="Fetching data", unit="ticker"):
+        # Adjusted URL to fetch market capitalization data
+        url = f"https://financialmodelingprep.com/api/v3/historical-market-capitalization/{ticker}?from={start}&to={current_date}&apikey={api_key}"
+        response = requests.get(url)
+        data = response.json()
+
+        # Check if there's historical market capitalization data in the response
+        if data:
+            df = pd.DataFrame(data)
+            df['ticker'] = ticker  # Add ticker column for identification
+            frames.append(df)
+        else:
+            print(f"Skipped {ticker} - No data available")
+
+    if frames:
+        market_cap = pd.concat(frames)
+        market_cap['date'] = pd.to_datetime(market_cap['date'], errors='coerce')
+        market_cap = market_cap.set_index(['ticker', 'date'])
+        market_cap['marketCap'] = market_cap['marketCap'].astype(float)
+        market_cap = market_cap.rename(columns={'marketCap': 'market_cap'})
+        market_cap = market_cap.drop('symbol', axis=1)
+        return market_cap.sort_index(level=['ticker', 'date'])
     else:
         print("No data available for any ticker.")
         return None

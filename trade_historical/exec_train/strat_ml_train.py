@@ -366,7 +366,7 @@ del dividend
 # earning_disparity = PrepFactor(trade_live=trade_live, factor_name='factor_earning_disparity', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(earning_disparity)
 # del earning_disparity
-#
+
 # resid_mom = PrepFactor(trade_live=trade_live, factor_name='factor_resid_mom', group='permno', interval='D', kind='trend', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(resid_mom)
 # del resid_mom
@@ -377,6 +377,14 @@ del dividend
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------BETAS---------------------------------------------------------------------------------------------
+sb_pca = ModelPrep(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(sb_pca, normalize=normalize, impute=impute)
+del sb_pca
+
+sb_sector = ModelPrep(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
+alpha.add_factor(sb_sector, normalize=normalize, impute=impute)
+del sb_sector
+
 # sb_fama = PrepFactor(trade_live=trade_live, factor_name='factor_sb_fama', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(sb_fama)
 # del sb_fama
@@ -385,10 +393,6 @@ del dividend
 # alpha.add_factor(sb_bond)
 # del sb_bond
 
-sb_pca = ModelPrep(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(sb_pca, normalize=normalize, impute=impute)
-del sb_pca
-
 # sb_pca_copy = PrepFactor(trade_live=trade_live, factor_name='factor_sb_pca_copy', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(sb_pca_copy)
 # del sb_pca_copy
@@ -396,10 +400,6 @@ del sb_pca
 # sb_sector_copy = PrepFactor(trade_live=trade_live, factor_name='factor_sb_sector_copy', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(sb_sector_copy)
 # del sb_sector_copy
-
-sb_sector = ModelPrep(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
-alpha.add_factor(sb_sector, normalize=normalize, impute=impute)
-del sb_sector
 
 # sb_inverse = ModelPrep(live=live, factor_name='factor_sb_inverse', group='permno', interval='D', kind='price', stock=stock, div=False, start=start, end=end, save=save).prep()
 # alpha.add_factor(sb_inverse, normalize=normalize, impute=impute)

@@ -14,17 +14,20 @@ class LiveData:
     def __init__(self,
                  live=None,
                  start_date=None,
-                 current_date=None):
+                 current_date=None,
+                 annual_update=None):
 
         '''
         live (bool): Get live data or historical data
         start_date (str: YYYY-MM-DD): Start date for data retrieval
         current_date (str: YYYY-MM-DD): Current date (this will be the last date for data retrieval)
+        annual_update (bool): Update permno list or not
         '''
 
         self.live = live
         self.start_date = start_date
         self.current_date = current_date
+        self.annual_update = annual_update
 
         with open(get_config() / 'api_key.json') as f:
             config = json.load(f)
@@ -77,101 +80,100 @@ class LiveData:
 
     # Create CRSP Price
     def create_crsp_price(self, threshold, set_age):
-        print("-" * 60)
-        # Read in CRSP dataset
-        print('Read in CRSP dataset')
-        crsp = pd.read_csv(get_large(self.live) / 'crsp_price.csv')
+        if self.annual_update:
+            print("-" * 60)
+            # Read in CRSP dataset
+            print('Read in CRSP dataset')
+            crsp = pd.read_csv(get_large(self.live) / 'crsp_price.csv')
 
-        # Rename Columns
-        print('Rename columns...')
-        crsp.columns = crsp.columns.str.lower()
-        crsp = crsp.rename(columns={'prc': 'Close', 'bid': 'High', 'ask': 'Low', 'openprc': 'Open', 'shrout': 'outstanding', 'vol': 'Volume', 'cfacpr': 'adj_price'})
+            # Rename Columns
+            print('Rename columns...')
+            crsp.columns = crsp.columns.str.lower()
+            crsp = crsp.rename(columns={'prc': 'Close', 'bid': 'High', 'ask': 'Low', 'openprc': 'Open', 'shrout': 'outstanding', 'vol': 'Volume', 'cfacpr': 'adj_price'})
 
-        # Adjust closing price
-        print('Adjusting Close Price...')
-        crsp['Close'] = crsp['Close'] / crsp['adj_price']
+            # Adjust closing price
+            print('Adjusting Close Price...')
+            crsp['Close'] = crsp['Close'] / crsp['adj_price']
 
-        # Set and sort index
-        print('Set and sort indices...')
-        crsp.date = pd.to_datetime(crsp.date)
-        crsp = crsp.set_index(['permno', 'date'])
-        crsp = crsp.sort_index(level=['permno', 'date'])
+            # Set and sort index
+            print('Set and sort indices...')
+            crsp.date = pd.to_datetime(crsp.date)
+            crsp = crsp.set_index(['permno', 'date'])
+            crsp = crsp.sort_index(level=['permno', 'date'])
 
-        # Remove duplicate indices and replace all infinity with nan
-        print('Remove duplicate indices and infinity...')
-        crsp = crsp[~crsp.index.duplicated(keep='first')]
-        crsp = crsp.replace([np.inf, -np.inf], np.nan)
+            # Remove duplicate indices and replace all infinity with nan
+            print('Remove duplicate indices and infinity...')
+            crsp = crsp[~crsp.index.duplicated(keep='first')]
+            crsp = crsp.replace([np.inf, -np.inf], np.nan)
 
-        # Remove stocks that have more than 1 NAN values in their Closing price column
-        # Stocks that get delisted have 1 row of NAN values as their last row
-        # Stocks that switch ticker (WM to COOP: 81593) have rows of NAN valuescap = cap.dropna(subset='Close')
-        # Afterwards, drop all rows that have NAN values in Close (every delisted permno stock only has 1 NAN in Close now)
-        print('Remove stocks with NAN...')
-        nan_counts = crsp.groupby('permno')['Close'].apply(lambda x: x.isna().sum())
-        valid_permnos = nan_counts[nan_counts <= 1].index.tolist()
-        crsp = crsp[crsp.index.get_level_values('permno').isin(valid_permnos)]
-        crsp = crsp.dropna(subset='Close')
+            # Remove stocks that have more than 1 NAN values in their Closing price column
+            # Stocks that get delisted have 1 row of NAN values as their last row
+            # Stocks that switch ticker (WM to COOP: 81593) have rows of NAN values: cap = cap.dropna(subset='Close')
+            # Afterwards, drop all rows that have NAN values in Close (every delisted permno stock only has 1 NAN in Close now)
+            print('Remove stocks with NAN...')
+            nan_counts = crsp.groupby('permno')['Close'].apply(lambda x: x.isna().sum())
+            valid_permnos = nan_counts[nan_counts <= 1].index.tolist()
+            crsp = crsp[crsp.index.get_level_values('permno').isin(valid_permnos)]
+            crsp = crsp.dropna(subset='Close')
 
-        # Remove dates in stocks that have a negative closing price
-        crsp = crsp[crsp['Close'] >= 0]
+            # Remove dates in stocks that have a negative closing price
+            crsp = crsp[crsp['Close'] >= 0]
 
-        # Remove stocks that do not have at least 3 years worth of year data
-        print(f'Set length to {set_age} years...')
-        crsp = set_length(crsp, set_age)
+            # Remove stocks that do not have at least 3 years worth of year data
+            print(f'Set length to {set_age} years...')
+            crsp = set_length(crsp, set_age)
 
-        # Drop permno that do not have over _B market cap
-        print(f"Drop permnos that do not have over {threshold}B market cap...")
-        crsp['market_cap'] = crsp['Close'] * crsp['outstanding'] * 1000
-        avg_cap = crsp.groupby('permno')['market_cap'].mean()
-        above_cap = avg_cap[avg_cap > threshold].index
-        crsp = crsp[crsp.index.get_level_values('permno').isin(above_cap)]
+            # Drop permno that do not have over {threshold}B market cap 50% of the time
+            print(f"Drop permnos that do not have over {threshold}B market cap 50% of the time...")
+            crsp['market_cap'] = crsp['Close'] * crsp['outstanding'] * 1000
+            crsp = filter_market_cap(crsp, 'permno', threshold)
 
-        # Drop permnos that have the same ticker on the last date of the dataframe
-        print('Export ticker and filter out any permnos that share tickers on the last date...')
-        last_date = crsp.index.get_level_values('date').max()
-        filtered_df = crsp[crsp.index.get_level_values('date') == last_date]
-        duplicated_tickers = filtered_df[filtered_df['ticker'].duplicated(keep=False)]['ticker'].unique()
-        permnos_to_drop = filtered_df[filtered_df['ticker'].isin(duplicated_tickers)].index.get_level_values('permno').unique()
-        crsp = crsp[~crsp.index.get_level_values('permno').isin(permnos_to_drop)]
-        ticker = crsp[['ticker']]
-        ticker.to_parquet(get_parquet(self.live) / 'data_crsp_ticker.parquet.brotli', compression='brotli')
+            # Drop permnos that have the same ticker on the last date of the dataframe
+            print('Export ticker and filter out any permnos that share tickers on the last date...')
+            last_date = crsp.index.get_level_values('date').max()
+            filtered_df = crsp[crsp.index.get_level_values('date') == last_date]
+            duplicated_tickers = filtered_df[filtered_df['ticker'].duplicated(keep=False)]['ticker'].unique()
+            permnos_to_drop = filtered_df[filtered_df['ticker'].isin(duplicated_tickers)].index.get_level_values('permno').unique()
+            crsp = crsp[~crsp.index.get_level_values('permno').isin(permnos_to_drop)]
+            ticker = crsp[['ticker']]
+            ticker.to_parquet(get_parquet(self.live) / 'data_crsp_ticker.parquet.brotli', compression='brotli')
 
-        # Export ohclv
-        print('Export ohclv...')
-        ohclv = crsp[['Open', 'High', 'Low', 'Close', 'Volume']]
-        ohclv = ohclv.astype(float)
-        ohclv.to_parquet(get_parquet(self.live) / 'data_crsp_price.parquet.brotli', compression='brotli')
+            # Export ohclv
+            print('Export ohclv...')
+            ohclv = crsp[['Open', 'High', 'Low', 'Close', 'Volume']]
+            ohclv = ohclv.astype(float)
+            ohclv.to_parquet(get_parquet(self.live) / 'data_crsp_price.parquet.brotli', compression='brotli')
 
-        # Set up Exchange Mapping
-        print("Set up Exchange Mapping...")
-        exchange_mapping = {
-            -2: "Halted NYSE/AMEX",
-            -1: "Suspended NYSE/AMEX/NASDAQ",
-            0: "Not Trading NYSE/AMEX/NASDAQ",
-            1: "NYSE",
-            2: "AMEX",
-            3: "NASDAQ",
-            4: "Arca",
-            5: "Mutual Funds NASDAQ",
-            10: "Boston Stock Exchange",
-            13: "Chicago Stock Exchange",
-            16: "Pacific Stock Exchange",
-            17: "Philadelphia Stock Exchange",
-            19: "Toronto Stock Exchange",
-            20: "OTC Non-NASDAQ",
-            31: "When-issued NYSE",
-            32: "When-issued AMEX",
-            33: "When-issued NASDAQ"
-        }
-        crsp['exchcd'] = crsp['exchcd'].map(exchange_mapping)
-        exchange_copy = crsp.copy(deep=True)
-        exchange_copy = exchange_copy.sort_values(by=['permno', 'date', 'ticker'])
+            # Set up Exchange Mapping
+            print("Set up Exchange Mapping...")
+            exchange_mapping = {
+                -2: "Halted NYSE/AMEX",
+                -1: "Suspended NYSE/AMEX/NASDAQ",
+                0: "Not Trading NYSE/AMEX/NASDAQ",
+                1: "NYSE",
+                2: "AMEX",
+                3: "NASDAQ",
+                4: "Arca",
+                5: "Mutual Funds NASDAQ",
+                10: "Boston Stock Exchange",
+                13: "Chicago Stock Exchange",
+                16: "Pacific Stock Exchange",
+                17: "Philadelphia Stock Exchange",
+                19: "Toronto Stock Exchange",
+                20: "OTC Non-NASDAQ",
+                31: "When-issued NYSE",
+                32: "When-issued AMEX",
+                33: "When-issued NASDAQ"
+            }
+            crsp['exchcd'] = crsp['exchcd'].map(exchange_mapping)
+            exchange_copy = crsp.copy(deep=True)
+            exchange_copy = exchange_copy.sort_values(by=['permno', 'date', 'ticker'])
 
-        # Convert to permno/ticker multindex and export data
-        print("Convert to permno/ticker multindex and export data...")
-        exchange = exchange_copy.groupby(['permno', 'ticker'])['exchcd'].last()
-        exchange = exchange.reset_index().rename(columns={'exchcd': 'exchange'}).set_index(['permno', 'ticker'])
-        exchange.to_parquet(get_parquet(self.live) / 'data_exchange.parquet.brotli', compression='brotli')
+            # Convert to permno/ticker multindex and export data
+            print("Convert to permno/ticker multindex and export data...")
+            exchange = exchange_copy.groupby(['permno', 'ticker'])['exchcd'].last()
+            exchange = exchange.reset_index().rename(columns={'exchcd': 'exchange'}).set_index(['permno', 'ticker'])
+            exchange.to_parquet(get_parquet(self.live) / 'data_exchange.parquet.brotli', compression='brotli')
 
     def create_compustat_quarterly(self):
         print("-" * 60)
@@ -387,7 +389,6 @@ class LiveData:
         print("Export data...")
         annual.to_parquet(get_parquet(self.live) / 'data_fund_raw_a.parquet.brotli', compression='brotli')
 
-
     # Create Common Stock List
     def create_stock_list(self):
         print("-" * 60)
@@ -415,98 +416,167 @@ class LiveData:
         common.index.names = ['permno']
         export_stock(common, get_large(self.live) / 'permno_common.csv')
 
-
     # Create Live Price
-    def create_live_price(self):
+    def create_live_price(self, set_age):
+        # print("-" * 60)
+        # # Get ticker list from crsp_ticker
+        # print("Get common ticker list...")
+        # crsp_ticker = pd.read_parquet(get_parquet(self.live) / 'data_crsp_ticker.parquet.brotli')
+        # common_stock_list = read_stock(get_large(self.live) / 'permno_common.csv')
+        # crsp_ticker = get_stocks_data(crsp_ticker, common_stock_list)
+        # # This date should be the end of the annual CRSP dataset (i.e., 2022-12-31)
+        # last_date = crsp_ticker.index.get_level_values('date').max()
+        # ticker_list = crsp_ticker.loc[crsp_ticker.index.get_level_values('date') == last_date, 'ticker'].tolist()
+        #
+        # # Read in trade_live market data
+        # print("Read in trade_live market data...")
+        # start_year = last_date.to_pydatetime()
+        # start_year = start_year.replace(year=start_year.year + 1, month=1, day=1)
+        # start_year = start_year.strftime("%Y-%m-%d")
+        # price = get_data_fmp(ticker_list=ticker_list, start=start_year, current_date=self.current_date)
+        #
+        # # Extract permno ticker pair used for mapping
+        # print("Extract permno ticker pair used for mapping...")
+        # permno_ticker_map = crsp_ticker.loc[crsp_ticker.index.get_level_values('date') == last_date][['ticker']]
+        #
+        # # Map permno ticker pair to trade_live market data
+        # print("Map permno ticker pair to trade_live market data...")
+        # permno_ticker_map = permno_ticker_map.reset_index()
+        # price_change = price.reset_index()
+        # price_change['permno'] = price_change['ticker'].map(permno_ticker_map.set_index('ticker').to_dict()['permno'])
+        # price_change = price_change.dropna(subset=['permno'])  # drop rows without a matching permno
+        # price_change['permno'] = price_change['permno'].astype(int)  # Convert permno to int if it's in float due to NaNs
+        # price_change = price_change.set_index(['permno', 'date'])
+        #
+        # # Read in CRSP price
+        # print("Read in CRSP price...")
+        # crsp_price = pd.read_parquet(get_parquet(self.live) / 'data_crsp_price.parquet.brotli')
+        # crsp_price = get_stocks_data(crsp_price, common_stock_list)
+        #
+        # # Change adj close to close
+        # print("Change adj close to close...")
+        # price_change = price_change.drop('Close', axis=1)
+        # price_change = price_change.rename(columns={'Adj Close': 'Close'})
+        # price_change_price = price_change[['Open', 'High', 'Low', 'Close', 'Volume']]
+        #
+        # # Concat and sort trade_historical price and trade_live price
+        # print("Concat and sort trade_historical price and trade_live price...")
+        # combined_price = pd.concat([crsp_price, price_change_price], axis=0)
+        # combined_price = combined_price.sort_index(level=['permno', 'date'])
+        #
+        # ret = create_return(combined_price, [1])
+        #
+        # # Identify and drop permnos that have returns greater than 10 (this is due to price descrepancy between CRSP and FMP)
+        # print("Identify and drop permnos that have returns greater than 10 (this removes extremely volatile stocks (i.e., TPST on October 10, 2023))...")
+        # permnos_to_remove = ret.loc[ret.RET_01 > 10].index.get_level_values('permno').unique()
+        # print(f"Number of stocks to remove: {len(permnos_to_remove)}")
+        # combined_price = combined_price.drop(permnos_to_remove, level='permno')
+        #
+        # # Filter for the period of interest around start_year and then identify permnos with returns greater than 5
+        # print("Filter for the period of interest around start_year and then identify permnos with returns greater than 5 (this is due to price discrepancy between CRSP and FMP)...")
+        # print("Note: some stocks may have already been removed by the >10 condition (there may be some overlaps)")
+        # start_year = pd.to_datetime(start_year)
+        # subset_ret = ret.loc[(ret.index.get_level_values('date') >= start_year - pd.Timedelta(days=5)) & (ret.index.get_level_values('date') <= start_year + pd.Timedelta(days=5))]
+        # permnos_to_remove = subset_ret[subset_ret.RET_01 > 5].index.get_level_values('permno').unique()
+        # print(f"Number of stocks to remove: {len(permnos_to_remove)}")
+        # combined_price = combined_price.drop(permnos_to_remove, level='permno')
+        # combined_price = combined_price.drop('RET_01', axis=1)
+        #
+        # # Concat and sort trade_historical ticker and trade_live ticker
+        # print("Concat and sort trade_historical ticker and trade_live ticker...")
+        # price_change_ticker = price_change[['ticker']]
+        # combined_ticker = pd.concat([crsp_ticker, price_change_ticker], axis=0)
+        # combined_ticker = combined_ticker.sort_index(level=['permno', 'date'])
+        # combined_price_stock_list = get_stock_idx(combined_price)
+        # combined_ticker = get_stocks_data(combined_ticker, combined_price_stock_list)
+        #
+        # # Export ohclv
+        # print('Export Price...')
+        # combined_price.to_parquet(get_parquet(self.live) / 'data_price.parquet.brotli', compression='brotli')
+        #
+        # # Export date
+        # print('Export Date...')
+        # date = combined_price.drop(columns=combined_price.columns)
+        # date.to_parquet(get_parquet(self.live) / 'data_date.parquet.brotli', compression='brotli')
+        #
+        # # Export ticker
+        # print('Export Tickers...')
+        # combined_ticker.to_parquet(get_parquet(self.live) / 'data_ticker.parquet.brotli', compression='brotli')
+        #
+        # # Export permno list for trade_live trading
+        # print("Export permno list for trade_live trading...")
+        # print(f'Number of stocks: {len(get_stock_idx(combined_price))}')
+        # export_stock(combined_price, get_large(self.live) / 'permno_live.csv')
+        # if self.annual_update:
+        #     export_stock(price_change_price, get_large(self.live) / 'permno_live.csv')
+
         print("-" * 60)
         # Get ticker list from crsp_ticker
         print("Get common ticker list...")
         crsp_ticker = pd.read_parquet(get_parquet(self.live) / 'data_crsp_ticker.parquet.brotli')
         common_stock_list = read_stock(get_large(self.live) / 'permno_common.csv')
         crsp_ticker = get_stocks_data(crsp_ticker, common_stock_list)
-        # This date should be the end of the annual CRSP dataset (i.e., 2022-12-31)
-        last_date = crsp_ticker.index.get_level_values('date').max()
-        ticker_list = crsp_ticker.loc[crsp_ticker.index.get_level_values('date') == last_date, 'ticker'].tolist()
 
-        # Read in trade_live market data
-        print("Read in trade_live market data...")
-        start_year = last_date.to_pydatetime()
-        start_year = start_year.replace(year=start_year.year + 1, month=1, day=1)
-        start_year = start_year.strftime("%Y-%m-%d")
-        price = get_data_fmp(ticker_list=ticker_list, start=start_year, current_date=self.current_date)
+        # Identify permnos with more than one unique ticker
+        count_ticker = crsp_ticker.groupby('permno')['ticker'].nunique()
+        nonunique_ticker = count_ticker[count_ticker > 1].index.tolist()
+        crsp_ticker = crsp_ticker[~crsp_ticker.index.get_level_values('permno').isin(nonunique_ticker)]
+        ticker_list = crsp_ticker['ticker'].unique()
+
+        # Get live data
+        price = get_data_fmp(ticker_list=ticker_list, start='2005-01-01', current_date=self.current_date)
 
         # Extract permno ticker pair used for mapping
         print("Extract permno ticker pair used for mapping...")
-        permno_ticker_map = crsp_ticker.loc[crsp_ticker.index.get_level_values('date') == last_date][['ticker']]
+        permno_ticker_map = crsp_ticker[['ticker']]
 
         # Map permno ticker pair to trade_live market data
         print("Map permno ticker pair to trade_live market data...")
         permno_ticker_map = permno_ticker_map.reset_index()
         price_change = price.reset_index()
         price_change['permno'] = price_change['ticker'].map(permno_ticker_map.set_index('ticker').to_dict()['permno'])
-        price_change = price_change.dropna(subset=['permno'])  # drop rows without a matching permno
+        price_change = price_change.dropna(subset=['permno'])  # Drop rows without a matching permno
         price_change['permno'] = price_change['permno'].astype(int)  # Convert permno to int if it's in float due to NaNs
         price_change = price_change.set_index(['permno', 'date'])
-
-        # Read in CRSP price
-        print("Read in CRSP price...")
-        crsp_price = pd.read_parquet(get_parquet(self.live) / 'data_crsp_price.parquet.brotli')
-        crsp_price = get_stocks_data(crsp_price, common_stock_list)
 
         # Change adj close to close
         print("Change adj close to close...")
         price_change = price_change.drop('Close', axis=1)
         price_change = price_change.rename(columns={'Adj Close': 'Close'})
-        price_change_price = price_change[['Open', 'High', 'Low', 'Close', 'Volume']]
+        price_change_price = price_change[['Open', 'High', 'Low', 'Close', 'Volume', 'ticker']]
 
-        # Concat and sort trade_historical price and trade_live price
-        print("Concat and sort trade_historical price and trade_live price...")
-        combined_price = pd.concat([crsp_price, price_change_price], axis=0)
-        combined_price = combined_price.sort_index(level=['permno', 'date'])
+        # Set length
+        print(f"Set length to be: {set_age} years")
+        price_change_price = set_length(price_change_price, set_age)
 
-        ret = create_return(combined_price, [1])
-
-        # Identify and drop permnos that have returns greater than 10 (this is due to price descrepancy between CRSP and FMP)
-        print("Identify and drop permnos that have returns greater than 10 (this removes extremely volatile stocks (i.e., TPST on October 10, 2023))...")
-        permnos_to_remove = ret.loc[ret.RET_01 > 10].index.get_level_values('permno').unique()
+        # Filter stock with returns greater than 2 (if you don't do this model training will be terrible: >15.0 l2 loss)
+        print("Filter stock with returns greater than 2")
+        price_change_price = create_return(price_change_price, [1])
+        permnos_to_remove = price_change_price.loc[price_change_price.RET_01 >= 2].index.get_level_values('permno').unique()
         print(f"Number of stocks to remove: {len(permnos_to_remove)}")
-        combined_price = combined_price.drop(permnos_to_remove, level='permno')
-
-        # Filter for the period of interest around start_year and then identify permnos with returns greater than 5
-        print("Filter for the period of interest around start_year and then identify permnos with returns greater than 5 (this is due to price discrepancy between CRSP and FMP)...")
-        print("Note: some stocks may have already been removed by the >10 condition (there may be some overlaps)")
-        start_year = pd.to_datetime(start_year)
-        subset_ret = ret.loc[(ret.index.get_level_values('date') >= start_year - pd.Timedelta(days=5)) & (ret.index.get_level_values('date') <= start_year + pd.Timedelta(days=5))]
-        permnos_to_remove = subset_ret[subset_ret.RET_01 > 5].index.get_level_values('permno').unique()
-        print(f"Number of stocks to remove: {len(permnos_to_remove)}")
-        combined_price = combined_price.drop(permnos_to_remove, level='permno')
-        combined_price = combined_price.drop('RET_01', axis=1)
-
-        # Concat and sort trade_historical ticker and trade_live ticker
-        print("Concat and sort trade_historical ticker and trade_live ticker...")
-        price_change_ticker = price_change[['ticker']]
-        combined_ticker = pd.concat([crsp_ticker, price_change_ticker], axis=0)
-        combined_ticker = combined_ticker.sort_index(level=['permno', 'date'])
-        combined_price_stock_list = get_stock_idx(combined_price)
-        combined_ticker = get_stocks_data(combined_ticker, combined_price_stock_list)
+        price_change_price = price_change_price.drop(permnos_to_remove, level='permno')
+        price_change_price = price_change_price.sort_index(level=['permno', 'date'])
+        price_change_ticker = price_change_price[['ticker']]
+        price_change_price = price_change_price.drop(['ticker', 'RET_01'], axis=1)
 
         # Export ohclv
         print('Export Price...')
-        combined_price.to_parquet(get_parquet(self.live) / 'data_price.parquet.brotli', compression='brotli')
+        price_change_price.to_parquet(get_parquet(self.live) / 'data_price.parquet.brotli', compression='brotli')
 
         # Export date
         print('Export Date...')
-        date = combined_price.drop(columns=combined_price.columns)
+        date = price_change_price.drop(columns=price_change_price.columns)
         date.to_parquet(get_parquet(self.live) / 'data_date.parquet.brotli', compression='brotli')
 
         # Export ticker
         print('Export Tickers...')
-        combined_ticker.to_parquet(get_parquet(self.live) / 'data_ticker.parquet.brotli', compression='brotli')
+        price_change_ticker.to_parquet(get_parquet(self.live) / 'data_ticker.parquet.brotli', compression='brotli')
 
-        # Export permno list for trade_live trading
+        # Export permno list for trade_live trading if annual_update is true
         print("Export permno list for trade_live trading...")
-        print(f'Number of stocks: {len(get_stock_idx(combined_price))}')
-        export_stock(combined_price, get_large(self.live) / 'permno_live.csv')
+        print(f'Number of stocks: {len(get_stock_idx(price_change_price))}')
+        if self.annual_update:
+            export_stock(price_change_price, get_large(self.live) / 'permno_live.csv')
 
     # Create Misc
     def create_misc(self):

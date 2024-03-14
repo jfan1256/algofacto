@@ -103,72 +103,71 @@ class StratMLRetLR(Strategy):
         alpha.add_factor(ind_mom, normalize=normalize, impute=impute)
         del ind_mom
 
-        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # -----------------------------------------------------------------------------OPEN ASSET----------------------------------------------------------------------------------------
-
-        net_debt_finance = ModelPrep(live=live, factor_name='factor_net_debt_finance', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(net_debt_finance, normalize=normalize, impute=impute)
-        del net_debt_finance
-
-        chtax = ModelPrep(live=live, factor_name='factor_chtax', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(chtax, normalize=normalize, impute=impute)
-        del chtax
-
-        asset_growth = ModelPrep(live=live, factor_name='factor_asset_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(asset_growth, normalize=normalize, impute=impute)
-        del asset_growth
-
-        mom_season = ModelPrep(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_season, normalize=normalize, impute=impute)
-        del mom_season
-
-        noa = ModelPrep(live=live, factor_name='factor_noa', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(noa, normalize=normalize, impute=impute)
-        del noa
-
-        invest_ppe = ModelPrep(live=live, factor_name='factor_invest_ppe_inv', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(invest_ppe, normalize=normalize, impute=impute)
-        del invest_ppe
-
-        inv_growth = ModelPrep(live=live, factor_name='factor_inv_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(inv_growth, normalize=normalize, impute=impute)
-        del inv_growth
-        
-        comp_debt = ModelPrep(live=live, factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(comp_debt, normalize=normalize, impute=impute)
-        del comp_debt
-
-        cheq = ModelPrep(live=live, factor_name='factor_cheq', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(cheq, normalize=normalize, impute=impute)
-        del cheq
-
-        xfin = ModelPrep(live=live, factor_name='factor_xfin', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(xfin, normalize=normalize, impute=impute)
-        del xfin
-
-        emmult = ModelPrep(live=live, factor_name='factor_emmult', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(emmult, normalize=normalize, impute=impute)
-        del emmult
-
-        accrual = ModelPrep(live=live, factor_name='factor_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(accrual, normalize=normalize, impute=impute)
-        del accrual
-
-        pcttoacc = ModelPrep(live=live, factor_name='factor_pcttotacc', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(pcttoacc, normalize=normalize, impute=impute)
-        del pcttoacc
-
-        accrual_bm = ModelPrep(live=live, factor_name='factor_accrual_bm', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(accrual_bm, normalize=normalize, impute=impute)
-        del accrual_bm
-
-        grcapx = ModelPrep(live=live, factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(grcapx, normalize=normalize, impute=impute)
-        del grcapx
-
-        gradexp = ModelPrep(live=live, factor_name='factor_gradexp', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(gradexp, normalize=normalize, impute=impute)
-        del gradexp
+        # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # # -----------------------------------------------------------------------------OPEN ASSET----------------------------------------------------------------------------------------
+        # net_debt_finance = ModelPrep(live=live, factor_name='factor_net_debt_finance', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(net_debt_finance, normalize=normalize, impute=impute)
+        # del net_debt_finance
+        #
+        # chtax = ModelPrep(live=live, factor_name='factor_chtax', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(chtax, normalize=normalize, impute=impute)
+        # del chtax
+        #
+        # asset_growth = ModelPrep(live=live, factor_name='factor_asset_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(asset_growth, normalize=normalize, impute=impute)
+        # del asset_growth
+        #
+        # mom_season = ModelPrep(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(mom_season, normalize=normalize, impute=impute)
+        # del mom_season
+        #
+        # noa = ModelPrep(live=live, factor_name='factor_noa', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(noa, normalize=normalize, impute=impute)
+        # del noa
+        #
+        # invest_ppe = ModelPrep(live=live, factor_name='factor_invest_ppe_inv', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(invest_ppe, normalize=normalize, impute=impute)
+        # del invest_ppe
+        #
+        # inv_growth = ModelPrep(live=live, factor_name='factor_inv_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(inv_growth, normalize=normalize, impute=impute)
+        # del inv_growth
+        #
+        # comp_debt = ModelPrep(live=live, factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(comp_debt, normalize=normalize, impute=impute)
+        # del comp_debt
+        #
+        # cheq = ModelPrep(live=live, factor_name='factor_cheq', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(cheq, normalize=normalize, impute=impute)
+        # del cheq
+        #
+        # xfin = ModelPrep(live=live, factor_name='factor_xfin', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(xfin, normalize=normalize, impute=impute)
+        # del xfin
+        #
+        # emmult = ModelPrep(live=live, factor_name='factor_emmult', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(emmult, normalize=normalize, impute=impute)
+        # del emmult
+        #
+        # accrual = ModelPrep(live=live, factor_name='factor_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(accrual, normalize=normalize, impute=impute)
+        # del accrual
+        #
+        # pcttoacc = ModelPrep(live=live, factor_name='factor_pcttotacc', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(pcttoacc, normalize=normalize, impute=impute)
+        # del pcttoacc
+        #
+        # accrual_bm = ModelPrep(live=live, factor_name='factor_accrual_bm', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(accrual_bm, normalize=normalize, impute=impute)
+        # del accrual_bm
+        #
+        # grcapx = ModelPrep(live=live, factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(grcapx, normalize=normalize, impute=impute)
+        # del grcapx
+        #
+        # gradexp = ModelPrep(live=live, factor_name='factor_gradexp', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(gradexp, normalize=normalize, impute=impute)
+        # del gradexp
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------TRAINING------------------------------------------------------------------------------------------

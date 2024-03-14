@@ -80,7 +80,7 @@ class LiveCreate:
                  portfolio,
                  threshold,
                  set_length,
-                 update_crsp_price,
+                 annual_update,
                  current_date,
                  start_data,
                  start_factor):
@@ -89,7 +89,7 @@ class LiveCreate:
         portfolio (list): List of portfolio strategy class names
         threshold (int): Market cap threshold for preprocessing stocks
         set_length (int): Number of years required for stock to be considered for trading
-        update_crsp_price (str): Used to determine whether to update CRSP Price Dataset (should only be done at the start of every new year)
+        annual_update (str): Used to determine whether to update CRSP Price Dataset and permno list(should only be done at the start of every new year)
         current_date (str: YYYY-MM-DD): Current date of today (the end date for data retrieval)
         start_data (str: YYYY-MM-DD): Start date for data retrieval
         start_facdtor (str: YYYY-MM-DD): Start data fore factor creation
@@ -98,7 +98,7 @@ class LiveCreate:
         self.portfolio = portfolio
         self.threshold = threshold
         self.set_length = set_length
-        self.update_crsp_price = update_crsp_price
+        self.annual_update = annual_update
         self.current_date = current_date
         self.start_data = start_data
         self.start_factor = start_factor
@@ -112,16 +112,15 @@ class LiveCreate:
         start_time = time.time()
 
         # Create Live Data
-        live_data = LiveData(live=live, start_date=self.start_data, current_date=self.current_date)
+        live_data = LiveData(live=live, start_date=self.start_data, current_date=self.current_date, annual_update=self.annual_update)
 
         # Get Data
-        if self.update_crsp_price:
-            live_data.create_crsp_price(self.threshold, self.set_length)
+        live_data.create_crsp_price(self.threshold, self.set_length)
         live_data.create_link_table()
         live_data.create_compustat_quarterly()
         live_data.create_compustat_annual()
         live_data.create_stock_list()
-        live_data.create_live_price()
+        live_data.create_live_price(self.set_length)
         live_data.create_misc()
         live_data.create_compustat_pension()
         live_data.create_industry()
@@ -248,7 +247,6 @@ class LiveCreate:
         FactorClustIndMomSub(live=live, file_name='factor_clust_ind_mom_sub', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
         FactorClustIndMomFama(live=live, file_name='factor_clust_ind_mom_fama', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
         FactorClustLoadVolume(live=live, file_name='factor_clust_load_volume', skip=False, stock='all', start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
-        FactorClustVolatility(live=live, file_name='factor_clust_volatility', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
         FactorClustVolume(live=live, file_name='factor_clust_volume', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='date', join='permno', window=21, cluster=21).create_factor()
 
         elapsed_time = time.time() - start_time

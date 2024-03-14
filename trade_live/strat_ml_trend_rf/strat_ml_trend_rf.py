@@ -362,10 +362,6 @@ class StratMLTrendRF(Strategy):
         alpha.add_factor(clust_load_volume, categorical=True)
         del clust_load_volume
 
-        clust_volatility = ModelPrep(live=live, factor_name='factor_clust_volatility', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(clust_volatility, categorical=True)
-        del clust_volatility
-
         clust_volume = ModelPrep(live=live, factor_name='factor_clust_volume', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(clust_volume, categorical=True)
         del clust_volume

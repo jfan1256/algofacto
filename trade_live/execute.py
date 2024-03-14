@@ -53,14 +53,14 @@ def build():
     current_date = date.today().strftime('%Y-%m-%d')
 
     # Create live create
-    live_retrieve = LiveCreate(portfolio=strat_crit['portfolio'], current_date=current_date, threshold=data_crit['threshold'], set_length=data_crit['age'], update_crsp_price=data_crit['annual_update'], start_data=data_crit['start_date'], start_factor=data_crit['start_date'])
+    live_retrieve = LiveCreate(portfolio=strat_crit['portfolio'], current_date=current_date, threshold=data_crit['threshold'], set_length=data_crit['age'], annual_update=data_crit['annual_update'], start_data=data_crit['start_date'], start_factor=data_crit['start_date'])
 
-    # Retrieve live data
-    live_retrieve.exec_data()
-    # Create factor data
-    live_retrieve.exec_factor()
-    # Get adj factor data
-    live_retrieve.exec_adj_factor()
+    # # Retrieve live data
+    # live_retrieve.exec_data()
+    # # Create factor data
+    # live_retrieve.exec_factor()
+    # # Get adj factor data
+    # live_retrieve.exec_adj_factor()
 
     # Backtest strategies
     if 'StratMLTrendRF' in strat_crit['portfolio']:
@@ -69,7 +69,7 @@ def build():
         start_ml_trend_rf.exec_live()
 
     if 'StratMLRetGBM' in strat_crit['portfolio']:
-        strat_ml_ret_gbm = StratMLRetGBM(allocate=strat_crit['ml_ret_gbm']['allocate'], current_date=current_date, start_model=strat_crit['ml_ret_gbm']['start_backtest'], threshold=strat_crit['ml_ret_gbm']['threshold'], num_stocks=strat_crit['ml_ret_gbm']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=1)
+        strat_ml_ret_gbm = StratMLRetGBM(allocate=strat_crit['ml_ret_gbm']['allocate'], current_date=current_date, start_model=strat_crit['ml_ret_gbm']['start_backtest'], threshold=strat_crit['ml_ret_gbm']['threshold'], num_stocks=strat_crit['ml_ret_gbm']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=10)
         strat_ml_ret_gbm.exec_backtest()
         strat_ml_ret_gbm.exec_live()
 
@@ -280,6 +280,7 @@ def monitor():
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------TIME TO MAKE MONEY--------------------------------------------------------------------------------
 # Build
+build()
 schedule.every().monday.at("00:01").do(build)
 schedule.every().tuesday.at("00:01").do(build)
 schedule.every().wednesday.at("00:01").do(build)
