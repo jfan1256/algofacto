@@ -59,40 +59,264 @@ class StratMLRetGBM(Strategy):
         start_time = time.time()
 
         best_params = {
-            'max_depth': [6, 6, 6, 6, 6, 6],
-            'learning_rate': [0.1005147, 0.1088923, 0.1160839, 0.1304572, 0.1365527, 0.1866055],
-            'num_leaves': [57, 120, 42, 116, 119, 136],
-            'feature_fraction': [1, 1, 1, 1, 1, 1],
-            'min_gain_to_split': [0.02, 0.02, 0.02, 0.02, 0.02, 0.02],
-            'min_data_in_leaf': [200, 173, 189, 185, 135, 157],
-            'lambda_l1': [0, 0, 0, 0, 0, 0],
-            'lambda_l2': [0.2773845686298494, 2.8e-05, 0.0079915, 8.35e-05, 1e-05, 0.0153158],
-            'bagging_fraction': [1, 1, 1, 1, 1, 1],
-            'bagging_freq': [0, 0, 0, 0, 0, 0]
+            'max_depth':          [4,             4,                4            ],
+            'learning_rate':      [0.1989804,     0.2017221,        0.1000341    ],
+            'num_leaves':         [61,            83,               29           ],
+            'feature_fraction':   [1,             1,                1            ],
+            'min_gain_to_split':  [0.02,          0.02,             0.02         ],
+            'min_data_in_leaf':   [90,            77,               102          ],
+            'lambda_l1':          [0,             0,                0            ],
+            'lambda_l2':          [0.0013003,     0.0017645,        0.0001043    ],
+            'bagging_fraction':   [1,             1,                1            ],
+            'bagging_freq':       [0,             0,                0            ]
+        }
+
+        best_params = {
+            'max_depth': [4],
+            'learning_rate': [0.15],
+            'num_leaves': [124],
+            'feature_fraction': [1],
+            'min_gain_to_split': [0.02],
+            'min_data_in_leaf': [167],
+            'lambda_l1': [0],
+            'lambda_l2': [0.011],
+            'bagging_fraction': [1],
+            'bagging_freq': [0]
         }
 
         lightgbm_params = {
-            'max_depth':           {'optuna': ('suggest_categorical', [6]),               'gridsearch': [4, 6, 8],                     'default': 4,        'best': best_params['max_depth']},
-            'learning_rate':       {'optuna': ('suggest_float', 0.10, 0.50, False),       'gridsearch': [0.005, 0.01, 0.1, 0.15],      'default': 0.15,     'best': best_params['learning_rate']},
-            'num_leaves':          {'optuna': ('suggest_int', 5, 150),                    'gridsearch': [20, 40, 60],                  'default': 15,       'best': best_params['num_leaves']},
-            'feature_fraction':    {'optuna': ('suggest_categorical', [1.0]),             'gridsearch': [0.7, 0.8, 0.9],               'default': 1.0,      'best': best_params['feature_fraction']},
-            'min_gain_to_split':   {'optuna': ('suggest_float', 0.02, 0.02, False),       'gridsearch': [0.0001, 0.001, 0.01],         'default': 0.02,     'best': best_params['min_gain_to_split']},
-            'min_data_in_leaf':    {'optuna': ('suggest_int', 50, 200),                   'gridsearch': [40, 60, 80],                  'default': 60,       'best': best_params['min_data_in_leaf']},
-            'lambda_l1':           {'optuna': ('suggest_float', 0, 0, False),             'gridsearch': [0.001, 0.01],                 'default': 0,        'best': best_params['lambda_l1']},
-            'lambda_l2':           {'optuna': ('suggest_float', 1e-5, 10, True),          'gridsearch': [0.001, 0.01],                 'default': 0.01,     'best': best_params['lambda_l2']},
-            'bagging_fraction':    {'optuna': ('suggest_float', 1.0, 1.0, True),          'gridsearch': [0.9, 1],                      'default': 1,        'best': best_params['bagging_fraction']},
-            'bagging_freq':        {'optuna': ('suggest_int', 0, 0),                      'gridsearch': [0, 20],                       'default': 0,        'best': best_params['bagging_freq']},
+            'max_depth':           {'optuna': ('suggest_categorical', [4]),               'gridsearch': [4],                                                                                                      'default': 6,        'best': best_params['max_depth']},
+            'learning_rate':       {'optuna': ('suggest_float', 0.10, 0.50, False),       'gridsearch': [round(i / 100, 2) for i in range(10, 31)],                                                               'default': 0.15,     'best': best_params['learning_rate']},
+            'num_leaves':          {'optuna': ('suggest_int', 5, 150),                    'gridsearch': list(range(5, 151)),                                                                                      'default': 15,       'best': best_params['num_leaves']},
+            'feature_fraction':    {'optuna': ('suggest_categorical', [1.0]),             'gridsearch': [1],                                                                                                      'default': 1.0,      'best': best_params['feature_fraction']},
+            'min_gain_to_split':   {'optuna': ('suggest_float', 0.02, 0.02, False),       'gridsearch': [0.02],                                                                                                   'default': 0.02,     'best': best_params['min_gain_to_split']},
+            'min_data_in_leaf':    {'optuna': ('suggest_int', 50, 200),                   'gridsearch': list(range(50, 201)),                                                                                     'default': 60,       'best': best_params['min_data_in_leaf']},
+            'lambda_l1':           {'optuna': ('suggest_float', 0, 0, False),             'gridsearch': [0],                                                                                                      'default': 0,        'best': best_params['lambda_l1']},
+            'lambda_l2':           {'optuna': ('suggest_float', 1e-5, 10, True),          'gridsearch': sorted(set([custom_round(10**x, 2) for x in [i * 0.001 for i in range(-5000, 1001)]] + [10])),     'default': 0.01,     'best': best_params['lambda_l2']},
+            'bagging_fraction':    {'optuna': ('suggest_float', 1.0, 1.0, True),          'gridsearch': [1],                                                                                                      'default': 1,        'best': best_params['bagging_fraction']},
+            'bagging_freq':        {'optuna': ('suggest_int', 0, 0),                      'gridsearch': [0],                                                                                                      'default': 0,        'best': best_params['bagging_freq']},
         }
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
         format_end = date.today().strftime('%Y%m%d')
         model_name = f'lightgbm_{format_end}'
-        tune = 'default'
-        # tune = ['optuna', 50]
+        tune = ['gridsearch', 50]
 
         alpha = ModelLightgbm(live=live, model_name=model_name, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0,
                               incr=True, opt='wfo', outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
+
+        # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # # -----------------------------------------------------------------------------GENERAL-------------------------------------------------------------------------------------------
+        # ret = ModelPrep(live=live, factor_name='factor_ret', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(ret)
+        # del ret
+        #
+        # ret_comp = ModelPrep(live=live, factor_name='factor_ret_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(ret_comp, normalize=normalize)
+        # del ret_comp
+        #
+        # cycle = ModelPrep(live=live, factor_name='factor_time', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(cycle, categorical=True)
+        # del cycle
+        #
+        # talib = ModelPrep(live=live, factor_name='factor_talib', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(talib, normalize=normalize)
+        # del talib
+        #
+        # volume = ModelPrep(live=live, factor_name='factor_volume', group='permno', interval='D', kind='price', div=False, stock=stock, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(volume, normalize=normalize)
+        # del volume
+        #
+        # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # # -----------------------------------------------------------------------------PCA-----------------------------------------------------------------------------------------------
+        # load_ret = ModelPrep(live=live, factor_name='factor_load_ret', group='permno', interval='D', kind='loading', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(load_ret, normalize=normalize)
+        # del load_ret
+        #
+        # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # # -----------------------------------------------------------------------------INDUSTRY------------------------------------------------------------------------------------------
+        # ind = ModelPrep(live=live, factor_name='factor_ind', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(ind, categorical=True)
+        # del ind
+        #
+        # ind_mom = ModelPrep(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(ind_mom, normalize=normalize)
+        # del ind_mom
+        #
+        # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # # -------------------------------------------------------------------------OPEN ASSET MONTHLY------------------------------------------------------------------------------------
+        # net_debt_finance = ModelPrep(live=live, factor_name='factor_net_debt_finance', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # net_debt_finance = net_debt_finance.groupby('permno').shift(84)
+        # alpha.add_factor(net_debt_finance, normalize=normalize)
+        # del net_debt_finance
+        #
+        # chtax = ModelPrep(live=live, factor_name='factor_chtax', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # chtax = chtax.groupby('permno').shift(84)
+        # alpha.add_factor(chtax, normalize=normalize)
+        # del chtax
+        #
+        # asset_growth = ModelPrep(live=live, factor_name='factor_asset_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # asset_growth = asset_growth.groupby('permno').shift(84)
+        # alpha.add_factor(asset_growth, normalize=normalize)
+        # del asset_growth
+        #
+        # noa = ModelPrep(live=live, factor_name='factor_noa', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # noa = noa.groupby('permno').shift(84)
+        # alpha.add_factor(noa, normalize=normalize)
+        # del noa
+        #
+        # invest_ppe = ModelPrep(live=live, factor_name='factor_invest_ppe_inv', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # invest_ppe = invest_ppe.groupby('permno').shift(84)
+        # alpha.add_factor(invest_ppe, normalize=normalize)
+        # del invest_ppe
+        #
+        # inv_growth = ModelPrep(live=live, factor_name='factor_inv_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # inv_growth = inv_growth.groupby('permno').shift(84)
+        # alpha.add_factor(inv_growth, normalize=normalize)
+        # del inv_growth
+        #
+        # comp_debt = ModelPrep(live=live, factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # comp_debt = comp_debt.groupby('permno').shift(84)
+        # alpha.add_factor(comp_debt, normalize=normalize)
+        # del comp_debt
+        #
+        # cheq = ModelPrep(live=live, factor_name='factor_cheq', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # cheq = cheq.groupby('permno').shift(84)
+        # alpha.add_factor(cheq, normalize=normalize)
+        # del cheq
+        #
+        # xfin = ModelPrep(live=live, factor_name='factor_xfin', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # xfin = xfin.groupby('permno').shift(84)
+        # alpha.add_factor(xfin, normalize=normalize)
+        # del xfin
+        #
+        # emmult = ModelPrep(live=live, factor_name='factor_emmult', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # emmult = emmult.groupby('permno').shift(84)
+        # alpha.add_factor(emmult, normalize=normalize)
+        # del emmult
+        #
+        # accrual = ModelPrep(live=live, factor_name='factor_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # accrual = accrual.groupby('permno').shift(84)
+        # alpha.add_factor(accrual, normalize=normalize)
+        # del accrual
+        #
+        # frontier = ModelPrep(live=live, factor_name='factor_frontier', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # frontier = frontier.groupby('permno').shift(84)
+        # alpha.add_factor(frontier, normalize=normalize)
+        # del frontier
+        #
+        # hire = ModelPrep(live=live, factor_name='factor_hire', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # hire = hire.groupby('permno').shift(84)
+        # alpha.add_factor(hire, normalize=normalize)
+        # del hire
+        #
+        # rds = ModelPrep(live=live, factor_name='factor_rds', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # rds = rds.groupby('permno').shift(84)
+        # alpha.add_factor(rds, normalize=normalize)
+        # del rds
+        #
+        # pcttoacc = ModelPrep(live=live, factor_name='factor_pcttotacc', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # pcttoacc = pcttoacc.groupby('permno').shift(84)
+        # alpha.add_factor(pcttoacc, normalize=normalize)
+        # del pcttoacc
+        #
+        # accrual_bm = ModelPrep(live=live, factor_name='factor_accrual_bm', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # accrual_bm = accrual_bm.groupby('permno').shift(84)
+        # alpha.add_factor(accrual_bm, normalize=normalize)
+        # del accrual_bm
+        #
+        # earning_streak = ModelPrep(live=live, factor_name='factor_earning_streak', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # earning_streak = earning_streak.groupby('permno').shift(84)
+        # alpha.add_factor(earning_streak, normalize=normalize)
+        # del earning_streak
+        #
+        # ms = ModelPrep(live=live, factor_name='factor_ms', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # ms = ms.groupby('permno').shift(84)
+        # alpha.add_factor(ms, categorical=True)
+        # del ms
+        #
+        # grcapx = ModelPrep(live=live, factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # grcapx = grcapx.groupby('permno').shift(84)
+        # alpha.add_factor(grcapx, normalize=normalize)
+        # del grcapx
+        #
+        # gradexp = ModelPrep(live=live, factor_name='factor_gradexp', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # gradexp = gradexp.groupby('permno').shift(84)
+        # alpha.add_factor(gradexp, normalize=normalize)
+        # del gradexp
+        #
+        # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # # -------------------------------------------------------------------------OPEN ASSET DAILY--------------------------------------------------------------------------------------
+        # mom_rev = ModelPrep(live=live, factor_name='factor_mom_rev', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(mom_rev, categorical=True)
+        # del mom_rev
+        #
+        # mom_season16 = ModelPrep(live=live, factor_name='factor_mom_season16', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(mom_season16, normalize=normalize)
+        # del mom_season16
+        #
+        # mom_off_season = ModelPrep(live=live, factor_name='factor_mom_off_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(mom_off_season, normalize=normalize)
+        # del mom_off_season
+        #
+        # dividend = ModelPrep(live=live, factor_name='factor_dividend', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(dividend, categorical=True)
+        # del dividend
+        #
+        # ret_skew = ModelPrep(live=live, factor_name='factor_ret_skew', group='permno', interval='D', kind='skew', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(ret_skew, normalize=normalize)
+        # del ret_skew
+        #
+        # size = ModelPrep(live=live, factor_name='factor_size', group='permno', interval='D', kind='size', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(size, normalize=normalize)
+        # del size
+        #
+        # mom_off_season6 = ModelPrep(live=live, factor_name='factor_mom_off_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(mom_off_season6, normalize=normalize)
+        # del mom_off_season6
+        #
+        # mom_off_season11 = ModelPrep(live=live, factor_name='factor_mom_off_season11', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(mom_off_season11, normalize=normalize)
+        # del mom_off_season11
+        #
+        # age_mom = ModelPrep(live=live, factor_name='factor_age_mom', group='permno', interval='D', kind='age', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(age_mom, normalize=normalize)
+        # del age_mom
+        #
+        # mom_season_short = ModelPrep(live=live, factor_name='factor_mom_season_short', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(mom_season_short, normalize=normalize)
+        # del mom_season_short
+        #
+        # mom_season = ModelPrep(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(mom_season, normalize=normalize)
+        # del mom_season
+        #
+        # trend_factor = ModelPrep(live=live, factor_name='factor_trend_factor', group='permno', interval='D', kind='trend', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(trend_factor, normalize=normalize)
+        # del trend_factor
+        #
+        # mom_season6 = ModelPrep(live=live, factor_name='factor_mom_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(mom_season6, normalize=normalize)
+        # del mom_season6
+        #
+        # mom_season11 = ModelPrep(live=live, factor_name='factor_mom_season11', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(mom_season11, normalize=normalize)
+        # del mom_season11
+        #
+        # mom_vol = ModelPrep(live=live, factor_name='factor_mom_vol', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(mom_vol, categorical=True)
+        # del mom_vol
+        #
+        # int_mom = ModelPrep(live=live, factor_name='factor_int_mom', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(int_mom, normalize=normalize)
+        # del int_mom
+        #
+        # # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # # -----------------------------------------------------------------------------CLUSTER-------------------------------------------------------------------------------------------
+        # clust_ret = ModelPrep(live=live, factor_name='factor_clust_ret', group='permno', interval='D', kind='cluster', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
+        # alpha.add_factor(clust_ret, categorical=True)
+        # del clust_ret
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------GENERAL-------------------------------------------------------------------------------------------
@@ -131,174 +355,6 @@ class StratMLRetGBM(Strategy):
         ind_mom = ModelPrep(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
         alpha.add_factor(ind_mom, normalize=normalize)
         del ind_mom
-
-        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # -------------------------------------------------------------------------OPEN ASSET MONTHLY------------------------------------------------------------------------------------
-        net_debt_finance = ModelPrep(live=live, factor_name='factor_net_debt_finance', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        net_debt_finance = net_debt_finance.groupby('permno').shift(84)
-        alpha.add_factor(net_debt_finance, normalize=normalize)
-        del net_debt_finance
-
-        chtax = ModelPrep(live=live, factor_name='factor_chtax', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        chtax = chtax.groupby('permno').shift(84)
-        alpha.add_factor(chtax, normalize=normalize)
-        del chtax
-
-        asset_growth = ModelPrep(live=live, factor_name='factor_asset_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        asset_growth = asset_growth.groupby('permno').shift(84)
-        alpha.add_factor(asset_growth, normalize=normalize)
-        del asset_growth
-
-        noa = ModelPrep(live=live, factor_name='factor_noa', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        noa = noa.groupby('permno').shift(84)
-        alpha.add_factor(noa, normalize=normalize)
-        del noa
-
-        invest_ppe = ModelPrep(live=live, factor_name='factor_invest_ppe_inv', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()        
-        invest_ppe = invest_ppe.groupby('permno').shift(84)
-        alpha.add_factor(invest_ppe, normalize=normalize)
-        del invest_ppe
-
-        inv_growth = ModelPrep(live=live, factor_name='factor_inv_growth', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        inv_growth = inv_growth.groupby('permno').shift(84)
-        alpha.add_factor(inv_growth, normalize=normalize)
-        del inv_growth
-
-        comp_debt = ModelPrep(live=live, factor_name='factor_comp_debt', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        comp_debt = comp_debt.groupby('permno').shift(84)
-        alpha.add_factor(comp_debt, normalize=normalize)
-        del comp_debt
-
-        cheq = ModelPrep(live=live, factor_name='factor_cheq', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        cheq = cheq.groupby('permno').shift(84)
-        alpha.add_factor(cheq, normalize=normalize)
-        del cheq
-
-        xfin = ModelPrep(live=live, factor_name='factor_xfin', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        xfin = xfin.groupby('permno').shift(84)
-        alpha.add_factor(xfin, normalize=normalize)
-        del xfin
-
-        emmult = ModelPrep(live=live, factor_name='factor_emmult', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        emmult = emmult.groupby('permno').shift(84)
-        alpha.add_factor(emmult, normalize=normalize)
-        del emmult
-
-        accrual = ModelPrep(live=live, factor_name='factor_accrual', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        accrual = accrual.groupby('permno').shift(84)
-        alpha.add_factor(accrual, normalize=normalize)
-        del accrual
-
-        frontier = ModelPrep(live=live, factor_name='factor_frontier', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        frontier = frontier.groupby('permno').shift(84)
-        alpha.add_factor(frontier, normalize=normalize)
-        del frontier
-
-        hire = ModelPrep(live=live, factor_name='factor_hire', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        hire = hire.groupby('permno').shift(84)
-        alpha.add_factor(hire, normalize=normalize)
-        del hire
-
-        rds = ModelPrep(live=live, factor_name='factor_rds', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        rds = rds.groupby('permno').shift(84)
-        alpha.add_factor(rds, normalize=normalize)
-        del rds
-
-        pcttoacc = ModelPrep(live=live, factor_name='factor_pcttotacc', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        pcttoacc = pcttoacc.groupby('permno').shift(84)
-        alpha.add_factor(pcttoacc, normalize=normalize)
-        del pcttoacc
-
-        accrual_bm = ModelPrep(live=live, factor_name='factor_accrual_bm', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        accrual_bm = accrual_bm.groupby('permno').shift(84)
-        alpha.add_factor(accrual_bm, normalize=normalize)
-        del accrual_bm
-
-        earning_streak = ModelPrep(live=live, factor_name='factor_earning_streak', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        earning_streak = earning_streak.groupby('permno').shift(84)
-        alpha.add_factor(earning_streak, normalize=normalize)
-        del earning_streak
-
-        ms = ModelPrep(live=live, factor_name='factor_ms', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        ms = ms.groupby('permno').shift(84)
-        alpha.add_factor(ms, categorical=True)
-        del ms
-
-        grcapx = ModelPrep(live=live, factor_name='factor_grcapx', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        grcapx = grcapx.groupby('permno').shift(84)
-        alpha.add_factor(grcapx, normalize=normalize)
-        del grcapx
-
-        gradexp = ModelPrep(live=live, factor_name='factor_gradexp', group='permno', interval='M', kind='fundamental', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        gradexp = gradexp.groupby('permno').shift(84)
-        alpha.add_factor(gradexp, normalize=normalize)
-        del gradexp
-
-        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # -------------------------------------------------------------------------OPEN ASSET DAILY--------------------------------------------------------------------------------------
-        mom_rev = ModelPrep(live=live, factor_name='factor_mom_rev', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_rev, categorical=True)
-        del mom_rev
-        
-        mom_season16 = ModelPrep(live=live, factor_name='factor_mom_season16', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_season16, normalize=normalize)
-        del mom_season16
-
-        mom_off_season = ModelPrep(live=live, factor_name='factor_mom_off_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_off_season, normalize=normalize)
-        del mom_off_season
-
-        dividend = ModelPrep(live=live, factor_name='factor_dividend', group='permno', interval='D', kind='dividend', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(dividend, categorical=True)
-        del dividend
-
-        ret_skew = ModelPrep(live=live, factor_name='factor_ret_skew', group='permno', interval='D', kind='skew', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(ret_skew, normalize=normalize)
-        del ret_skew
-
-        size = ModelPrep(live=live, factor_name='factor_size', group='permno', interval='D', kind='size', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(size, normalize=normalize)
-        del size
-
-        mom_off_season6 = ModelPrep(live=live, factor_name='factor_mom_off_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_off_season6, normalize=normalize)
-        del mom_off_season6
-
-        mom_off_season11 = ModelPrep(live=live, factor_name='factor_mom_off_season11', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_off_season11, normalize=normalize)
-        del mom_off_season11
-
-        age_mom = ModelPrep(live=live, factor_name='factor_age_mom', group='permno', interval='D', kind='age', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(age_mom, normalize=normalize)
-        del age_mom
-
-        mom_season_short = ModelPrep(live=live, factor_name='factor_mom_season_short', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_season_short, normalize=normalize)
-        del mom_season_short
-
-        mom_season = ModelPrep(live=live, factor_name='factor_mom_season', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_season, normalize=normalize)
-        del mom_season
-
-        trend_factor = ModelPrep(live=live, factor_name='factor_trend_factor', group='permno', interval='D', kind='trend', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(trend_factor, normalize=normalize)
-        del trend_factor
-
-        mom_season6 = ModelPrep(live=live, factor_name='factor_mom_season6', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_season6, normalize=normalize)
-        del mom_season6
-
-        mom_season11 = ModelPrep(live=live, factor_name='factor_mom_season11', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_season11, normalize=normalize)
-        del mom_season11
-
-        mom_vol = ModelPrep(live=live, factor_name='factor_mom_vol', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(mom_vol, categorical=True)
-        del mom_vol
-
-        int_mom = ModelPrep(live=live, factor_name='factor_int_mom', group='permno', interval='D', kind='mom', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()
-        alpha.add_factor(int_mom, normalize=normalize)
-        del int_mom
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------CLUSTER-------------------------------------------------------------------------------------------
@@ -366,6 +422,8 @@ class StratMLRetGBM(Strategy):
             equal_weight, long_weight, short_weight = live_test.exec_port_opt(data=pred)
             strat_ret = equal_weight['totalRet']
             sharpe = qs.stats.sharpe(strat_ret)
+            calmar = qs.stats.calmar(strat_ret)
+            maxdd = qs.stats.max_drawdown(strat_ret)
             # Display metrics
             print('-' * 60)
             print(f'Row: {i}')
@@ -378,8 +436,12 @@ class StratMLRetGBM(Strategy):
             formatted_metrics = headers + "\n" + values
             print(formatted_metrics)
             print(f'SHARPE Ratio: {sharpe}')
+            print(f'CALMAR Ratio: {calmar}')
+            print(f'MAX DD: {maxdd*100}%')
             # Save SHARPE to dictionary
-            keep[i] = sharpe
+            keep[i] = np.mean(sharpe + calmar)
+            # keep[i] = sharpe
+            # keep[i] = calmar
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------PERFORM ENSEMBLE PREDICTION AND SAVE METRIC/IC---------------------------------------------------------------

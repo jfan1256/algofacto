@@ -93,28 +93,27 @@ class FactorTalib(Factor):
             factor_data['willr'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.WILLR(x.High, x.Low, x.Close, timeperiod=14)))
     
         # -------------------------------------------Volume Indicators----------------------------------------------------
-    
         # Chaikin A/D Line
         def _AD(factor_data):
-            factor_data['ad'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.AD(x.High, x.Low, x.Close, x.Volume) / x.Volume.mean()))
+            factor_data['ad'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.AD(x.High, x.Low, x.Close, x.Volume) / x.expanding().Volume.mean()))
     
         # On Balance Volume
         def _OBV(factor_data):
             factor_data['obv'] = (factor_data.groupby(self.group, group_keys=False).apply(lambda x: talib.OBV(x.Close, x.Volume) / x.expanding().Volume.mean()))
     
         _SMA(self.factor_data)
-        # _EMA(factor_data)
         _HT(self.factor_data)
-        # _PMDI(factor_data)
         _ADXR(self.factor_data)
         _PPO(self.factor_data)
-        # _AROONOSC(factor_data)
         _BOP(self.factor_data)
         _CCI(self.factor_data)
         _MACD(self.factor_data)
-        # _MFI(factor_data)
         _RSI(self.factor_data)
         _ULTOSC(self.factor_data)
         _WILLR(self.factor_data)
-        _AD(self.factor_data)
         _OBV(self.factor_data)
+        _EMA(self.factor_data)
+        _PMDI(self.factor_data)
+        _AROONOSC(self.factor_data)
+        _MFI(self.factor_data)
+        _AD(self.factor_data)

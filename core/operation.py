@@ -1,3 +1,5 @@
+from math import floor, log10
+
 from core.system import *
 from core.animation import *
 
@@ -248,6 +250,12 @@ def filter_market_cap(data, group, threshold):
         else:
             return None
     return data.groupby(group).apply(filter).dropna(how='all').reset_index(level=0, drop=True)
+
+def custom_round(number, sig_fig):
+    if number == 0:
+        return 0
+    else:
+        return round(number, sig_fig - int(floor(log10(abs(number)))) - 1)
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------PARALLELIZED ROLLING OPERATIONS--------------------------------------------------------------------

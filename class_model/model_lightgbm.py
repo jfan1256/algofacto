@@ -491,7 +491,7 @@ class ModelLightgbm(ModelTrain):
             # Get param values and print the key (formatted params)
             param_vals = list(params.values())
             # Round param vals (this is to maintain consistency)
-            param_vals = [round(p, 7) if isinstance(p, float) else p for p in param_vals]
+            param_vals = [custom_round(p, 2) if isinstance(p, float) else p for p in param_vals]
 
             key = '_'.join([str(float(p)) for p in param_vals])
             print(f'Key: {key}')
@@ -500,21 +500,30 @@ class ModelLightgbm(ModelTrain):
             # Train model and return the optimization metric for optuna
             return self.lightgbm(key, param_names, param_vals, base_params, data_pretrain, pretrain_idx, data_train, ret, num_iterations, metric_cols)
         elif self.tuning[0] == 'gridsearch':
-            # Get and create all possible combinations of params
-            cv_params = list(product(*params.values()))
-            n_params = len(cv_params)
-            # Randomized grid search
-            cvp = np.random.choice(list(range(n_params)), size=int(n_params / 2), replace=False)
-            cv_params_ = [cv_params[i] for i in cvp][:self.tuning[1]]
-            print("Number of gridsearch iterations: " + str(len(cv_params_)))
-            # Iterate over (shuffled) hyperparameter combinations
-            for p, param_vals in enumerate(cv_params_):
+            # Retrieve number of iterations
+            n_iterations = self.tuning[1]
+            param_names = list(params.keys())
+            random_params = []
+
+            # Select a random value from gridsearch list for each parameter
+            for _ in range(n_iterations):
+                current_params = {}
+                for name, choices in params.items():
+                    selected_value = np.random.choice(choices)
+                    current_params[name] = selected_value
+                random_params.append(current_params)
+
+            # Execute randomized grid search
+            for i, params in enumerate(random_params):
+                param_vals = list(params.values())
                 key = '_'.join([str(float(p)) for p in param_vals])
+                print(f'Trial {i+1}/{len(random_params)}')
                 print(f'Key: {key}')
                 # Create the directory
-                os.makedirs(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}')
-                # Train model
+                os.makedirs(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{key}', exist_ok=True)
+                # Assume self.lightgbm() is defined to train your model with the given parameters
                 self.lightgbm(key, param_names, param_vals, base_params, data_pretrain, pretrain_idx, data_train, ret, num_iterations, metric_cols)
+
         elif self.tuning == 'default':
             # Get param values and print the key (formatted params)
             param_vals = list(params.values())

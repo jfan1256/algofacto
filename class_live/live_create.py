@@ -230,7 +230,6 @@ class LiveCreate:
         FactorRetSkew(live=live, file_name='factor_ret_skew', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='permno').create_factor()
         FactorDividend(live=live, file_name='factor_dividend', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='permno').create_factor()
         FactorMS(live=live, file_name='factor_ms', skip=True, stock=stock, start=self.start_factor, end=self.current_date).create_factor()
-        FactorGradexp(live=live, file_name='factor_gradexp', skip=True, stock=stock, start=self.start_factor, end=self.current_date).create_factor()
         FactorSize(live=live, file_name='factor_size', skip=True, stock=stock, start=self.start_factor, end=self.current_date).create_factor()
         FactorRetMax(live=live, file_name='factor_ret_max', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='permno').create_factor()
         FactorMomOffSeason6(live=live, file_name='factor_mom_off_season6', skip=False, stock=stock, start=self.start_factor, end=self.current_date, batch_size=10, splice_size=20, group='permno').create_factor()
