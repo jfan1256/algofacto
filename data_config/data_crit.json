@@ -1,6 +1,6 @@
 {
   "threshold": 6000000000,
   "age": 3,
-  "annual_update": true,
+  "annual_update": false,
   "start_date": "2005-01-01"
 }
