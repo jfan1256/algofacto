@@ -29,7 +29,7 @@ start_time = time.time()
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
-alpha = ModelLRegression(live=live, model_name=model_name, tuning=tune, plot_hist=False, pred='price', model='elastic', stock='permno',
+alpha = ModelLRegression(live=live, model_name=model_name, tuning=tune, plot_hist=False, pred='price', model='ridge', stock='permno',
                          lookahead=1, trend=0, opt='ewo', outlier=False, train_len=504, valid_len=21, test_len=21, **lr_params)
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -38,21 +38,21 @@ ret = ModelPrep(live=live, factor_name='factor_ret', group='permno', interval='D
 alpha.add_factor(ret, impute=impute)
 del ret
 
-# ret_comp = ModelPrep(live=live, factor_name='factor_ret_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
-# alpha.add_factor(ret_comp, normalize=normalize, impute=impute)
-# del ret_comp
+ret_comp = ModelPrep(live=live, factor_name='factor_ret_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+alpha.add_factor(ret_comp, normalize=normalize, impute=impute)
+del ret_comp
 
 # cycle = ModelPrep(live=live, factor_name='factor_time', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(cycle, categorical=True)
 # del cycle
 
-# talib = ModelPrep(live=live, factor_name='factor_talib', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
-# alpha.add_factor(talib, normalize=normalize, impute=impute)
-# del talib
+talib = ModelPrep(live=live, factor_name='factor_talib', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+alpha.add_factor(talib, normalize=normalize, impute=impute)
+del talib
 
-# volume = ModelPrep(live=live, factor_name='factor_volume', group='permno', interval='D', kind='price', div=False, stock=stock, start=start_model, end=current_date, save=save).prep()
-# alpha.add_factor(volume, normalize=normalize, impute=impute)
-# del volume
+volume = ModelPrep(live=live, factor_name='factor_volume', group='permno', interval='D', kind='price', div=False, stock=stock, start=start_model, end=current_date, save=save).prep()
+alpha.add_factor(volume, normalize=normalize, impute=impute)
+del volume
 
 # volatility = ModelPrep(live=live, factor_name='factor_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(volatility, normalize=normalize, impute=impute)
@@ -112,9 +112,9 @@ del load_ret
 # alpha.add_factor(ind_sub, categorical=True)
 # del ind_sub
 
-# ind_mom = ModelPrep(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
-# alpha.add_factor(ind_mom, normalize=normalize, impute=impute)
-# del ind_mom
+ind_mom = ModelPrep(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+alpha.add_factor(ind_mom, normalize=normalize, impute=impute)
+del ind_mom
 
 # ind_mom_fama = ModelPrep(live=live, factor_name='factor_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(ind_mom_fama, normalize=normalize, impute=impute)

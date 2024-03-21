@@ -1,7 +1,10 @@
 import shutil
+
 import quantstats as qs
+import concurrent.futures
 
 from scipy.stats import spearmanr
+from functools import partial
 
 from class_model.model_lightgbm import ModelLightgbm
 from class_model.model_test import ModelTest
@@ -45,7 +48,40 @@ class StratMLRetGBM(Strategy):
             config = json.load(f)
             fred_key = config['fred_key']
         self.fred_key = fred_key
-    
+
+    # Backtest file (for parallelization)
+    def backtest_file(self, row, ticker, misc, live_test):
+        # Read file
+        read_file = live_test.get_max_metric_file(row)
+
+        # Get predicted returns
+        returns = live_test.sharpe_ret(read_file, iteration=False)
+
+        # Merge with ticker and market cap
+        tic = returns.merge(ticker, left_index=True, right_index=True, how='left')
+        tic = tic.merge(misc, left_index=True, right_index=True, how='left')
+        tic['market_cap'] = tic.groupby('permno')['market_cap'].ffill()
+        tic = tic.reset_index().set_index(['window', 'ticker', 'date'])
+        tic = tic.drop('permno', axis=1)
+
+        # Execute backtest
+        pred = live_test.sharpe_backtest(tic, self.threshold)
+        equal_weight, long_weight, short_weight = live_test.exec_port_opt(data=pred)
+        strat_ret = equal_weight['totalRet']
+
+        # Get statistics
+        sharpe = qs.stats.sharpe(strat_ret)
+        calmar = qs.stats.calmar(strat_ret)
+        maxdd = qs.stats.max_drawdown(strat_ret)
+        metrics = read_file['metrics']
+        column_widths = [max(len(str(val)) for val in metrics[col]) for col in metrics.columns]
+        header_widths = [len(header) for header in metrics.columns]
+        max_widths = [max(col_width, header_width) for col_width, header_width in zip(column_widths, header_widths)]
+        headers = " | ".join([header.ljust(width) for header, width in zip(metrics.columns, max_widths)])
+        values = " | ".join([str(val).ljust(width) for val, width in zip(metrics.iloc[0], max_widths)])
+        formatted_metrics = headers + "\n" + values
+        return formatted_metrics, sharpe, calmar, maxdd
+
     def exec_backtest(self):
         print("---------------------------------------------------------------EXEC ML RET GBM MODEL--------------------------------------------------------------------------------------")
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -58,17 +94,30 @@ class StratMLRetGBM(Strategy):
 
         start_time = time.time()
 
+        # best_params = {
+        #     'max_depth':          [4,             4,                4            ],
+        #     'learning_rate':      [0.14,          0.11,             0.11         ],
+        #     'num_leaves':         [115,           32,               68           ],
+        #     'feature_fraction':   [1,             1,                1            ],
+        #     'min_gain_to_split':  [0.02,          0.02,             0.02         ],
+        #     'min_data_in_leaf':   [59,            144,              108          ],
+        #     'lambda_l1':          [0,             0,                0            ],
+        #     'lambda_l2':          [4.5e-5,        5.9e-5,           7.3e-5       ],
+        #     'bagging_fraction':   [1,             1,                1            ],
+        #     'bagging_freq':       [0,             0,                0            ]
+        # }
+
         best_params = {
-            'max_depth':          [4,             4,                4            ],
-            'learning_rate':      [0.14,          0.11,             0.11         ],
-            'num_leaves':         [115,           32,               68           ],
-            'feature_fraction':   [1,             1,                1            ],
-            'min_gain_to_split':  [0.02,          0.02,             0.02         ],
-            'min_data_in_leaf':   [59,            144,              108          ],
-            'lambda_l1':          [0,             0,                0            ],
-            'lambda_l2':          [4.5e-5,        5.9e-5,           7.3e-5       ],
-            'bagging_fraction':   [1,             1,                1            ],
-            'bagging_freq':       [0,             0,                0            ]
+            'max_depth':          [4,           4,            4,           4,          4       ],
+            'learning_rate':      [0.14,        0.11,         0.11,        0.1,        0.11    ],
+            'num_leaves':         [115,         32,           68,          80,         130     ],
+            'feature_fraction':   [1,           1,            1,           1,          1       ],
+            'min_gain_to_split':  [0.02,        0.02,         0.02,        0.02,       0.02    ],
+            'min_data_in_leaf':   [59,          144,          108,         175,        140     ],
+            'lambda_l1':          [0,           0,            0,           0,          0       ],
+            'lambda_l2':          [4.5e-5,      5.9e-5,       7.3e-5,      2.7,        0.0093  ],
+            'bagging_fraction':   [1,           1,            1,           1,          1       ],
+            'bagging_freq':       [0,           0,            0,           0,          0       ]
         }
 
         lightgbm_params = {
@@ -371,6 +420,7 @@ class StratMLRetGBM(Strategy):
         # -------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------------
         live = True
         model_name = f"lightgbm_{date.today().strftime('%Y%m%d')}"
+        model_name = f'lightgbm_20240318'
         dir_path = Path(get_ml_report(live, model_name) / model_name)
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -387,48 +437,96 @@ class StratMLRetGBM(Strategy):
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ---------------------------------------------------------------------------CALCULATE SHARPE PER TRIAL--------------------------------------------------------------------------
         print("----------------------------------------------------------------------CALCULATE SHARPE PER TRIAL--------------------------------------------------------------------------")
-        # Dictionary to keep track of SHARPE
+        # Dictionary to keep track of statistics
         keep = {}
+
+        # Read in data
         ticker = pd.read_parquet(get_parquet(live) / 'data_ticker.parquet.brotli')
         misc = pd.read_parquet(get_parquet(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
 
-        # Iterate through each trial
-        for i, row in files.iterrows():
-            # Read file in
-            read_file = live_test.get_max_metric_file(row)
-            # Execute ranking of stocks
-            returns = live_test.sharpe_ret(read_file, iteration=False)
-            # Convert Permno to Ticker
-            tic = returns.merge(ticker, left_index=True, right_index=True, how='left')
-            tic = tic.merge(misc, left_index=True, right_index=True, how='left')
-            tic['market_cap'] = tic.groupby('permno')['market_cap'].ffill()
-            tic = tic.reset_index().set_index(['window', 'ticker', 'date'])
-            tic = tic.drop('permno', axis=1)
-            # Calculate SHARPE with EWP
-            pred = live_test.sharpe_backtest(tic, self.threshold)
-            equal_weight, long_weight, short_weight = live_test.exec_port_opt(data=pred)
-            strat_ret = equal_weight['totalRet']
-            sharpe = qs.stats.sharpe(strat_ret)
-            calmar = qs.stats.calmar(strat_ret)
-            maxdd = qs.stats.max_drawdown(strat_ret)
-            # Display metrics
-            print('-' * 60)
-            print(f'Row: {i}')
-            metrics = read_file['metrics']
-            column_widths = [max(len(str(val)) for val in metrics[col]) for col in metrics.columns]
-            header_widths = [len(header) for header in metrics.columns]
-            max_widths = [max(col_width, header_width) for col_width, header_width in zip(column_widths, header_widths)]
-            headers = " | ".join([header.ljust(width) for header, width in zip(metrics.columns, max_widths)])
-            values = " | ".join([str(val).ljust(width) for val, width in zip(metrics.iloc[0], max_widths)])
-            formatted_metrics = headers + "\n" + values
-            print(formatted_metrics)
-            print(f'SHARPE Ratio: {sharpe}')
-            print(f'CALMAR Ratio: {calmar}')
-            print(f'MAX DD: {maxdd*100}%')
-            # Save SHARPE to dictionary
-            keep[i] = np.mean(sharpe + calmar)
-            # keep[i] = sharpe
-            # keep[i] = calmar
+        # # Iterate through each trial
+        # for i, row in files.iterrows():
+        #     # Read file in
+        #     read_file = live_test.get_max_metric_file(row)
+        #     # Execute ranking of stocks
+        #     returns = live_test.sharpe_ret(read_file, iteration=False)
+        #     # Convert Permno to Ticker
+        #     tic = returns.merge(ticker, left_index=True, right_index=True, how='left')
+        #     tic = tic.merge(misc, left_index=True, right_index=True, how='left')
+        #     tic['market_cap'] = tic.groupby('permno')['market_cap'].ffill()
+        #     tic = tic.reset_index().set_index(['window', 'ticker', 'date'])
+        #     tic = tic.drop('permno', axis=1)
+        #     # Calculate SHARPE with EWP
+        #     pred = live_test.sharpe_backtest(tic, self.threshold)
+        #     equal_weight, long_weight, short_weight = live_test.exec_port_opt(data=pred)
+        #     strat_ret = equal_weight['totalRet']
+        #     sharpe = qs.stats.sharpe(strat_ret)
+        #     calmar = qs.stats.calmar(strat_ret)
+        #     maxdd = qs.stats.max_drawdown(strat_ret)
+        #     # Display metrics
+        #     print('-' * 60)
+        #     print(f'Row: {i}')
+        #     metrics = read_file['metrics']
+        #     column_widths = [max(len(str(val)) for val in metrics[col]) for col in metrics.columns]
+        #     header_widths = [len(header) for header in metrics.columns]
+        #     max_widths = [max(col_width, header_width) for col_width, header_width in zip(column_widths, header_widths)]
+        #     headers = " | ".join([header.ljust(width) for header, width in zip(metrics.columns, max_widths)])
+        #     values = " | ".join([str(val).ljust(width) for val, width in zip(metrics.iloc[0], max_widths)])
+        #     formatted_metrics = headers + "\n" + values
+        #     print(formatted_metrics)
+        #     print(f'SHARPE Ratio: {sharpe}')
+        #     print(f'CALMAR Ratio: {calmar}')
+        #     print(f'MAX DD: {maxdd*100}%')
+        #     # Save SHARPE to dictionary
+        #     keep[i] = np.mean(sharpe + calmar)
+        #     # keep[i] = sharpe
+        #     # keep[i] = calmar
+
+        # # Create a partial application
+        # process_func = partial(self.backtest_file, ticker=ticker, misc=misc, live_test=live_test)
+        #
+        # # Parallelize backtest
+        # with concurrent.futures.ProcessPoolExecutor() as executor:
+        #     results = list(executor.map(process_func, [row for i, row in files.iterrows()]))
+        #
+        # # Process and print results
+        # for i, (formatted_metrics, sharpe, calmar, maxdd) in enumerate(results):
+        #     print('-' * 60)
+        #     print(f'Row: {i}')
+        #     print(formatted_metrics)
+        #     print(f'SHARPE Ratio: {sharpe}')
+        #     print(f'CALMAR Ratio: {calmar}')
+        #     print(f'MAX DD: {maxdd * 100}%')
+        #     # Save SHARPE to dictionary
+        #     keep[i] = np.mean(sharpe + calmar)
+
+        # Splitting files into batches
+        batch_size=10
+        batches = [files.iloc[i:i + batch_size] for i in range(0, files.shape[0], batch_size)]
+
+        # Process each batch
+        for batch_index, batch in enumerate(batches):
+            print(f'Processing batch {batch_index + 1}/{len(batches)}')
+            process_func = partial(self.backtest_file, ticker=ticker, misc=misc, live_test=live_test)
+            with concurrent.futures.ProcessPoolExecutor() as executor:
+                # Submit a set of futures for the executor to run asynchronously
+                futures = [executor.submit(process_func, row) for i, row in batch.iterrows()]
+                batch_results = []
+                for future in concurrent.futures.as_completed(futures):
+                    # Collecting results as they complete
+                    batch_results.append(future.result())
+
+            # Process and print results for each row in the batch
+            for i, (formatted_metrics, sharpe, calmar, maxdd) in enumerate(batch_results):
+                row_index = batch_index * batch_size + i
+                print('-' * 60)
+                print(f'Row: {row_index}')
+                print(formatted_metrics)
+                print(f'SHARPE Ratio: {sharpe}')
+                print(f'CALMAR Ratio: {calmar}')
+                print(f'MAX DD: {maxdd * 100}%')
+                # Save SHARPE to dictionary
+                keep[row_index] = np.mean([sharpe, calmar])
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # ------------------------------------------------------------------PERFORM ENSEMBLE PREDICTION AND SAVE METRIC/IC---------------------------------------------------------------
@@ -489,7 +587,7 @@ class StratMLRetGBM(Strategy):
 
         # Retrieve weights for long/short and multiply by self.allocate
         long_weight = (long_weights[-1] * self.allocate).tolist()
-        short_weight = (short_weight[-1] * self.allocate).tolist()
+        short_weight = (short_weights[-1] * self.allocate).tolist()
 
         # Long Stock Dataframe
         long_df = pd.DataFrame({

@@ -251,6 +251,7 @@ def filter_market_cap(data, group, threshold):
             return None
     return data.groupby(group).apply(filter).dropna(how='all').reset_index(level=0, drop=True)
 
+# Round to # of sig figs
 def custom_round(number, sig_fig):
     if number == 0:
         return 0
