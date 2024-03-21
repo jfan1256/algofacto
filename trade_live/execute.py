@@ -22,7 +22,6 @@ from trade_live.strat_trend_mls.strat_trend_mls import StratTrendMLS
 from trade_live.strat_mrev_etf.strat_mrev_etf import StratMrevETF
 from trade_live.strat_mrev_mkt.strat_mrev_mkt import StratMrevMkt
 
-
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------BUILD, TRADE, MONITOR---------------------------------------------------------------------------
 def build():
@@ -104,12 +103,11 @@ def build():
         strat_mrev_mkt.exec_backtest()
 
     # Log time
-    print("-" * 180)
+    print("-"*180)
     elapsed_time = time.time() - start_time
     minutes, seconds = divmod(elapsed_time, 60)
     print(f"Total Time to Execute Build: {int(minutes)}:{int(seconds):02}")
-    print("-" * 180)
-
+    print("-"*180)
 
 def trade():
     '''
@@ -218,7 +216,6 @@ def trade():
     if current_day != 4:
         sys.exit(0)
 
-
 def monitor():
     '''
     Note: Specify monitor criteria in mont_crit.json:
@@ -280,28 +277,28 @@ def monitor():
     # Exit script
     sys.exit(0)
 
-
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -----------------------------------------------------------------------------TIME TO MAKE MONEY--------------------------------------------------------------------------------
-# Build
-build()
-schedule.every().monday.at("00:01").do(build)
-schedule.every().tuesday.at("00:01").do(build)
-schedule.every().wednesday.at("00:01").do(build)
-schedule.every().thursday.at("00:01").do(build)
-schedule.every().friday.at("00:01").do(build)
+if __name__ == '__main__':
+    # Build
+    build()
+    schedule.every().monday.at("00:01").do(build)
+    schedule.every().tuesday.at("00:01").do(build)
+    schedule.every().wednesday.at("00:01").do(build)
+    schedule.every().thursday.at("00:01").do(build)
+    schedule.every().friday.at("00:01").do(build)
 
-# Trade
-schedule.every().monday.at("15:40").do(trade)
-schedule.every().tuesday.at("15:40").do(trade)
-schedule.every().wednesday.at("15:40").do(trade)
-schedule.every().thursday.at("15:40").do(trade)
-schedule.every().friday.at("15:40").do(trade)
+    # Trade
+    schedule.every().monday.at("15:40").do(trade)
+    schedule.every().tuesday.at("15:40").do(trade)
+    schedule.every().wednesday.at("15:40").do(trade)
+    schedule.every().thursday.at("15:40").do(trade)
+    schedule.every().friday.at("15:40").do(trade)
 
-# Monitor
-schedule.every().friday.at("16:00").do(monitor)
+    # Monitor
+    schedule.every().friday.at("16:00").do(monitor)
 
-# Execute
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+    # Execute
+    while True:
+        schedule.run_pending()
+        time.sleep(1)

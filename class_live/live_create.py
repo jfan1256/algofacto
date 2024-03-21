@@ -75,6 +75,7 @@ from class_factor.factor_clust_load_volume import FactorClustLoadVolume
 
 from class_live.live_data import LiveData
 
+
 class LiveCreate:
     def __init__(self,
                  portfolio,
@@ -84,7 +85,7 @@ class LiveCreate:
                  current_date,
                  start_data,
                  start_factor):
-        
+
         '''
         portfolio (list): List of portfolio strategy class names
         threshold (int): Market cap threshold for preprocessing stocks
@@ -146,7 +147,7 @@ class LiveCreate:
         retry_delay = 5
         retry_count = 0
 
-        print("-"*60)
+        print("-" * 60)
         while retry_count < max_retries:
             try:
                 ray.shutdown()
@@ -161,7 +162,7 @@ class LiveCreate:
                     time.sleep(retry_delay)
                 else:
                     print("Failed to initialize Ray after several attempts.")
-        print("-"*60)
+        print("-" * 60)
         start_time = time.time()
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

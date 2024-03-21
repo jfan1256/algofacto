@@ -33,7 +33,7 @@ class LiveData:
             config = json.load(f)
             wrd_key = config['wrd_key']
             fred_key = config['fred_key']
-            
+
         self.wrd_key = wrd_key
         self.fred_key = fred_key
 
