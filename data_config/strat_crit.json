@@ -1,7 +1,7 @@
 {
   "portfolio": ["StratMLRetGBM"],
   "ml_ret_gbm":   {"start_backtest":"2008-01-01",  "allocate":1.000,  "threshold":2000000000,   "total_stocks":40,  "per_side":[20,20],  "hedge":0},
-  "ml_ret_lr":    {"start_backtest":"2008-01-01",  "allocate":0.000,  "threshold":2000000000,   "total_stocks":30,  "per_side":[15,15],  "hedge":0},
+  "ml_ret_lr":    {"start_backtest":"2008-01-01",  "allocate":0.000,  "threshold":2000000000,   "total_stocks":40,  "per_side":[20,20],  "hedge":0},
   "ml_trend_rf":  {"start_backtest":"2008-01-01",  "allocate":0.000,  "threshold":2000000000,   "total_stocks":30,  "per_side":[10,10],  "hedge":10},
   "port_iv":      {"start_backtest":"2008-01-01",  "allocate":0.000,  "threshold":8000000000,   "total_stocks":20,  "per_side":[10,10],  "hedge":0},
   "port_id":      {"start_backtest":"2008-01-01",  "allocate":0.000,  "threshold":8000000000,   "total_stocks":20,  "per_side":[10,10],  "hedge":0},
