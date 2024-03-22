@@ -338,7 +338,6 @@ class ModelLightgbm(ModelTrain):
                 else:
                     # Get the model predictions using different number of trees from the model
                     test_pred_ret = {str(n): model.predict(test_factors) if n == 1000 else model.predict(test_factors, num_iteration=n) for n in num_iterations}
-                    # test_pred_ret = {str(0): model.predict(test_factors, num_iteration=model.best_iteration)}
                 print("-" * 60)
             elif self.pred == 'sign':
                 print('Predicting......')
@@ -348,7 +347,6 @@ class ModelLightgbm(ModelTrain):
                 else:
                     # Get the model predictions using different number of trees from the model
                     test_pred_ret = {str(n): model.predict(test_factors) if n == 1000 else model.predict(test_factors, num_iteration=n) for n in num_iterations}
-                    # test_pred_ret = {str(0): model.predict(test_factors, num_iteration=model.best_iteration)}
                 print("-" * 60)
 
             # Create a prediction dataset
@@ -463,7 +461,7 @@ class ModelLightgbm(ModelTrain):
         if 'pred_iteration' in param_names:
             num_iterations = [0]
         else:
-            num_iterations = [150, 200, 300, 400, 500, 750, 1000]
+            num_iterations = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 
         # This will be used for the metric dataset during training
         metric_cols = (param_names + ['time'] + ["daily_metric_" + str(n) for n in num_iterations])
