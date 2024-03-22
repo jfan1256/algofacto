@@ -7,7 +7,7 @@ from core.operation import *
 # -----------------------------------------------------------------------------PARAMS--------------------------------------------------------------------------------------------
 live = True
 save = True
-start_model = '2008-01-01'
+start_model = '2010-01-01'
 current_date = '2025-01-01'
 normalize = 'rank_normalize'
 impute = 'cross_median'
@@ -38,9 +38,9 @@ ret = ModelPrep(live=live, factor_name='factor_ret', group='permno', interval='D
 alpha.add_factor(ret, impute=impute)
 del ret
 
-ret_comp = ModelPrep(live=live, factor_name='factor_ret_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
-alpha.add_factor(ret_comp, normalize=normalize, impute=impute)
-del ret_comp
+# ret_comp = ModelPrep(live=live, factor_name='factor_ret_comp', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+# alpha.add_factor(ret_comp, normalize=normalize, impute=impute)
+# del ret_comp
 
 # cycle = ModelPrep(live=live, factor_name='factor_time', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(cycle, categorical=True)
@@ -50,9 +50,9 @@ talib = ModelPrep(live=live, factor_name='factor_talib', group='permno', interva
 alpha.add_factor(talib, normalize=normalize, impute=impute)
 del talib
 
-volume = ModelPrep(live=live, factor_name='factor_volume', group='permno', interval='D', kind='price', div=False, stock=stock, start=start_model, end=current_date, save=save).prep()
-alpha.add_factor(volume, normalize=normalize, impute=impute)
-del volume
+# volume = ModelPrep(live=live, factor_name='factor_volume', group='permno', interval='D', kind='price', div=False, stock=stock, start=start_model, end=current_date, save=save).prep()
+# alpha.add_factor(volume, normalize=normalize, impute=impute)
+# del volume
 
 # volatility = ModelPrep(live=live, factor_name='factor_volatility', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(volatility, normalize=normalize, impute=impute)
@@ -112,9 +112,9 @@ del load_ret
 # alpha.add_factor(ind_sub, categorical=True)
 # del ind_sub
 
-ind_mom = ModelPrep(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
-alpha.add_factor(ind_mom, normalize=normalize, impute=impute)
-del ind_mom
+# ind_mom = ModelPrep(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+# alpha.add_factor(ind_mom, normalize=normalize, impute=impute)
+# del ind_mom
 
 # ind_mom_fama = ModelPrep(live=live, factor_name='factor_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(ind_mom_fama, normalize=normalize, impute=impute)
@@ -238,11 +238,12 @@ del ind_mom
 # alpha.add_factor(gradexp, normalize=normalize)
 # del gradexp
 
-# # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# # -----------------------------------------------------------------------------BETAS---------------------------------------------------------------------------------------------
-# sb_pca = ModelPrep(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
-# alpha.add_factor(sb_pca, normalize=normalize, impute=impute)
-# del sb_pca
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------BETAS---------------------------------------------------------------------------------------------
+sb_pca = ModelPrep(live=live, factor_name='factor_sb_pca', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+sb_pca = sb_pca[['resid_mom_21_ret_pca_01_60']]
+alpha.add_factor(sb_pca, normalize=normalize, impute=impute)
+del sb_pca
 
 # sb_sector = ModelPrep(live=live, factor_name='factor_sb_sector', group='permno', interval='D', kind='price', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(sb_sector, normalize=normalize, impute=impute)

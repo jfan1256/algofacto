@@ -104,12 +104,27 @@ class StratMLRetGBM(Strategy):
             'lambda_l1':          [0,             0,                0            ],
             'lambda_l2':          [4.5e-5,        5.9e-5,           7.3e-5       ],
             'bagging_fraction':   [1,             1,                1            ],
-            'bagging_freq':       [0,             0,                0            ]
+            'bagging_freq':       [0,             0,                0            ],
+            'pred_iteration':     [500,           500,              500          ]
+        }
+
+        best_params = {
+            'max_depth': [4, ],
+            'learning_rate': [0.14, ],
+            'num_leaves': [115, ],
+            'feature_fraction': [1, ],
+            'min_gain_to_split': [0.02, ],
+            'min_data_in_leaf': [59, ],
+            'lambda_l1': [0, ],
+            'lambda_l2': [4.5e-5, ],
+            'bagging_fraction': [1, ],
+            'bagging_freq': [0, ],
+            'pred_iteration': [500, ]
         }
 
         lightgbm_params = {
             'max_depth':           {'optuna': ('suggest_categorical', [4]),               'gridsearch': [4],                                                                                                      'default': 6,        'best': best_params['max_depth']},
-            'learning_rate':       {'optuna': ('suggest_float', 0.10, 0.50, False),       'gridsearch': [round(i / 100, 2) for i in range(10, 31)],                                                               'default': 0.15,     'best': best_params['learning_rate']},
+            'learning_rate':       {'optuna': ('suggest_float', 0.10, 0.50, False),       'gridsearch': [round(i / 100, 2) for i in range(10, 21)],                                                               'default': 0.15,     'best': best_params['learning_rate']},
             'num_leaves':          {'optuna': ('suggest_int', 5, 150),                    'gridsearch': list(range(5, 151)),                                                                                      'default': 15,       'best': best_params['num_leaves']},
             'feature_fraction':    {'optuna': ('suggest_categorical', [1.0]),             'gridsearch': [1],                                                                                                      'default': 1.0,      'best': best_params['feature_fraction']},
             'min_gain_to_split':   {'optuna': ('suggest_float', 0.02, 0.02, False),       'gridsearch': [0.02],                                                                                                   'default': 0.02,     'best': best_params['min_gain_to_split']},
@@ -118,18 +133,20 @@ class StratMLRetGBM(Strategy):
             'lambda_l2':           {'optuna': ('suggest_float', 1e-5, 10, True),          'gridsearch': sorted(set([custom_round(10**x, 2) for x in [i * 0.001 for i in range(-5000, 1001)]] + [10])),     'default': 0.01,     'best': best_params['lambda_l2']},
             'bagging_fraction':    {'optuna': ('suggest_float', 1.0, 1.0, True),          'gridsearch': [1],                                                                                                      'default': 1,        'best': best_params['bagging_fraction']},
             'bagging_freq':        {'optuna': ('suggest_int', 0, 0),                      'gridsearch': [0],                                                                                                      'default': 0,        'best': best_params['bagging_freq']},
+            'pred_iteration':                                                                                                                                                                                                         {'best': best_params['pred_iteration']}
         }
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
         format_end = date.today().strftime('%Y%m%d')
         model_name = f'lightgbm_{format_end}'
-        tune = 'best'
+        # tune = 'best'
         tune = ['gridsearch', 50]
 
         alpha = ModelLightgbm(live=live, model_name=model_name, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0,
                               incr=True, opt='wfo', outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
 
+        self.current_date = '2016-01-01'
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------GENERAL-------------------------------------------------------------------------------------------
         ret = ModelPrep(live=live, factor_name='factor_ret', group='permno', interval='D', kind='price', stock=stock, div=False, start=self.start_model, end=self.current_date, save=True).prep()

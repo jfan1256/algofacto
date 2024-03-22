@@ -81,6 +81,8 @@ class ModelTrain:
         if self.tuning[0] == 'optuna':
             params = {}
             for key, spec in self.parameter_specs.items():
+                if key == 'pred_iteration':
+                    continue
                 method_name = spec['optuna'][0]
                 if method_name == 'suggest_float':
                     low, high, *rest = spec['optuna'][1:]
@@ -90,9 +92,9 @@ class ModelTrain:
                     params[key] = getattr(trial, method_name)(key, *spec['optuna'][1:])
             return params
         elif self.tuning[0] == 'gridsearch':
-            return {key: spec['gridsearch'] for key, spec in self.parameter_specs.items()}
+            return {key: spec['gridsearch'] for key, spec in self.parameter_specs.items() if 'gridsearch' in spec}
         elif self.tuning == 'default':
-            return {key: spec['default'] for key, spec in self.parameter_specs.items()}
+            return {key: spec['default'] for key, spec in self.parameter_specs.items() if 'default' in spec}
         elif self.tuning == 'best':
             num_sets = len(self.parameter_specs['max_depth']['best'])
             best_param_sets = []

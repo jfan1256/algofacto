@@ -185,6 +185,13 @@ class ModelLightgbm(ModelTrain):
         # Get the parameters
         params = dict(zip(param_name_train, param_val_train))
         params.update(base_params)
+
+        # Isolate 'pred_iteration' if in params
+        if 'pred_iteration' in params:
+            pred_iteration = params.pop('pred_iteration')
+        else:
+            pred_iteration = None
+
         # Set up cross-validation and track time
         T = 0
         log_loss = []
@@ -325,13 +332,23 @@ class ModelLightgbm(ModelTrain):
             # Predict for price or sign
             if self.pred == 'price':
                 print('Predicting......')
-                # Get the model predictions using different number of trees from the model
-                test_pred_ret = {str(n): model.predict(test_factors) if n == 1000 else model.predict(test_factors, num_iteration=n) for n in num_iterations}
+                if pred_iteration is not None:
+                    # Get the model predictions for pred_iteration
+                    test_pred_ret = {str(0): model.predict(test_factors, num_iteration=pred_iteration)}
+                else:
+                    # Get the model predictions using different number of trees from the model
+                    test_pred_ret = {str(n): model.predict(test_factors) if n == 1000 else model.predict(test_factors, num_iteration=n) for n in num_iterations}
+                    # test_pred_ret = {str(0): model.predict(test_factors, num_iteration=model.best_iteration)}
                 print("-" * 60)
             elif self.pred == 'sign':
                 print('Predicting......')
-                # Get the model predictions using different number of trees from the model
-                test_pred_ret = {str(n): model.predict(test_factors) if n == 1000 else model.predict(test_factors, num_iteration=n) for n in num_iterations}
+                if pred_iteration is not None:
+                    # Get the model predictions for pred_iteration
+                    test_pred_ret = {str(0): model.predict(test_factors, num_iteration=pred_iteration)}
+                else:
+                    # Get the model predictions using different number of trees from the model
+                    test_pred_ret = {str(n): model.predict(test_factors) if n == 1000 else model.predict(test_factors, num_iteration=n) for n in num_iterations}
+                    # test_pred_ret = {str(0): model.predict(test_factors, num_iteration=model.best_iteration)}
                 print("-" * 60)
 
             # Create a prediction dataset
@@ -431,7 +448,7 @@ class ModelLightgbm(ModelTrain):
             # base_params = dict(boosting='gbdt', device_type='cpu', num_threads=1, force_col_wise=True, deterministic=True, verbose=-1, objective='regression', metric='mse', seed=42, bagging_seed=42, feature_fraction_seed=42, drop_seed=42)
             base_params = dict(boosting='gbdt', device_type='gpu', gpu_platform_id=1, gpu_device_id=0, verbose=-1, gpu_use_dp=True, num_threads=1, force_col_wise=True, objective='regression', metric='mse', seed=42, bagging_seed=42, feature_fraction_seed=42, drop_seed=42)
         elif self.pred == 'sign':
-            base_params = dict(boosting='gbdt', device_type='gpu', gpu_platform_id=1, gpu_device_id=0, verbose=-1, gpu_use_dp=True, objective='binary', metric='binary_logloss', seed=42)
+            base_params = dict(boosting='gbdt', device_type='gpu', gpu_platform_id=1, gpu_device_id=0, verbose=-1, gpu_use_dp=True, num_threads=1, force_col_wise=True, objective='binary', metric='binary_logloss', seed=42, bagging_seed=42, feature_fraction_seed=42, drop_seed=42)
 
         # Get parameters and set num_iterations used for prediction
         params = self._get_parameters(trial)
@@ -443,8 +460,11 @@ class ModelLightgbm(ModelTrain):
             param_names = list(params.keys())
 
         # Num iterations
-        # num_iterations = [150, 200, 300, 400, 500, 750, 1000]
-        num_iterations = [500]
+        if 'pred_iteration' in param_names:
+            num_iterations = [0]
+        else:
+            num_iterations = [150, 200, 300, 400, 500, 750, 1000]
+
         # This will be used for the metric dataset during training
         metric_cols = (param_names + ['time'] + ["daily_metric_" + str(n) for n in num_iterations])
 
