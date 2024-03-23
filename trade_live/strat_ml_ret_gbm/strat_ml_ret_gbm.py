@@ -94,20 +94,6 @@ class StratMLRetGBM(Strategy):
 
         start_time = time.time()
 
-        # best_params = {
-        #     'max_depth':          [4,             4,                4            ],
-        #     'learning_rate':      [0.14,          0.11,             0.11         ],
-        #     'num_leaves':         [115,           32,               68           ],
-        #     'feature_fraction':   [1,             1,                1            ],
-        #     'min_gain_to_split':  [0.02,          0.02,             0.02         ],
-        #     'min_data_in_leaf':   [59,            144,              108          ],
-        #     'lambda_l1':          [0,             0,                0            ],
-        #     'lambda_l2':          [4.5e-5,        5.9e-5,           7.3e-5       ],
-        #     'bagging_fraction':   [1,             1,                1            ],
-        #     'bagging_freq':       [0,             0,                0            ],
-        #     'pred_iteration':     [500,           500,              500          ]
-        # }
-
         best_params = {
             'max_depth':          [4,       4,       4,       4,       4,       4,       4,       4,       4,       4        ],
             'learning_rate':      [0.2,     0.15,    0.12,    0.11,    0.11,    0.2,     0.16,    0.1,     0.12,    0.13     ],
@@ -140,7 +126,6 @@ class StratMLRetGBM(Strategy):
         # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
         format_end = date.today().strftime('%Y%m%d')
         model_name = f'lightgbm_{format_end}'
-        # tune = ['gridsearch', 50]
         tune = 'best'
 
         alpha = ModelLightgbm(live=live, model_name=model_name, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0,

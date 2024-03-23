@@ -70,7 +70,7 @@ def build():
 
     if 'StratMLRetGBM' in strat_crit['portfolio']:
         strat_ml_ret_gbm = StratMLRetGBM(allocate=strat_crit['ml_ret_gbm']['allocate'], current_date=current_date, start_model=strat_crit['ml_ret_gbm']['start_backtest'], threshold=strat_crit['ml_ret_gbm']['threshold'], num_stocks=strat_crit['ml_ret_gbm']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=10)
-        # strat_ml_ret_gbm.exec_backtest()
+        strat_ml_ret_gbm.exec_backtest()
         strat_ml_ret_gbm.exec_live()
 
     if 'StratMLRetLR' in strat_crit['portfolio']:
@@ -281,7 +281,6 @@ def monitor():
 # -----------------------------------------------------------------------------TIME TO MAKE MONEY--------------------------------------------------------------------------------
 if __name__ == '__main__':
     # Build
-    build()
     schedule.every().monday.at("00:01").do(build)
     schedule.every().tuesday.at("00:01").do(build)
     schedule.every().wednesday.at("00:01").do(build)
