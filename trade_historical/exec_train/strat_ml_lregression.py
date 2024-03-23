@@ -112,9 +112,9 @@ del load_ret
 # alpha.add_factor(ind_sub, categorical=True)
 # del ind_sub
 
-# ind_mom = ModelPrep(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
-# alpha.add_factor(ind_mom, normalize=normalize, impute=impute)
-# del ind_mom
+ind_mom = ModelPrep(live=live, factor_name='factor_ind_mom', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
+alpha.add_factor(ind_mom, normalize=normalize, impute=impute)
+del ind_mom
 
 # ind_mom_fama = ModelPrep(live=live, factor_name='factor_ind_mom_fama', group='permno', interval='D', kind='ind', stock=stock, div=False, start=start_model, end=current_date, save=save).prep()
 # alpha.add_factor(ind_mom_fama, normalize=normalize, impute=impute)

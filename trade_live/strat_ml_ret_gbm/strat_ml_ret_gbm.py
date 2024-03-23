@@ -94,32 +94,32 @@ class StratMLRetGBM(Strategy):
 
         start_time = time.time()
 
-        best_params = {
-            'max_depth':          [4,             4,                4            ],
-            'learning_rate':      [0.14,          0.11,             0.11         ],
-            'num_leaves':         [115,           32,               68           ],
-            'feature_fraction':   [1,             1,                1            ],
-            'min_gain_to_split':  [0.02,          0.02,             0.02         ],
-            'min_data_in_leaf':   [59,            144,              108          ],
-            'lambda_l1':          [0,             0,                0            ],
-            'lambda_l2':          [4.5e-5,        5.9e-5,           7.3e-5       ],
-            'bagging_fraction':   [1,             1,                1            ],
-            'bagging_freq':       [0,             0,                0            ],
-            'pred_iteration':     [500,           500,              500          ]
-        }
+        # best_params = {
+        #     'max_depth':          [4,             4,                4            ],
+        #     'learning_rate':      [0.14,          0.11,             0.11         ],
+        #     'num_leaves':         [115,           32,               68           ],
+        #     'feature_fraction':   [1,             1,                1            ],
+        #     'min_gain_to_split':  [0.02,          0.02,             0.02         ],
+        #     'min_data_in_leaf':   [59,            144,              108          ],
+        #     'lambda_l1':          [0,             0,                0            ],
+        #     'lambda_l2':          [4.5e-5,        5.9e-5,           7.3e-5       ],
+        #     'bagging_fraction':   [1,             1,                1            ],
+        #     'bagging_freq':       [0,             0,                0            ],
+        #     'pred_iteration':     [500,           500,              500          ]
+        # }
 
         best_params = {
-            'max_depth': [4, ],
-            'learning_rate': [0.14, ],
-            'num_leaves': [115, ],
-            'feature_fraction': [1, ],
-            'min_gain_to_split': [0.02, ],
-            'min_data_in_leaf': [59, ],
-            'lambda_l1': [0, ],
-            'lambda_l2': [4.5e-5, ],
-            'bagging_fraction': [1, ],
-            'bagging_freq': [0, ],
-            'pred_iteration': [500, ]
+            'max_depth':          [4,       4,       4,       4,       4,       4,       4,       4,       4,       4        ],
+            'learning_rate':      [0.2,     0.15,    0.12,    0.11,    0.11,    0.2,     0.16,    0.1,     0.12,    0.13     ],
+            'num_leaves':         [78,      83,      137,     95,      70,      136,     36,      146,     55,      124      ],
+            'feature_fraction':   [1,       1,       1,       1,       1,       1,       1,       1,       1,       1        ],
+            'min_gain_to_split':  [0.02,    0.02,    0.02,    0.02,    0.02,    0.02,    0.02,    0.02,    0.02,    0.02     ],
+            'min_data_in_leaf':   [51,      165,     129,     69,      187,     87,      88,      79,      152,     84       ],
+            'lambda_l1':          [0,       0,       0,       0,       0,       0,       0,       0,       0,       0        ],
+            'lambda_l2':          [0.0027,  0.00074, 0.24,    0.041,   0.0044,  0.045,   0.00078, 0.00072, 0.00028, 0.083    ],
+            'bagging_fraction':   [1,       1,       1,       1,       1,       1,       1,       1,       1,       1        ],
+            'bagging_freq':       [0,       0,       0,       0,       0,       0,       0,       0,       0,       0        ],
+            'pred_iteration':     [300,     400,     500,     500,     500,     300,     400,     600,     300,     200      ]
         }
 
         lightgbm_params = {
@@ -140,8 +140,8 @@ class StratMLRetGBM(Strategy):
         # -----------------------------------------------------------------------------MODEL---------------------------------------------------------------------------------------------
         format_end = date.today().strftime('%Y%m%d')
         model_name = f'lightgbm_{format_end}'
-        # tune = 'best'
-        tune = ['gridsearch', 50]
+        # tune = ['gridsearch', 50]
+        tune = 'best'
 
         alpha = ModelLightgbm(live=live, model_name=model_name, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0,
                               incr=True, opt='wfo', outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21, **lightgbm_params)
