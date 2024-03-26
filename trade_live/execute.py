@@ -66,17 +66,14 @@ def build():
     if 'StratMLTrendRF' in strat_crit['portfolio']:
         start_ml_trend_rf = StratMLTrendRF(allocate=strat_crit['ml_trend_rf']['allocate'], current_date=current_date, start_model=strat_crit['ml_trend_rf']['start_backtest'], threshold=strat_crit['ml_trend_rf']['threshold'], num_stocks=strat_crit['ml_trend_rf']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=1)
         start_ml_trend_rf.exec_backtest()
-        start_ml_trend_rf.exec_live()
 
     if 'StratMLRetGBM' in strat_crit['portfolio']:
         strat_ml_ret_gbm = StratMLRetGBM(allocate=strat_crit['ml_ret_gbm']['allocate'], current_date=current_date, start_model=strat_crit['ml_ret_gbm']['start_backtest'], threshold=strat_crit['ml_ret_gbm']['threshold'], num_stocks=strat_crit['ml_ret_gbm']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=10)
         strat_ml_ret_gbm.exec_backtest()
-        strat_ml_ret_gbm.exec_live()
 
     if 'StratMLRetLR' in strat_crit['portfolio']:
         strat_ml_ret_lr = StratMLRetLR(allocate=strat_crit['ml_ret_lr']['allocate'], current_date=current_date, start_model=strat_crit['ml_ret_lr']['start_backtest'], threshold=strat_crit['ml_ret_lr']['threshold'], num_stocks=strat_crit['ml_ret_lr']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=1)
         strat_ml_ret_lr.exec_backtest()
-        strat_ml_ret_lr.exec_live()
 
     if 'StratPortIV' in strat_crit['portfolio']:
         strat_port_iv = StratPortIV(allocate=strat_crit['port_iv']['allocate'], current_date=current_date, start_date=strat_crit['port_iv']['start_backtest'], threshold=strat_crit['port_iv']['threshold'], num_stocks=strat_crit['port_iv']['per_side'][0], window_port=7)
@@ -162,6 +159,10 @@ def trade():
             exec_strategies = []
 
             # Load strategies
+            if 'StratMLRetGBM' in strat_crit['portfolio']:
+                strat_ml_ret_gbm = StratMLRetGBM(allocate=strat_crit['ml_ret_gbm']['allocate'], current_date=current_date, start_model=strat_crit['ml_ret_gbm']['start_backtest'], threshold=strat_crit['ml_ret_gbm']['threshold'], num_stocks=strat_crit['ml_ret_gbm']['per_side'][0], leverage=0.5, port_opt='equal_weight', use_top=10)
+                exec_strategies.append(executor.submit(strat_ml_ret_gbm.exec_live))
+
             if 'StratPortIV' in strat_crit['portfolio']:
                 strat_port_iv = StratPortIV(allocate=strat_crit['port_iv']['allocate'], current_date=current_date, start_date=strat_crit['port_iv']['start_backtest'], threshold=strat_crit['port_iv']['threshold'], num_stocks=strat_crit['port_iv']['per_side'][0], window_port=7)
                 exec_strategies.append(executor.submit(strat_port_iv.exec_live))
@@ -281,6 +282,7 @@ def monitor():
 # -----------------------------------------------------------------------------TIME TO MAKE MONEY--------------------------------------------------------------------------------
 if __name__ == '__main__':
     # Build
+    build()
     schedule.every().monday.at("00:01").do(build)
     schedule.every().tuesday.at("00:01").do(build)
     schedule.every().wednesday.at("00:01").do(build)

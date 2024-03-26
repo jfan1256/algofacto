@@ -97,7 +97,6 @@ class ModelPrep:
             self.data = self.data.drop(['Close'], axis=1)
         return self.data
 
-
     # Handle various data errors
     def _handle_data(self):
         # Replace all infinite values with NAN
@@ -106,7 +105,6 @@ class ModelPrep:
         # Remove all duplicate indices
         self.data = self.data.loc[~self.data.index.duplicated(keep='first')]
         return self.data
-
 
     # Execute prepping process
     @show_processing_animation(message_func=lambda self, *args, **kwargs: f'Creating {self.factor_name}', animation=spinner_animation, post_func=print_data_shape)

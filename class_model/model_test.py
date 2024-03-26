@@ -1,6 +1,7 @@
 import os
 import base64
 import math
+import lightgbm as lgb
 
 from io import BytesIO
 from IPython.display import Image
@@ -81,6 +82,10 @@ class ModelTest:
             elif file.endswith(".png"):
                 img = os.path.join(result_data_dir, file)
                 files[extract_first_string(file)] = Image(img)
+            elif file.endswith(".txt"):
+                model = os.path.join(result_data_dir, file)
+                if 'lightgbm' in model:
+                    files['model'] = lgb.Booster(model_file=model)
         return files
 
     # Get all files under a specific folder

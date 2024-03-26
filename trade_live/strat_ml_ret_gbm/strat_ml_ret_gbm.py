@@ -2,6 +2,7 @@ import shutil
 
 import quantstats as qs
 import concurrent.futures
+import lightgbm as lgb
 
 from scipy.stats import spearmanr
 from functools import partial
@@ -11,6 +12,7 @@ from class_model.model_test import ModelTest
 from class_model.model_prep import ModelPrep
 from class_strat.strat import Strategy
 from core.operation import *
+from core.factor import *
 
 class StratMLRetGBM(Strategy):
     def __init__(self,
@@ -191,8 +193,6 @@ class StratMLRetGBM(Strategy):
         print(f"Total time to execute everything: {int(minutes)}:{int(seconds):02}")
         print("-" * 60)
 
-    def exec_live(self):
-        print("------------------------------------------------------------------------EXEC ML RET GBM PRED------------------------------------------------------------------------------")
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         # -------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------------
         live = True
@@ -200,8 +200,8 @@ class StratMLRetGBM(Strategy):
         dir_path = Path(get_ml_report(live, model_name) / model_name)
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # -------------------------------------------------------------------------------INITIATE LIVE TEST------------------------------------------------------------------------------
-        print("--------------------------------------------------------------------------INITIATE LIVE TEST------------------------------------------------------------------------------")
+        # -------------------------------------------------------------------------------INITIATE BACKTEST-------------------------------------------------------------------------------
+        print("--------------------------------------------------------------------------INITIATE BACKTEST-------------------------------------------------------------------------------")
         live_test = ModelTest(live=live, num_stocks=self.num_stocks, leverage=self.leverage, port_opt=self.port_opt, model_name=model_name, current_date=self.current_date, dir_path=dir_path)
         files = live_test.read_result('metrics')
 
@@ -221,12 +221,12 @@ class StratMLRetGBM(Strategy):
         misc = pd.read_parquet(get_parquet(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
 
         # Splitting files into batches
-        batch_size=16
+        batch_size = 16
         batches = [files.iloc[i:i + batch_size] for i in range(0, files.shape[0], batch_size)]
 
         # Process each batch
         for batch_index, batch in enumerate(batches):
-            print("-"*120)
+            print("-" * 120)
             print(f'Processing batch {batch_index + 1}/{len(batches)}')
             process_func = partial(self.backtest_file, ticker=ticker, misc=misc, live_test=live_test)
             with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -286,8 +286,8 @@ class StratMLRetGBM(Strategy):
         combined = combined.set_index(['window', 'ticker', 'date'])
 
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # ---------------------------------------------------------------------------------EXECUTE LIVETEST------------------------------------------------------------------------------
-        print("----------------------------------------------------------------------------EXECUTE LIVETEST------------------------------------------------------------------------------")
+        # ---------------------------------------------------------------------------------EXECUTE BACKTEST------------------------------------------------------------------------------
+        print("----------------------------------------------------------------------------EXECUTE BACKTEST------------------------------------------------------------------------------")
         # Create the desired dataframe with structure longRet, longStocks, shortRet, shortStocks
         pred_return = live_test.backtest(combined, self.threshold)
 
@@ -302,13 +302,123 @@ class StratMLRetGBM(Strategy):
         spy = get_spy(start_date='2005-01-01', end_date=self.current_date)
         qs.reports.html(strat_ret, spy, output=dir_path / 'report.html')
 
-        # Retrieve stocks to long/short tomorrow (only get 'ticker')
-        long = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['longStocks']]
-        short = [stock_pair[0] for stock_pair in pred_return.iloc[-1]['shortStocks']]
+    def exec_live(self):
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------------
+        # Params
+        live = True
+        model_name = f"lightgbm_{date.today().strftime('%Y%m%d')}"
+        dir_path = Path(get_ml_report(live, model_name) / model_name)
+
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # ---------------------------------------------------------------------------------LOAD DATA-------------------------------------------------------------------------------------
+        # Load in datasets
+        historical_price = pd.read_parquet(get_parquet(live) / 'data_price.parquet.brotli')
+        historical_price = historical_price.loc[historical_price.index.get_level_values('date') != self.current_date]
+        live_price = pd.read_parquet(get_live_price() / 'data_permno_live.parquet.brotli')
+
+        # Concat historical price and live price datasets
+        price = pd.concat([historical_price, live_price], axis=0)
+
+        # Create returns crop into window data
+        price = window_data(data=price, date=self.current_date, window=252 * 2)
+        ticker = price[['ticker']]
+        price = price[['Open', 'Close', 'Low', 'High', 'Volume']]
+
+        # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # -----------------------------------------------------------------------------CREATE FACTOR DATA-------------------------------------------------------------------------------
+        print("------------------------------------------------------------------------CREATE FACTOR DATA-------------------------------------------------------------------------------")
+        # Create Factor Data
+        factor_data = price.copy(deep=True)
+        ret = factor_ret(data=factor_data, window=[1, 5, 21, 126, 252])
+        ret_comp = factor_ret_comp(data=factor_data, window=[1, 5, 21, 126, 252])
+        cycle = factor_cycle(data=factor_data)
+        talib = factor_talib(data=factor_data)
+        volume = factor_volume(data=factor_data, window=[1, 5, 21, 126, 252])
+        load_ret = factor_load_ret(data=factor_data, num_component=5, window=21)
+        ind = factor_ind(live=live)
+        ind_mom = factor_ind_mom(data=factor_data, live=live, window=[1, 5, 21, 126, 252])
+        clust_ret = factor_clust_ret(data=factor_data, cluster=21, window=21)
+
+        # Model
+        normalize = 'rank_normalize'
+        format_end = date.today().strftime('%Y%m%d')
+        model_name = f'lightgbm_{format_end}'
+        alpha = ModelLightgbm(live=live, model_name=model_name)
+        alpha.add_factor(ret)
+        alpha.add_factor(ret_comp, normalize=normalize)
+        alpha.add_factor(cycle, categorical=True)
+        alpha.add_factor(talib, normalize=normalize)
+        alpha.add_factor(volume, normalize=normalize)
+        alpha.add_factor(load_ret, normalize=normalize)
+        alpha.add_factor(ind, categorical=True)
+        alpha.add_factor(ind_mom, normalize=normalize)
+        alpha.add_factor(clust_ret, categorical=True)
+
+        # Data for prediction
+        model_data = alpha.data
+        model_data = model_data.loc[model_data.index.get_level_values('date') == self.current_date]
+
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------INITIATE LIVETEST-------------------------------------------------------------------------------
+        print("--------------------------------------------------------------------------INITIATE LIVETEST-------------------------------------------------------------------------------")
+        # Initiate ModelTest
+        live_test = ModelTest(live=live, num_stocks=self.num_stocks, leverage=self.leverage, port_opt=self.port_opt, model_name=model_name, current_date=self.current_date, dir_path=dir_path)
+        files = live_test.read_result('metrics')
+
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # --------------------------------------------------------------------------------PREDICT RETURNS--------------------------------------------------------------------------------
+        print("---------------------------------------------------------------------------PREDICT RETURNS--------------------------------------------------------------------------------")
+        # Iterate through each trial
+        pred_collect = []
+        for i, row in files.iterrows():
+            # Read file in
+            read_file = live_test.get_max_metric_file(row)
+            # Extract model
+            model = read_file['model']
+            # Extract pred_iteration
+            pred_iteration = read_file['daily_metric']['pred_iteration'].iloc[0]
+            # Predict current_date returns
+            current_date_pred = model.predict(model_data, num_iteration=pred_iteration)
+            # Create prediction df
+            predictions_df = pd.DataFrame(data=current_date_pred, columns=['prediction'], index=model_data.index)
+            pred_collect.append(predictions_df)
+
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------PERFORM ENSEMBLE PREDICTION---------------------------------------------------------------------------
+        print("--------------------------------------------------------------------PERFORM ENSEMBLE PREDICTION---------------------------------------------------------------------------")
+        # Concat and calculate the mean of the predictions
+        total = pd.concat(pred_collect, axis=1)
+        total['mean_predictions'] = total.mean(axis=1)
+        final_pred = total[['mean_predictions']]
+
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------CONVERT FROM PERMNO TO TICKER-------------------------------------------------------------------------
+        print("--------------------------------------------------------------------CONVERT FROM PERMNO TO TICKER-------------------------------------------------------------------------")
+        # Read in data
+        misc = pd.read_parquet(get_parquet(live) / 'data_misc.parquet.brotli', columns=['market_cap'])
+        misc = pd.merge(price, misc, left_index=True, right_index=True, how='left')[['market_cap']]
+        misc = misc.groupby('permno')['market_cap'].ffill()
+
+        # Convert indices
+        ticker_pred = final_pred.merge(ticker, left_index=True, right_index=True, how='left')
+        ticker_pred = ticker_pred.merge(misc, left_index=True, right_index=True, how='left')
+        ticker_pred['market_cap'] = ticker_pred.groupby('permno')['market_cap'].ffill()
+        ticker_pred = ticker_pred.reset_index().set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+
+        # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        # --------------------------------------------------------------------------------RETRIEVE LONG/SHORT----------------------------------------------------------------------------
+        print("---------------------------------------------------------------------------RETRIEVE LONG/SHORT----------------------------------------------------------------------------")
+        # Sort
+        ticker_pred = ticker_pred.loc[ticker_pred['market_cap'] > self.threshold]
+        sort_ticker_pred = ticker_pred.sort_values(by='mean_predictions', ascending=False)
+        long = sort_ticker_pred.head(self.num_stocks).index.get_level_values('ticker').tolist()
+        short = sort_ticker_pred.tail(self.num_stocks).index.get_level_values('ticker').tolist()
 
         # Retrieve weights for long/short and multiply by self.allocate
-        long_weight = (long_weights[-1] * self.allocate).tolist()
-        short_weight = (short_weights[-1] * self.allocate).tolist()
+        weight = (1 / (self.num_stocks*2)) * self.allocate
+        long_weight = [weight for _ in range(self.num_stocks)]
+        short_weight = [weight for _ in range(self.num_stocks)]
 
         # Long Stock Dataframe
         long_df = pd.DataFrame({

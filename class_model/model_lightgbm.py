@@ -426,6 +426,10 @@ class ModelLightgbm(ModelTrain):
         split.T.describe().T.assign(**params).to_parquet(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'split.parquet.brotli', compression='brotli')
         all_pred_ret.to_parquet(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'predictions.parquet.brotli', compression='brotli')
 
+        # Export model
+        if self.live:
+            model.save_model(get_ml_result(self.live, self.model_name) / f'{self.model_name}' / f'params_{export_key}' / 'lightgbm.txt')
+
         # If optuna is true, optimize for dailyIC mean
         if self.tuning[0] == 'optuna':
             if self.pred == 'price':
