@@ -304,7 +304,8 @@ class StratMLRetGBM(Strategy):
 
     def exec_live(self):
         # -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-        # -------------------------------------------------------------------------------------PARAMS------------------------------------------------------------------------------------
+        # ---------------------------------------------------------------------------EXEC STRAT ML RET GBM LIVE--------------------------------------------------------------------------
+        print("----------------------------------------------------------------------EXEC STRAT ML RET GBM LIVE--------------------------------------------------------------------------")
         # Params
         live = True
         model_name = f"lightgbm_{date.today().strftime('%Y%m%d')}"
@@ -321,7 +322,8 @@ class StratMLRetGBM(Strategy):
         price = pd.concat([historical_price, live_price], axis=0)
 
         # Create returns crop into window data
-        price = window_data(data=price, date=self.current_date, window=252 * 2)
+        long_window_price = window_data(data=price, date=self.current_date, window=252 * 2)
+        short_window_price = window_data(data=price, date=self.current_date, window=63*2)
         ticker = price[['ticker']]
         price = price[['Open', 'Close', 'Low', 'High', 'Volume']]
 
@@ -329,26 +331,29 @@ class StratMLRetGBM(Strategy):
         # -----------------------------------------------------------------------------CREATE FACTOR DATA-------------------------------------------------------------------------------
         print("------------------------------------------------------------------------CREATE FACTOR DATA-------------------------------------------------------------------------------")
         # Create Factor Data
-        factor_data = price.copy(deep=True)
-        ret = factor_ret(data=factor_data, window=[1, 5, 21, 126, 252])
-        ret_comp = factor_ret_comp(data=factor_data, window=[1, 5, 21, 126, 252])
-        cycle = factor_cycle(data=factor_data)
-        talib = factor_talib(data=factor_data)
-        volume = factor_volume(data=factor_data, window=[1, 5, 21, 126, 252])
-        load_ret = factor_load_ret(data=factor_data, num_component=5, window=21)
-        ind = factor_ind(live=live)
-        ind_mom = factor_ind_mom(data=factor_data, live=live, window=[1, 5, 21, 126, 252])
-        clust_ret = factor_clust_ret(data=factor_data, cluster=21, window=21)
+        ret = factor_ret(data=long_window_price, window=[1, 5, 21, 126, 252])
+        ret_comp = factor_ret_comp(data=long_window_price, window=[1, 5, 21, 126, 252])
+        cycle = factor_cycle(data=long_window_price)
+        talib_window = factor_talib_window(data=short_window_price)
+        talib_expand = factor_talib_expand(data=price, current_date=self.current_date)
+        volume = factor_volume(data=long_window_price, window=[1, 5, 21, 126, 252])
+        load_ret = factor_load_ret(data=short_window_price, num_component=5, window=21)
+        ind = factor_ind(data=short_window_price, live=live)
+        ind_mom = factor_ind_mom(data=long_window_price, live=live, window=[1, 5, 21, 126, 252])
+        clust_ret = factor_clust_ret(data=short_window_price, cluster=21, window=21)
 
         # Model
         normalize = 'rank_normalize'
         format_end = date.today().strftime('%Y%m%d')
         model_name = f'lightgbm_{format_end}'
-        alpha = ModelLightgbm(live=live, model_name=model_name)
+        tune = 'best'
+        alpha = ModelLightgbm(live=live, model_name=model_name, tuning=tune, shap=False, plot_loss=False, plot_hist=False, pred='price', stock='permno', lookahead=1, trend=0,
+                              incr=True, opt='wfo', outlier=False, early=True, pretrain_len=1260, train_len=504, valid_len=63, test_len=21)
         alpha.add_factor(ret)
         alpha.add_factor(ret_comp, normalize=normalize)
         alpha.add_factor(cycle, categorical=True)
-        alpha.add_factor(talib, normalize=normalize)
+        alpha.add_factor(talib_window, normalize=normalize)
+        alpha.add_factor(talib_expand, normalize=normalize)
         alpha.add_factor(volume, normalize=normalize)
         alpha.add_factor(load_ret, normalize=normalize)
         alpha.add_factor(ind, categorical=True)
@@ -377,7 +382,7 @@ class StratMLRetGBM(Strategy):
             # Extract model
             model = read_file['model']
             # Extract pred_iteration
-            pred_iteration = read_file['daily_metric']['pred_iteration'].iloc[0]
+            pred_iteration = int(row.pred_iteration)
             # Predict current_date returns
             current_date_pred = model.predict(model_data, num_iteration=pred_iteration)
             # Create prediction df

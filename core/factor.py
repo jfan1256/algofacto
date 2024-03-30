@@ -5,10 +5,10 @@ from core.operation import *
 # Handle Data
 def handle_data(data):
     factor_data = data.copy(deep=True)
-    factor_data = factor_data.drop(['Open', 'Close', 'Low', 'High', 'Volume'], axis=1)
+    factor_data = factor_data.drop(['ticker', 'Open', 'Close', 'Low', 'High', 'Volume'], axis=1, errors='ignore')
     factor_data = factor_data.replace([np.inf, -np.inf], np.nan)
     factor_data = factor_data.loc[~factor_data.index.duplicated(keep='first')]
-    return handle_data(factor_data)
+    return factor_data
 
 # Factor Ret
 def factor_ret(data, window):
@@ -19,10 +19,11 @@ def factor_ret(data, window):
 # Factor Ret Comp
 def factor_ret_comp(data, window):
     factor_data = data.copy(deep=True)
+    factor_data = create_return(factor_data, [1])
     for t in window:
-        factor_data = create_return(factor_data, t)
         factor_data[f'ret_comp_{t:01}'] = factor_data.groupby('permno')['RET_01'].rolling(window=t).apply(lambda x: (1 + x).prod() - 1, raw=True).reset_index(level=0, drop=True)
-        factor_data = factor_data.drop(f'RET_{t:01}', axis=1)
+
+    factor_data = factor_data.drop(f'RET_01', axis=1)
     return handle_data(factor_data)
 
 # Factor Cycle
@@ -42,7 +43,7 @@ def factor_cycle(data):
     return handle_data(factor_data)
 
 # Factor TALIB
-def factor_talib(data):
+def factor_talib_window(data):
     factor_data = data.copy(deep=True)
     mAT = [5, 21, 63]
 
@@ -109,14 +110,6 @@ def factor_talib(data):
     # Williams Percent Range
     def _WILLR(factor_data):
         factor_data['willr'] = (factor_data.groupby('permno', group_keys=False).apply(lambda x: talib.WILLR(x.High, x.Low, x.Close, timeperiod=14)))
-    
-    # Chaikin A/D Line
-    def _AD(factor_data):
-        factor_data['ad'] = (factor_data.groupby('permno', group_keys=False).apply(lambda x: talib.AD(x.High, x.Low, x.Close, x.Volume) / x.expanding().Volume.mean()))
-
-    # On Balance Volume
-    def _OBV(factor_data):
-        factor_data['obv'] = (factor_data.groupby('permno', group_keys=False).apply(lambda x: talib.OBV(x.Close, x.Volume) / x.expanding().Volume.mean()))
 
     _SMA(factor_data)
     _HT(factor_data)
@@ -128,13 +121,28 @@ def factor_talib(data):
     _RSI(factor_data)
     _ULTOSC(factor_data)
     _WILLR(factor_data)
-    _OBV(factor_data)
     _EMA(factor_data)
     _PMDI(factor_data)
     _AROONOSC(factor_data)
     _MFI(factor_data)
+    return handle_data(factor_data)
+
+
+# Factor TALIB
+def factor_talib_expand(data, current_date):
+    factor_data = data.copy(deep=True)
+
+    # Chaikin A/D Line
+    def _AD(factor_data):
+        factor_data['ad'] = (factor_data.groupby('permno', group_keys=False).apply(lambda x: talib.AD(x.High, x.Low, x.Close, x.Volume) / x.expanding().Volume.mean()))
+
+    # On Balance Volume
+    def _OBV(factor_data):
+        factor_data['obv'] = (factor_data.groupby('permno', group_keys=False).apply(lambda x: talib.OBV(x.Close, x.Volume) / x.expanding().Volume.mean()))
+
+    _OBV(factor_data)
     _AD(factor_data)
-    
+    factor_data = window_data(factor_data, current_date, 63*2)
     return handle_data(factor_data)
 
 # Factor Volume
@@ -151,7 +159,14 @@ def factor_load_ret(data, num_component, window):
     # Create returns and convert stock index to columns
     factor_data = create_return(factor_data, windows=[1])
     factor_data = factor_data[[f'RET_01']]
+    factor_data = factor_data.dropna()
     factor_data = factor_data['RET_01'].unstack('permno')
+
+    # Remove last row of nan if there (i.e., 14937 has no data on Friday 2022-11-25 - causing a row of nan at the end except for permno 14937 when stacking)
+    if factor_data.tail(1).isna().sum(axis=1).values[0] > (factor_data.shape[1] / 2):
+        factor_data = factor_data.iloc[:-1]
+
+    # Get last window
     factor_data = factor_data.tail(window)
     
     # Normalize data
@@ -168,24 +183,29 @@ def factor_load_ret(data, num_component, window):
     
     # Create a dataframe that matches loadings to stock
     cols = factor_data.columns
-    date = factor_data.index[0]
+    date = factor_data.index[-1]
     factor_data = pd.DataFrame(loading, columns=[f'load_ret_{i + 1}' for i in range(component)], index=[[date] * len(cols), cols])
     factor_data.index.names = ['date', 'permno']
     factor_data = factor_data.swaplevel()
     return handle_data(factor_data)
 
 # Factor Ind
-def factor_ind(live):
-    factor_data = pd.read_parquet(get_parquet(live) / 'data_ind.parquet.brotli')
+def factor_ind(data, live):
+    factor_data = data.copy(deep=True)
+    ind = pd.read_parquet(get_parquet(live) / 'data_ind.parquet.brotli')
+    factor_data = pd.merge(factor_data, ind, left_index=True, right_index=True, how='left')
+    factor_data = factor_data[['Industry']]
+    factor_data = factor_data.groupby('permno').ffill()
     return handle_data(factor_data)
 
 # Factor Ind Mom
 def factor_ind_mom(data, live, window):
-    price = data.copy(deep=True)
-    ind_data = pd.read_parquet(get_parquet(live) / 'data_ind.parquet.brotli')
-    combine = pd.concat([price, ind_data], axis=1)
+    factor_data = data.copy(deep=True)
+    ind = pd.read_parquet(get_parquet(live) / 'data_ind.parquet.brotli')
+    factor_data = pd.merge(factor_data, ind, left_index=True, right_index=True, how='left')
+    factor_data['Industry'] = factor_data.groupby('permno')['Industry'].ffill()
 
-    ret = create_return(combine, windows=window)
+    ret = create_return(factor_data, windows=window)
     collect = []
 
     for t in window:
@@ -199,9 +219,18 @@ def factor_ind_mom(data, live, window):
 # Factor Clust Ret
 def factor_clust_ret(data, cluster, window):
     factor_data = data.copy(deep=True)
-    factor_data = create_return(factor_data, [1])
-    factor_data = factor_data.drop(['Open', 'Close', 'Low', 'Volume', 'High'], axis=1)
-    factor_data = factor_data.unstack('permno')
+
+    # Create returns and convert stock index to columns
+    factor_data = create_return(factor_data, windows=[1])
+    factor_data = factor_data[[f'RET_01']]
+    factor_data = factor_data.dropna()
+    factor_data = factor_data['RET_01'].unstack('permno')
+
+    # Remove last row of nan if there (i.e., 14937 has no data on Friday 2022-11-25 - causing a row of nan at the end except for permno 14937 when stacking)
+    if factor_data.tail(1).isna().sum(axis=1).values[0] > (factor_data.shape[1] / 2):
+        factor_data = factor_data.iloc[:-1]
+
+    # Get last window
     factor_data = factor_data.tail(window)
 
     # Normalize data
@@ -216,9 +245,9 @@ def factor_clust_ret(data, cluster, window):
     cluster_fit = kmeans.fit_predict(factor_data.T)
 
     # Create a dataframe that matches cluster to stock
-    col = factor_data.columns
-    date = factor_data.index[0]
-    factor_data = pd.DataFrame(cluster_fit, columns=[f'{col.lower()}_cluster'], index=[[date] * len(col), col])
+    cols = factor_data.columns
+    date = factor_data.index[-1]
+    factor_data = pd.DataFrame(cluster_fit, columns=[f'ret_01_cluster'], index=[[date] * len(cols), cols])
     factor_data.index.names = ['date', 'permno']
     factor_data = factor_data.swaplevel()
     return handle_data(factor_data)

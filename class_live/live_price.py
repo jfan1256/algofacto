@@ -23,7 +23,7 @@ class LivePrice:
 
 
     # Get first valid contract
-    async def _get_contract(self, symbol):
+    async def _fetch_contract(self, symbol):
         contract = Stock(symbol, 'SMART', 'USD')
         contracts = await self.ibkr_server.reqContractDetailsAsync(contract)
         if contracts:
@@ -35,42 +35,54 @@ class LivePrice:
             return None
 
     # Get the last closing price of a stock
-    async def _get_market_data(self, stock):
+    async def _fetch_last_data(self, stock):
         print("-" * 60)
         MAX_RETRIES = 10
         SLEEP_DURATION = 5
 
         for _ in range(MAX_RETRIES):
-            market_data = self.ibkr_server.reqMktData(stock, '', False, False)
+            market_data = self.ibkr_server.reqMktData(stock, '233', False, False)
             await asyncio.sleep(SLEEP_DURATION)
+            if market_data.open:
+                open = market_data.open
+            if market_data.high:
+                high = market_data.high
             if market_data.last:
-                print(f"Obtained {stock.symbol} last price: {market_data.last}")
+                last_price = market_data.last
+            if market_data.low:
+                low = market_data.low
+            if market_data.volume:
+                # IBKR Volume data unit is in hundreds (loses two digits of information compared to FMP and WRDS data)
+                volume = market_data.volume * 100
+
+            if open is not None and high is not None and last_price is not None and low is not None and volume is not None:
+                print(f"Obtained {stock.symbol} Open: {open} | High: {high} | Close: {last_price} | Low: {low} | Volume: {volume}")
                 print("-" * 60)
                 self.ibkr_server.cancelMktData(stock)
-                return market_data.last
+                return open, high, last_price, low, volume
 
         print(f"Failed to get market data for {stock.symbol} after {MAX_RETRIES} consecutive calls.")
         print("-" * 60)
         self.ibkr_server.cancelMktData(stock)
-        return None
+        return None, None
 
-    # Get most recent closing price
-    async def _get_last_price(self, symbol):
-        contract = await self._get_contract(symbol)
+    # Get most recent closing price and volume
+    async def _get_last_data(self, symbol):
+        contract = await self._fetch_contract(symbol)
         if not contract:
             return symbol, None
-        last_price = await self._get_market_data(contract)
-        print(f"Saving {symbol} last price: {last_price}")
+        open, high, last_price, low, volume = await self._fetch_last_data(contract)
+        print(f"Saving {symbol} Open: {open} | High: {high} | Close: {last_price} | Low: {low} | Volume: {volume}")
         print("-" * 60)
-        return symbol, last_price
+        return symbol, open, high, last_price, low, volume
 
     # Split the all_stocks list into chunks of batch_size
-    async def _get_prices_in_batches(self, all_stocks, batch_size):
+    async def _get_data_in_batches(self, all_stocks, batch_size):
         batches = [all_stocks[i:i + batch_size] for i in range(0, len(all_stocks), batch_size)]
         symbol_price_tuples = []
         for i, batch in enumerate(batches, 1):
             print(f"----------------------------------------------------------------BATCH: {i}/{len(batches)}---------------------------------------------------------------------------")
-            tasks = [self._get_last_price(stock_symbol) for stock_symbol in batch]
+            tasks = [self._get_last_data(stock_symbol) for stock_symbol in batch]
             batch_results = await asyncio.gather(*tasks)
             # Filter and extend the main list
             symbol_price_tuples.extend([t for t in batch_results if t[1] is not None])
@@ -137,10 +149,10 @@ class LivePrice:
 
         # Get stock prices in batches (or else it will hit ticker request rate limit ~ 250 request per 5 seconds)
         batch_size = 75
-        symbol_price_tuples = await self._get_prices_in_batches(all_stocks, batch_size)
+        symbol_price_tuples = await self._get_data_in_batches(all_stocks, batch_size)
 
         # Create DataFrame
-        all_price_data = pd.DataFrame(symbol_price_tuples, columns=['ticker', 'Close'])
+        all_price_data = pd.DataFrame(symbol_price_tuples, columns=['ticker', 'Open', 'High', 'Close', 'Low', 'Volume'])
         all_price_data['date'] = pd.to_datetime(self.current_date)
 
         # Separate all price data into respective ticker datasets

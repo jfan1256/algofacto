@@ -55,12 +55,12 @@ def build():
     # Create live create
     live_retrieve = LiveCreate(portfolio=strat_crit['portfolio'], current_date=current_date, threshold=data_crit['threshold'], set_length=data_crit['age'], annual_update=data_crit['annual_update'], start_data=data_crit['start_date'], start_factor=data_crit['start_date'])
 
-    # Retrieve live data
-    live_retrieve.exec_data()
-    # Create factor data
-    live_retrieve.exec_factor()
-    # Get adj factor data
-    live_retrieve.exec_adj_factor()
+    # # Retrieve live data
+    # live_retrieve.exec_data()
+    # # Create factor data
+    # live_retrieve.exec_factor()
+    # # Get adj factor data
+    # live_retrieve.exec_adj_factor()
 
     # Backtest strategies
     if 'StratMLTrendRF' in strat_crit['portfolio']:
