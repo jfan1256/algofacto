@@ -150,7 +150,7 @@ def trade():
         # Create price executioner
         live_price = LivePrice(portfolio=strat_crit['portfolio'], ibkr_server=ibkr_server, current_date=current_date)
 
-        # Retrieve live close prices
+        # Retrieve live prices
         loop = asyncio.get_event_loop()
         loop.run_until_complete(live_price.exec_live_price())
 
@@ -291,11 +291,11 @@ if __name__ == '__main__':
     schedule.every().friday.at("00:01").do(build)
 
     # Trade
-    schedule.every().monday.at("15:40").do(trade)
-    schedule.every().tuesday.at("15:40").do(trade)
-    schedule.every().wednesday.at("15:40").do(trade)
-    schedule.every().thursday.at("15:40").do(trade)
-    schedule.every().friday.at("15:40").do(trade)
+    schedule.every().monday.at("15:45").do(trade)
+    schedule.every().tuesday.at("15:45").do(trade)
+    schedule.every().wednesday.at("15:45").do(trade)
+    schedule.every().thursday.at("15:45").do(trade)
+    schedule.every().friday.at("15:45").do(trade)
 
     # Monitor
     schedule.every().friday.at("16:00").do(monitor)
