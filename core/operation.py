@@ -1,19 +1,3 @@
-from math import floor, log10
-
-from core.system import *
-from core.animation import *
-
-from sklearn.cluster import KMeans
-from statsmodels.regression.rolling import RollingOLS
-from sklearn.decomposition import PCA
-from timebudget import timebudget
-from joblib import Parallel, delayed
-from tqdm import tqdm
-from plotly.subplots import make_subplots
-from datetime import date
-from pandas.tseries.offsets import BDay
-from datetime import datetime, timedelta
-
 import time
 import plotly.offline as py
 import plotly.graph_objs as go
@@ -29,6 +13,22 @@ import numpy as np
 import ray
 import warnings
 import yfinance as yf
+
+from math import floor, log10
+from sklearn.cluster import KMeans
+from statsmodels.regression.rolling import RollingOLS
+from sklearn.decomposition import PCA
+from timebudget import timebudget
+from joblib import Parallel, delayed
+from tqdm import tqdm
+from plotly.subplots import make_subplots
+from datetime import date
+from pandas.tseries.offsets import BDay
+from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor
+
+from core.system import *
+from core.animation import *
 
 warnings.filterwarnings('ignore')
 
@@ -672,5 +672,45 @@ def get_sp500_fmp():
     else:
         print("Failed to retrieve data:", response.status_code, response.text)
         return None
+
+# Get real-time price data
+def get_real_price_fmp(ticker_list):
+    # Current Date
+    current_date = pd.to_datetime(date.today().strftime('%Y-%m-%d'))
+
+    def fetch_data(ticker):
+        url = f"https://financialmodelingprep.com/api/v3/stock/full/real-time-price/{ticker}?apikey={cls.api_key}"
+        response = requests.get(url)
+        if response.ok:
+            data = response.json()
+            if data:
+                return (ticker, data[0])
+        return (ticker, None)
+
+    with ThreadPoolExecutor(max_workers=16) as executor:
+        results = list(tqdm(executor.map(fetch_data, ticker_list), total=len(ticker_list), desc="Processing data"))
+
+    frames = []
+    for ticker, data in results:
+        if data:
+            ohlcv_data = {
+                'ticker': ticker,
+                'date': current_date,
+                'Open': data['bidPrice'],
+                'High': max(data['askPrice'], data['lastSalePrice']),
+                'Low': min(data['bidPrice'], data['lastSalePrice']),
+                'Close': data['lastSalePrice'],
+                'Volume': data['volume']
+            }
+            df = pd.DataFrame([ohlcv_data], index=[0])
+            frames.append(df)
+        else:
+            print(f"Skipped {ticker} - No data available")
+            continue
+
+    # Create dataframe
+    price = pd.concat(frames)
+    price = price.set_index(['ticker', 'date']).sort_index(level=['ticker', 'date'])
+    return price
 
 

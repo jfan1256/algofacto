@@ -147,6 +147,10 @@ class LivePrice:
             # Append tickers
             all_stocks = all_stocks + port_id_etf_ticker
 
+        # Get volume data from FMP
+        volume = get_real_price_fmp(all_stocks)
+        volume = volume[['Volume']]
+
         # Get stock prices in batches (or else it will hit ticker request rate limit ~ 250 request per 5 seconds)
         batch_size = 75
         symbol_price_tuples = await self._get_data_in_batches(all_stocks, batch_size)
@@ -154,6 +158,15 @@ class LivePrice:
         # Create DataFrame
         all_price_data = pd.DataFrame(symbol_price_tuples, columns=['ticker', 'Open', 'High', 'Close', 'Low', 'Volume'])
         all_price_data['date'] = pd.to_datetime(self.current_date)
+
+        # Merge FMP volume data with IBKR price data (drop NAN values in Volume column after merge)
+        all_price_data = all_price_data.set_index(['ticker', 'date'])
+        all_price_data = all_price_data.drop('Volume', axis=1)
+        all_price_data = all_price_data.merge(volume, left_index=True, right_index=True, how='left')
+        print(f"all_price_data before dropping NAN volume data: {len(all_price_data)}")
+        all_price_data = all_price_data.dropna(subset='Volume')
+        print(f"all_price_data after dropping NAN volume data: {len(all_price_data)}")
+        all_price_data = all_price_data.reset_index()
 
         # Separate all price data into respective ticker datasets
         permno_data = all_price_data[all_price_data['ticker'].isin(permno_ticker)]
