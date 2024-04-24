@@ -283,7 +283,6 @@ def monitor():
 # -----------------------------------------------------------------------------TIME TO MAKE MONEY--------------------------------------------------------------------------------
 if __name__ == '__main__':
     # Build
-    build()
     schedule.every().monday.at("00:01").do(build)
     schedule.every().tuesday.at("00:01").do(build)
     schedule.every().wednesday.at("00:01").do(build)
