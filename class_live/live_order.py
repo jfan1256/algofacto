@@ -1,3 +1,5 @@
+import math
+
 from ib_insync import *
 
 class LiveOrder:
@@ -46,8 +48,10 @@ class LiveOrder:
         zero_share = 0
         stock = await self._get_contract(symbol)
 
-        # Retrieve whole number of shares
-        num_share = int(capital_per_stock / stock_price)
+        # # Retrieve whole number of shares (round down)
+        # num_share = int(capital_per_stock / stock_price)
+        # Retrieve whole number of shares (round up)
+        num_share = math.ceil(capital_per_stock / stock_price)
 
         # Buy 1 share if num_share rounds to 0
         if num_share == 0:

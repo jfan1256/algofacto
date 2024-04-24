@@ -50,6 +50,7 @@ class LiveMonitor:
 
         # Perform full OLS regression
         strat_ret['const'] = 1
+        strat_ret = strat_ret.dropna()
         full_ols_model = sm.OLS(strat_ret['strat_ret'], strat_ret[['const', 'spy_ret']]).fit()
         full_alpha = full_ols_model.params['const']
         full_beta = full_ols_model.params['spy_ret']
@@ -184,9 +185,9 @@ class LiveMonitor:
         end_date = (daily_strat_ret.index.max() + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
         spy = get_spy(start_date=start_date, end_date=end_date)['spyRet']
         day_zero = daily_strat_share_ret.index[0] - pd.Timedelta(days=1)
-        daily_strat_share_ret = pd.concat([pd.Series([1e-4], index=[day_zero]), daily_strat_share_ret])
-        daily_strat_ret = pd.concat([pd.Series([1e-4], index=[day_zero]), daily_strat_ret])
-        spy = pd.concat([pd.Series([1e-4], index=[day_zero]), spy])
+        daily_strat_share_ret = pd.concat([pd.Series([1e-5], index=[day_zero]), daily_strat_share_ret])
+        daily_strat_ret = pd.concat([pd.Series([1e-5], index=[day_zero]), daily_strat_ret])
+        spy = pd.concat([pd.Series([1e-5], index=[day_zero]), spy])
         spy = spy.to_frame('spy_ret')
         qs.reports.html(daily_strat_share_ret, spy, output=self.output_path / 'qs_share_report.html')
         qs.reports.html(daily_strat_ret, spy, output=self.output_path / 'qs_report.html')
@@ -306,9 +307,9 @@ class LiveMonitor:
         end_date = (daily_strat_ret.index.max() + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
         spy = get_spy(start_date=start_date, end_date=end_date)['spyRet']
         day_zero = daily_strat_share_ret.index[0] - pd.Timedelta(days=1)
-        daily_strat_share_ret = pd.concat([pd.Series([1e-4], index=[day_zero]), daily_strat_share_ret])
-        daily_strat_ret = pd.concat([pd.Series([1e-4], index=[day_zero]), daily_strat_ret])
-        spy = pd.concat([pd.Series([1e-4], index=[day_zero]), spy])
+        daily_strat_share_ret = pd.concat([pd.Series([1e-5], index=[day_zero]), daily_strat_share_ret])
+        daily_strat_ret = pd.concat([pd.Series([1e-5], index=[day_zero]), daily_strat_ret])
+        spy = pd.concat([pd.Series([1e-5], index=[day_zero]), spy])
         spy = spy.to_frame('spy_ret')
         qs.reports.html(daily_strat_share_ret, spy, output=self.output_path / 'qs_share_report.html')
         qs.reports.html(daily_strat_ret, spy, output=self.output_path / 'qs_report.html')
